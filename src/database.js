@@ -5,7 +5,7 @@ const schema = require('./schema');
 function normalizeDatabaseUrl(value) {
   if (!value) return undefined;
   const url = new URL(value);
-  if (url.hostname.endsWith('.render.com') && !url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
+  if (url.hostname.endsWith('.render.com') && (!url.searchParams.has('sslmode') || url.searchParams.get('sslmode') === 'require')) url.searchParams.set('sslmode', 'verify-full');
   return url.toString();
 }
 

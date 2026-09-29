@@ -7,12 +7,33 @@ module.exports = [
     locked_until timestamptz,
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz',
+  'CREATE TABLE IF NOT EXISTS schema_migrations (key text PRIMARY KEY)',
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('grandfather_existing_accounts_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE users SET email_verified_at = created_at
+    WHERE email_verified_at IS NULL AND EXISTS (SELECT 1 FROM marker)`,
   `CREATE TABLE IF NOT EXISTS sessions (
     token_hash char(64) PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at timestamptz NOT NULL
   )`,
   'CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id)',
+  `CREATE TABLE IF NOT EXISTS auth_tokens (
+    token_hash char(64) PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose text NOT NULL CHECK (purpose IN ('verify', 'reset')),
+    expires_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  'CREATE INDEX IF NOT EXISTS auth_tokens_user_purpose_idx ON auth_tokens (user_id, purpose, created_at DESC)',
+  `CREATE TABLE IF NOT EXISTS user_ai_settings (
+    user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    provider text NOT NULL CHECK (provider IN ('groq', 'gemini')),
+    model text NOT NULL,
+    encrypted_key text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
   `CREATE TABLE IF NOT EXISTS prompts (
     owner_key char(64) NOT NULL,
     id uuid NOT NULL,

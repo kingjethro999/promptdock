@@ -39,9 +39,18 @@ let currentUser = null;
 let accountPrompts = [];
 let authMode = 'login';
 let pendingSave = false;
+let resetToken = null;
+let selectedProvider = 'groq';
+let savedProvider = null;
 
 function apiFetch(path, options = {}) { return fetch(path, options); }
 function libraryFetch(path, options = {}) { return apiFetch(path, options); }
+async function readApiJson(response) {
+  if (!response.headers.get('content-type')?.toLowerCase().includes('application/json'))
+    throw new Error('The site API is not responding. Check this deployment’s API configuration.');
+  try { return await response.json(); }
+  catch { throw new Error('The site API returned an invalid response. Try again.'); }
+}
 
 function readJSON(key, fallback) {
   try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; }
@@ -317,50 +326,78 @@ async function generateIdeaPrompt() {
 
 async function loadAiStatus() {
   try {
+    const accountResponse = await apiFetch('/api/auth/me');
+    if (accountResponse.ok) currentUser = (await accountResponse.json()).user;
+  } catch { currentUser = null; }
+  try {
     const response = await apiFetch('/api/status');
     if (!response.ok) throw new Error('Unavailable');
     const status = await response.json();
     aiAvailable = status.aiAvailable;
     voiceAvailable = status.voiceAvailable;
     databaseAvailable = Boolean(status.databaseAvailable);
-    if (databaseAvailable) {
-      try {
-        const accountResponse = await apiFetch('/api/auth/me');
-        if (accountResponse.ok) {
-          currentUser = (await accountResponse.json()).user;
-          if (currentUser) await loadRemoteLibrary();
-        }
-      } catch { showToast('Account service is unavailable right now.'); }
-    }
-    renderAccount();
-    $('aiStatus').textContent = aiAvailable ? 'Sends this draft to your configured AI provider' : 'Add an API key to .env to enable AI suggestions';
-    $('ideaStatus').textContent = aiAvailable ? ($('ideaInput').value.trim() ? 'Ready to turn this idea into a prompt' : 'Add your idea to begin') : 'Add an API key to .env to use AI';
-    $('voiceStatus').textContent = !voiceAvailable ? 'Add GROQ_API_KEY to .env to enable voice.'
-      : !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined' ? 'This browser cannot record audio here. Try typing your idea.'
-      : 'Speak your idea. Audio goes to Groq only after Stop & send.';
-  } catch { $('aiStatus').textContent = 'AI suggestions are unavailable'; $('ideaStatus').textContent = 'AI is unavailable. Use the manual editor below.'; $('voiceStatus').textContent = 'Voice is unavailable right now.'; }
+  } catch { aiAvailable = false; voiceAvailable = false; }
+  renderAccount();
+  renderShell();
+  if (currentUser) { await loadRemoteLibrary(); await loadSettings(); }
+  $('aiStatus').textContent = aiAvailable ? 'Sends this draft to your chosen AI provider' : 'Add a provider key in Settings to enable AI suggestions';
+  $('ideaStatus').textContent = aiAvailable ? ($('ideaInput').value.trim() ? 'Ready to turn this idea into a prompt' : 'Add your idea to begin') : 'Add a provider key in Settings to use AI';
+  $('voiceStatus').textContent = !voiceAvailable ? 'Voice requires a Groq key, yours or PromptDock’s.'
+    : !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined' ? 'This browser cannot record audio here. Try typing your idea.'
+    : 'Speak your idea. Audio goes to Groq only after Stop & send.';
   updateIdeaButton();
   updatePreview();
 }
 
 function renderAccount() {
-  $('accountButton').textContent = currentUser ? currentUser.email : 'Sign in to sync';
-  $('accountButton').disabled = !databaseAvailable && !currentUser;
-  $('privacyNote').textContent = currentUser ? 'Library syncs with your account' : databaseAvailable ? 'Sign in to sync your library' : 'Saved prompts stay in this browser';
+  $('accountButton').textContent = currentUser ? currentUser.email : 'Account';
+  $('settingsEmail').textContent = currentUser?.email || '';
+  $('privacyNote').textContent = currentUser ? 'Library syncs with your account' : 'Sign in to sync your library';
   renderLibrary();
+}
+
+function renderShell() {
+  const enteringWorkspace = currentUser && $('appShell').classList.contains('hidden');
+  $('bootScreen').classList.add('hidden');
+  $('landingPage').classList.toggle('hidden', Boolean(currentUser));
+  $('appShell').classList.toggle('hidden', !currentUser);
+  if (enteringWorkspace) window.scrollTo(0, 0);
 }
 
 function openAuth(mode = 'login') {
   authMode = mode;
-  $('authTitle').textContent = mode === 'register' ? 'Create an account' : 'Sign in';
-  $('authDescription').textContent = mode === 'register' ? 'Save your library and open it on any device.' : 'Sign in to keep your library in sync across devices.';
-  $('authSubmit').textContent = mode === 'register' ? 'Create account' : 'Sign in';
-  $('authToggle').textContent = mode === 'register' ? 'I have an account' : 'Create account';
-  $('authPassword').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+  const copy = {
+    login: ['Welcome back', 'Sign in to open your saved prompts on any device.', 'Sign in', 'Create account'],
+    register: ['Create your workspace', 'We’ll email you a link to verify your address.', 'Create account', 'I have an account'],
+    forgot: ['Reset your password', 'Enter your email and we’ll send a reset link.', 'Send reset link', 'Back to sign in'],
+    reset: ['Choose a new password', 'Use at least 12 characters.', 'Update password', 'Back to sign in'],
+    'pending-verify': ['Check your inbox', 'Open the verification link we sent you. You can request a new one below.', 'Resend verification', 'Back to sign in'],
+    'pending-reset': ['Check your inbox', 'If this email has an account, a reset link is on its way.', 'Send again', 'Back to sign in'],
+    verifying: ['Verifying your email', 'Please wait while we confirm your address.', '', '']
+  }[mode];
+  $('authTitle').textContent = copy[0];
+  $('authDescription').textContent = copy[1];
+  $('authSubmit').textContent = copy[2];
+  $('authToggle').textContent = copy[3];
+  const emailNeeded = !['reset', 'verifying'].includes(mode);
+  const passwordNeeded = ['login', 'register', 'reset'].includes(mode);
+  const confirmNeeded = ['register', 'reset'].includes(mode);
+  $('authEmailWrap').classList.toggle('hidden', !emailNeeded);
+  $('authPasswordWrap').classList.toggle('hidden', !passwordNeeded);
+  $('authConfirmWrap').classList.toggle('hidden', !confirmNeeded);
+  $('authEmail').required = emailNeeded;
+  $('authPassword').required = passwordNeeded;
+  $('authConfirm').required = confirmNeeded;
+  $('authSubmit').classList.toggle('hidden', mode === 'verifying');
+  $('authToggle').classList.toggle('hidden', mode === 'verifying');
+  $('authForgot').classList.toggle('hidden', mode !== 'login');
+  $('authPassword').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   $('authPassword').value = '';
+  $('authConfirm').value = '';
   $('authError').textContent = '';
+  $('authSuccess').textContent = '';
   if (!$('authDialog').open) $('authDialog').showModal();
-  $('authEmail').focus();
+  if (emailNeeded) $('authEmail').focus(); else if (passwordNeeded) $('authPassword').focus();
 }
 
 async function submitAuth(event) {
@@ -369,19 +406,53 @@ async function submitAuth(event) {
   button.disabled = true;
   $('authError').textContent = '';
   try {
-    const response = await apiFetch(`/api/auth/${authMode}`, {
+    if (['register', 'reset'].includes(authMode) && $('authPassword').value !== $('authConfirm').value) throw new Error('Passwords do not match.');
+    const route = { 'pending-verify': 'resend', 'pending-reset': 'forgot' }[authMode] || authMode;
+    const body = authMode === 'reset' ? { token: resetToken, password: $('authPassword').value }
+      : { email: $('authEmail').value, password: $('authPassword').value };
+    const response = await apiFetch(`/api/auth/${route}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: $('authEmail').value, password: $('authPassword').value })
+      body: JSON.stringify(body)
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Could not sign in.');
+    const result = await readApiJson(response);
+    if (!response.ok) {
+      if (result.code === 'email_delivery_failed' && authMode === 'register') {
+        openAuth('pending-verify');
+        $('authError').textContent = result.error || 'Verification email could not be sent. Try resending shortly.';
+        return;
+      }
+      if (result.code === 'verification_required') {
+        openAuth('pending-verify');
+        $('authSuccess').textContent = 'Your email still needs verification.';
+        return;
+      }
+      throw new Error(result.error || 'Could not continue.');
+    }
+    if (authMode === 'register' || authMode === 'pending-verify') {
+      openAuth('pending-verify');
+      $('authSuccess').textContent = 'Verification email sent. Check your inbox and spam folder.';
+      return;
+    }
+    if (authMode === 'forgot' || authMode === 'pending-reset') {
+      openAuth('pending-reset');
+      $('authSuccess').textContent = 'If this address has an account, a reset link has been sent.';
+      return;
+    }
+    if (authMode === 'reset') {
+      resetToken = null;
+      currentUser = null;
+      accountPrompts = [];
+      renderAccount(); renderShell();
+      openAuth('login');
+      $('authSuccess').textContent = 'Password updated. Sign in with your new password.';
+      return;
+    }
     currentUser = result.user;
     databaseAvailable = true;
     accountPrompts = [];
     $('authPassword').value = '';
     $('authDialog').close();
-    renderAccount();
-    await loadRemoteLibrary();
+    await loadAiStatus();
     if (pendingSave) {
       pendingSave = false;
       $('promptName').value = '';
@@ -392,6 +463,64 @@ async function submitAuth(event) {
   finally { button.disabled = false; }
 }
 
+async function handleAuthLink() {
+  const params = new URLSearchParams(window.location.search);
+  const verify = params.get('verify');
+  resetToken = params.get('reset');
+  if (!verify && !resetToken) return;
+  window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
+  if (resetToken) { openAuth('reset'); return; }
+  openAuth('verifying');
+  try {
+    const response = await apiFetch('/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: verify }) });
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || 'Verification failed.');
+    openAuth('login');
+    $('authSuccess').textContent = 'Email verified. Sign in to open your workspace.';
+  } catch (error) {
+    openAuth('login');
+    $('authError').textContent = error.message || 'Verification failed.';
+  }
+}
+
+function selectProvider(provider) {
+  selectedProvider = provider;
+  document.querySelectorAll('.provider-option').forEach(option => {
+    const active = option.dataset.provider === provider;
+    option.classList.toggle('active', active);
+    option.setAttribute('aria-pressed', String(active));
+  });
+  $('byokModel').placeholder = provider === 'groq' ? 'e.g. openai/gpt-oss-120b' : 'e.g. gemini-2.5-flash';
+  if (savedProvider && savedProvider !== provider) $('byokKey').placeholder = 'Add a key for this provider';
+}
+
+async function loadSettings() {
+  if (!currentUser) return;
+  try {
+    const response = await apiFetch('/api/settings');
+    if (!response.ok) throw new Error('Settings are unavailable.');
+    const setting = await readApiJson(response);
+    savedProvider = setting.provider;
+    selectProvider(setting.provider || 'groq');
+    $('byokModel').value = setting.model || '';
+    $('byokKey').value = '';
+    $('byokKey').placeholder = setting.hasKey ? 'Key saved — leave blank to keep it' : 'Paste your provider key';
+    $('byokState').textContent = !setting.available ? 'Personal keys are unavailable right now.'
+      : setting.hasKey ? `Using your ${setting.provider === 'groq' ? 'Groq' : 'Gemini'} key and model.` : 'Using PromptDock’s configured provider.';
+    $('byokForm').querySelector('button[type=submit]').disabled = !setting.available;
+    $('removeByok').disabled = !setting.hasKey;
+  } catch { $('byokState').textContent = 'Could not load your AI settings.'; }
+}
+
+async function signOut(all = false) {
+  const response = await apiFetch(all ? '/api/auth/logout-all' : '/api/auth/logout', { method: 'POST' }).catch(() => null);
+  if (!response?.ok) { showToast('Could not sign out. Try again.'); return; }
+  currentUser = null; accountPrompts = []; currentId = null;
+  localStorage.removeItem(DRAFT_KEY);
+  currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); updateIdeaButton();
+  switchView('builder'); renderAccount(); renderShell(); showToast('Signed out.');
+}
+
 async function enhancePrompt() {
   if (!aiAvailable || aiBusy || !elements.task.value.trim()) return;
   const original = dataFromForm();
@@ -399,7 +528,7 @@ async function enhancePrompt() {
   $('aiStatus').textContent = 'Improving your prompt…';
   try {
     const response = await apiFetch('/api/enhance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(original) });
-    const result = await response.json();
+    const result = await readApiJson(response);
     if (!response.ok) throw new Error(result.error || 'AI suggestions are unavailable.');
     if (JSON.stringify(original) !== JSON.stringify(dataFromForm())) { showToast('Your draft changed. AI suggestions were not applied.'); return; }
     currentId = null; currentAnalysis = null; setForm(result.data); renderInterpretation(null);
@@ -553,10 +682,13 @@ function switchView(view) {
   }
   $('builderView').classList.toggle('hidden', view !== 'builder');
   $('libraryView').classList.toggle('hidden', view !== 'library');
-  $('breadcrumbCurrent').textContent = view === 'builder' ? 'Idea to prompt' : 'My library';
+  $('settingsView').classList.toggle('hidden', view !== 'settings');
+  $('breadcrumbCurrent').textContent = { builder: 'Idea to prompt', library: 'My library', settings: 'Settings' }[view] || 'Workspace';
   document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
   $('sidebar').classList.remove('open'); $('menuButton').setAttribute('aria-expanded', 'false');
+  $('sidebarOverlay').classList.remove('visible');
   if (view === 'library') renderLibrary();
+  if (view === 'settings') loadSettings();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -594,27 +726,52 @@ $('saveButton').addEventListener('click', () => {
 });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
 $('saveForm').addEventListener('submit', async event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; await savePrompt(name); $('saveDialog').close(); });
-$('accountButton').addEventListener('click', () => {
-  if (currentUser) { $('accountEmail').textContent = currentUser.email; $('accountDialog').showModal(); }
-  else openAuth();
-});
+$('accountButton').addEventListener('click', () => switchView('settings'));
 $('authForm').addEventListener('submit', submitAuth);
 $('authToggle').addEventListener('click', () => openAuth(authMode === 'login' ? 'register' : 'login'));
+$('authForgot').addEventListener('click', () => openAuth('forgot'));
 $('closeAuth').addEventListener('click', () => { pendingSave = false; $('authDialog').close(); });
 $('authDialog').addEventListener('close', () => { if (!currentUser) pendingSave = false; });
-$('closeAccount').addEventListener('click', () => $('accountDialog').close());
-$('signOutButton').addEventListener('click', async () => {
-  const response = await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
-  if (!response?.ok) { showToast('Could not sign out. Try again.'); return; }
-  currentUser = null; accountPrompts = []; currentId = null;
-  localStorage.removeItem(DRAFT_KEY);
-  currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); updateIdeaButton();
-  $('accountDialog').close(); renderAccount(); showToast('Signed out.');
+$('sidebarSignOut').addEventListener('click', () => signOut());
+$('logoutAllButton').addEventListener('click', () => signOut(true));
+document.querySelectorAll('[data-auth-mode]').forEach(button => button.addEventListener('click', () => openAuth(button.dataset.authMode)));
+document.querySelectorAll('.provider-option').forEach(button => button.addEventListener('click', () => selectProvider(button.dataset.provider)));
+$('byokForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const feedback = $('byokFeedback'); feedback.textContent = ''; feedback.classList.remove('error');
+  try {
+    const response = await apiFetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: selectedProvider, model: $('byokModel').value, apiKey: $('byokKey').value }) });
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || 'Could not save provider settings.');
+    feedback.textContent = 'Provider saved. Your next AI request will use this key and model.';
+    await loadAiStatus();
+  } catch (error) { feedback.textContent = error.message || 'Could not save provider settings.'; feedback.classList.add('error'); }
+});
+$('removeByok').addEventListener('click', async () => {
+  const feedback = $('byokFeedback'); feedback.textContent = ''; feedback.classList.remove('error');
+  try {
+    const response = await apiFetch('/api/settings', { method: 'DELETE' });
+    if (!response.ok) throw new Error('Could not remove your key.');
+    feedback.textContent = 'Your saved key was removed. PromptDock’s provider is active.';
+    await loadAiStatus();
+  } catch (error) { feedback.textContent = error.message; feedback.classList.add('error'); }
+});
+$('passwordForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const feedback = $('passwordFeedback'); feedback.textContent = ''; feedback.classList.remove('error');
+  try {
+    const response = await apiFetch('/api/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: $('currentPassword').value, newPassword: $('newPassword').value }) });
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || 'Could not change your password.');
+    $('passwordForm').reset();
+    feedback.textContent = 'Password changed. Other sessions were signed out.';
+  } catch (error) { feedback.textContent = error.message || 'Could not change your password.'; feedback.classList.add('error'); }
 });
 $('helpButton').addEventListener('click', () => $('helpDialog').showModal());
 $('closeHelp').addEventListener('click', () => $('helpDialog').close());
 $('gotItButton').addEventListener('click', () => $('helpDialog').close());
-$('menuButton').addEventListener('click', () => { const open = $('sidebar').classList.toggle('open'); $('menuButton').setAttribute('aria-expanded', String(open)); });
+$('menuButton').addEventListener('click', () => { const open = $('sidebar').classList.toggle('open'); $('sidebarOverlay').classList.toggle('visible', open); $('menuButton').setAttribute('aria-expanded', String(open)); });
+$('sidebarOverlay').addEventListener('click', () => { $('sidebar').classList.remove('open'); $('sidebarOverlay').classList.remove('visible'); $('menuButton').setAttribute('aria-expanded', 'false'); });
 window.addEventListener('pagehide', () => { voiceRequestId++; if (voiceState === 'recording') stopVoiceRecording(false); else stopVoiceTracks(); });
 document.querySelectorAll('.platform-card').forEach(card => card.addEventListener('click', async () => {
   const url = platformUrls[card.dataset.platform];
@@ -626,6 +783,29 @@ document.querySelectorAll('.platform-card').forEach(card => card.addEventListene
 }));
 document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); if (document.activeElement === $('ideaInput')) generateIdeaPrompt(); else copyPrompt(); } });
 
+const demoExamples = {
+  business: { idea: "I want to launch a small skincare brand, but I don't know where to begin.", goal: 'Build a practical launch plan for a handmade skincare business.', focus: 'First steps → product validation → realistic launch costs.', format: 'Step-by-step plan with open questions.', depth: 'Deep' },
+  app: { idea: 'I have an app idea for helping people plan meals from what is already in their fridge.', goal: 'Plan a useful first version of a meal-planning app.', focus: 'Core user need → smallest useful feature set → launch risks.', format: 'Product outline and prioritized next steps.', depth: 'Deep' },
+  study: { idea: 'I need a better way to study for a big exam next month.', goal: 'Create a realistic study plan for the next four weeks.', focus: 'Time available → active recall → weekly check-ins.', format: 'Weekly schedule with daily actions.', depth: 'Balanced' }
+};
+let activeDemo = 'business';
+function showDemo(name) {
+  activeDemo = name;
+  const data = demoExamples[name];
+  document.querySelectorAll('.demo-choice').forEach(button => button.classList.toggle('active', button.dataset.demo === name));
+  $('demoOutput').classList.add('is-shaping');
+  $('demoIdea').textContent = data.idea;
+  setTimeout(() => {
+    $('demoGoal').textContent = data.goal;
+    $('demoFocus').textContent = data.focus;
+    $('demoFormat').textContent = data.format;
+    $('demoDepth').textContent = data.depth;
+    $('demoOutput').classList.remove('is-shaping');
+  }, 180);
+}
+document.querySelectorAll('.demo-choice').forEach(button => button.addEventListener('click', () => showDemo(button.dataset.demo)));
+$('demoAction').addEventListener('click', () => { const names = Object.keys(demoExamples); showDemo(names[(names.indexOf(activeDemo) + 1) % names.length]); });
+
 renderTemplates();
 $('appVersion').textContent = config.version;
 const savedDraft = readJSON(DRAFT_KEY, {});
@@ -634,4 +814,4 @@ $('ideaInput').value = savedDraft.idea || '';
 setForm(savedDraft.data || savedDraft);
 renderInterpretation(currentAnalysis);
 renderLibrary();
-loadAiStatus();
+(async () => { await loadAiStatus(); await handleAuthLink(); })();

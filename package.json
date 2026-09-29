@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "scripts": {
@@ -15,6 +15,7 @@
     "node": ">=20.12"
   },
   "dependencies": {
+    "nodemailer": "^10.0.12",
     "pg": "^8.23.0"
   }
 }

@@ -1,6 +1,6 @@
 # PromptDock
 
-Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes templates, account-based library sync, copy, and Markdown export.
+Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes a public interactive landing page, templates, voice input, account-based library sync, bring-your-own-key settings, copy, and Markdown export.
 
 ## Project layout
 
@@ -21,20 +21,22 @@ npm ci
 npm start
 ```
 
-Open <http://localhost:3000>. Set `DATABASE_URL` in `.env` to use your managed PostgreSQL database locally. Without a database, saved prompts stay in this browser only.
+Open <http://localhost:3000>. Set `DATABASE_URL`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `BYOK_ENCRYPTION_KEY` in `.env` to use all account features locally. The ignored `.env` file is loaded by the server. The landing page is public; verified users open directly into the workspace.
 
-When a database is connected, create an account or sign in to save prompts and sync the library across devices. Passwords are hashed with scrypt; sessions use HTTP-only cookies. The first sign-in in a browser imports prompts saved by older PromptDock versions, then removes the old browser workspace token. Existing prompts on another device are available after signing in with the same account. Email verification and password reset are not available yet.
+Create an account, verify the link sent by email, and sign in to sync prompts across devices. The account flow includes password reset, password change, and signing out on all devices. Passwords are hashed with scrypt; sessions use HTTP-only cookies. Verification links expire after 24 hours and reset links after 1 hour. The first sign-in in a browser imports prompts saved by older PromptDock versions, then removes the old browser workspace token.
+
+In Settings, choose Groq or Gemini, enter a model ID and your own API key, and save. Keys are encrypted with AES-256-GCM before being stored in PostgreSQL. The API never returns the saved key. Set one stable `BYOK_ENCRYPTION_KEY` (64 hex characters) on every deployment; changing or losing it makes previously saved keys unreadable. A Groq key also powers voice transcription. Removing a personal key returns the app to its configured provider.
 
 To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The server transcribes with Groq and sends the resulting idea through prompt generation. **Cancel** or the two-minute limit discards the recording. Vercel's function payload limit caps recordings at 4 MB.
 
 ## Deploy
 
-1. Use your existing Render Postgres database. No database service is deployed from this repository.
-2. Copy its **External URL** from Render Dashboard → database → **Connect** → **External**. Keep the URL private.
-3. Import this repository into Vercel with the repository root as its project root. Add `DATABASE_URL` with that **external URL**. The server adds `sslmode=require` automatically for Render external hosts when it is absent. Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for AI and voice, or configure another supported provider using `.env.example`. Deploy. The app creates the account, session, and prompt tables on first database access.
-4. Open the Vercel site. The sidebar version comes from the same frontend build as the deployed code. Check `/api/health` on that domain for database readiness.
+1. Import this repository into Vercel. Keep **Root Directory** as `./` and **Application Preset** as `Node`. The repository's `vercel.json` sets **Build Command** to `npm run build:frontend` and **Output Directory** to `src/dist`; set **Install Command** to `npm ci` if you override Vercel's default.
+2. Add server-side environment variables in Vercel: `DATABASE_URL` (your Render database's **External URL**), `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `BYOK_ENCRYPTION_KEY` (64 hex characters). Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for PromptDock's default AI and voice, or configure another provider from `.env.example`. Keep all secret values out of Git and the browser build.
+3. Deploy. The server uses verified TLS for Render external URLs and creates or migrates account, session, token, settings, and prompt tables on first database access. Open `/api/health` on the Vercel domain and expect `{"ok":true}`.
+4. Once the permanent Vercel or custom domain is known, set `APP_URL` to that full HTTPS origin and redeploy. Verification and reset emails use that address. Without `APP_URL`, they use Vercel's production URL when available, then its deployment URL.
 
-The provider keys and database URL are never written to Git or the static frontend. The root `.env` is ignored by Git. Voice uses a browser with `MediaRecorder` on localhost or HTTPS.
+The provider keys, Gmail app password, encryption key, and database URL are never written to Git or the static frontend. The root `.env` is ignored by Git. Voice uses a browser with `MediaRecorder` on localhost or HTTPS.
 
 Render Free Postgres has a 1 GB limit and expires after 30 days; plan an upgrade or export before expiry if you need to keep the data.
 

@@ -95,3 +95,5 @@
 .auth-error{min-height:16px;margin:12px 0 0!important;color:#aa3f34!important}
 #accountDialog{position:relative}
 @media(max-width:520px){.account-trigger{max-width:125px}}
+/* Keep navigation reachable on short screens and when templates grow. */
+.sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#58745d #172923}

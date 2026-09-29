@@ -6,6 +6,7 @@ const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
 const { version } = require('../package.json');
 const database = require('./database');
 const auth = require('./auth');
+const settings = require('./settings');
 
 const root = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT) || 3000;
@@ -15,7 +16,7 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml'
 };
-const publicFiles = new Set(['/index.html', '/styles.css', '/app.js', '/config.js', '/favicon.svg']);
+const publicFiles = new Set(['/index.html', '/styles.css', '/landing.css', '/app.js', '/config.js', '/favicon.svg']);
 
 function json(response, status, body, headers = {}) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers });
@@ -62,7 +63,11 @@ async function handleRequest(request, response) {
   }
   catch { response.writeHead(400).end('Bad request'); return; }
   if (pathname === '/api/status' && request.method === 'GET') {
-    json(response, 200, { aiAvailable: configuredProviders().length > 0, voiceAvailable: Boolean(process.env.GROQ_API_KEY), databaseAvailable: database.configured, version: `v${version}` });
+    try {
+      const user = database.configured ? await auth.currentUser(request) : null;
+      const env = user ? await settings.effectiveEnv(user.id) : process.env;
+      json(response, 200, { aiAvailable: configuredProviders(env).length > 0, voiceAvailable: Boolean(env.GROQ_API_KEY), databaseAvailable: database.configured, byokAvailable: Boolean(settings.encryptionKey()), version: `v${version}` });
+    } catch { json(response, 503, { error: 'Service status is unavailable.' }); }
     return;
   }
   if (pathname === '/api/health' && request.method === 'GET') {
@@ -75,12 +80,17 @@ async function handleRequest(request, response) {
     catch { json(response, 503, { error: 'Account service is unavailable.' }); }
     return;
   }
-  if (['/api/auth/register', '/api/auth/login', '/api/auth/logout', '/api/auth/import-legacy'].includes(pathname) && request.method === 'POST') {
+  if (['/api/auth/register', '/api/auth/login', '/api/auth/logout', '/api/auth/import-legacy', '/api/auth/resend', '/api/auth/forgot', '/api/auth/verify', '/api/auth/reset', '/api/auth/change-password', '/api/auth/logout-all'].includes(pathname) && request.method === 'POST') {
     if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!database.configured) { json(response, 503, { error: 'Database is not configured.' }); return; }
     try {
       if (pathname === '/api/auth/logout') {
         await auth.logout(request);
+        json(response, 200, { ok: true }, { 'Set-Cookie': auth.clearCookie(request) });
+      } else if (pathname === '/api/auth/logout-all') {
+        const user = await auth.currentUser(request);
+        if (!user) { json(response, 401, { error: 'Sign in first.' }); return; }
+        await auth.logoutAll(user.id);
         json(response, 200, { ok: true }, { 'Set-Cookie': auth.clearCookie(request) });
       } else if (pathname === '/api/auth/import-legacy') {
         const user = await auth.currentUser(request);
@@ -89,11 +99,41 @@ async function handleRequest(request, response) {
         json(response, 200, { ok: true });
       } else {
         if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
-        const result = await (pathname === '/api/auth/register' ? auth.register : auth.login)(await readBody(request), request);
-        json(response, 200, { user: result.user }, { 'Set-Cookie': result.cookie });
+        const body = await readBody(request);
+        if (pathname === '/api/auth/register') json(response, 200, await auth.register(body, request));
+        else if (pathname === '/api/auth/login') {
+          const result = await auth.login(body, request);
+          json(response, 200, { user: result.user }, { 'Set-Cookie': result.cookie });
+        } else if (pathname === '/api/auth/resend') json(response, 200, await auth.resendVerification(body));
+        else if (pathname === '/api/auth/forgot') json(response, 200, await auth.forgotPassword(body));
+        else if (pathname === '/api/auth/verify') json(response, 200, await auth.consumeToken(body?.token, 'verify'));
+        else if (pathname === '/api/auth/reset') json(response, 200, await auth.consumeToken(body?.token, 'reset', body?.password));
+        else if (pathname === '/api/auth/change-password') {
+          const user = await auth.currentUser(request);
+          if (!user) { json(response, 401, { error: 'Sign in first.' }); return; }
+          const result = await auth.changePassword(user, body, request);
+          json(response, 200, { ok: true }, { 'Set-Cookie': result.cookie });
+        }
       }
     } catch (error) {
-      json(response, error.status || 503, { error: error.status ? error.message : 'Account service is unavailable.' });
+      json(response, error.status || 503, { error: error.status ? error.message : 'Account service is unavailable.', code: error.code && typeof error.code === 'string' && !/^\d/.test(error.code) ? error.code : undefined });
+    }
+    return;
+  }
+  if (pathname === '/api/settings' && ['GET', 'PUT', 'DELETE'].includes(request.method)) {
+    if (request.method !== 'GET' && !validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) { json(response, 401, { error: 'Sign in first.' }); return; }
+      if (request.method === 'GET') json(response, 200, await settings.getSettings(user.id));
+      else if (request.method === 'DELETE') json(response, 200, await settings.deleteSettings(user.id));
+      else {
+        if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
+        json(response, 200, await settings.saveSettings(user.id, await readBody(request)));
+      }
+    } catch (error) {
+      const validation = /^(Choose Groq|Enter a valid|Enter an API key)/.test(error.message);
+      json(response, validation ? 400 : 503, { error: validation ? error.message : 'Settings are unavailable.' });
     }
     return;
   }
@@ -117,7 +157,12 @@ async function handleRequest(request, response) {
   }
   if (pathname === '/api/transcribe' && request.method === 'POST') {
     if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
-    try { json(response, 200, { text: await transcribeAudio(await readAudio(request), request.headers['content-type']) }); }
+    try {
+      const user = database.configured ? await auth.currentUser(request) : null;
+      if (database.configured && !user) { json(response, 401, { error: 'Sign in first.' }); return; }
+      const env = user ? await settings.effectiveEnv(user.id) : process.env;
+      json(response, 200, { text: await transcribeAudio(await readAudio(request), request.headers['content-type'], env) });
+    }
     catch (error) {
       const message = error.message;
       const status = message.startsWith('Recording is too large') ? 413
@@ -130,8 +175,11 @@ async function handleRequest(request, response) {
     if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
     try {
+      const user = database.configured ? await auth.currentUser(request) : null;
+      if (database.configured && !user) { json(response, 401, { error: 'Sign in first.' }); return; }
+      const env = user ? await settings.effectiveEnv(user.id) : process.env;
       const body = await readBody(request);
-      json(response, 200, await (pathname === '/api/idea-to-prompt' ? ideaToPrompt(body) : enhanceWithAI(body)));
+      json(response, 200, await (pathname === '/api/idea-to-prompt' ? ideaToPrompt(body, env) : enhanceWithAI(body, env)));
     } catch (error) {
       const message = error.message;
       const status = ['Draft is too long.', 'Idea is too long.'].includes(message) ? 413
