@@ -6,6 +6,6 @@
   "functions": { "api/index.js": { "maxDuration": 60 } },
   "rewrites": [
     { "source": "/api/:route*", "destination": "/api/index?route=:route*" },
-    { "source": "/p/:id", "destination": "/share.html" }
+    { "source": "/p/:id", "destination": "/api/index?share=:id" }
   ]
 }

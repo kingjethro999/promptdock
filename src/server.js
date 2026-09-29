@@ -15,9 +15,10 @@ const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.png': 'image/png',
   '.svg': 'image/svg+xml'
 };
-const publicFiles = new Set(['/index.html', '/share.html', '/styles.css', '/landing.css', '/share.css', '/app.js', '/share.js', '/prompt-format.js', '/config.js', '/favicon.svg']);
+const publicFiles = new Set(['/index.html', '/share.html', '/styles.css', '/landing.css', '/share.css', '/app.js', '/share.js', '/prompt-format.js', '/config.js', '/favicon.svg', '/social-card.png']);
 
 function json(response, status, body, headers = {}) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers });
@@ -55,6 +56,36 @@ function validOrigin(request) {
   return origin === `https://${host}` || (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host || '') && origin === `http://${host}`);
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+function renderSharedHtml(template, prompt, canonical, image) {
+  const title = `${prompt.name} — PromptDock`;
+  const description = String(prompt.data?.task || 'A shared PromptDock prompt').replace(/\s+/g, ' ').trim().slice(0, 180);
+  const meta = `<meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="canonical" href="${escapeHtml(canonical)}">`;
+  return template.replace('<title>Shared prompt — PromptDock</title>', `<title>${escapeHtml(title)}</title>`)
+    .replace('content="Explore a shared PromptDock prompt. Copy it or save your own version."', `content="${escapeHtml(description)}"`)
+    .replace('<!--PROMPT_META-->', meta);
+}
+
+async function serveSharedPage(request, response, publicId) {
+  try {
+    const prompt = await database.getPublicPrompt(publicId);
+    if (!prompt) { response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }).end('Shared prompt unavailable.'); return; }
+    const fallbackHost = process.env.VERCEL ? process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL : request.headers.host;
+    const origin = process.env.APP_URL ? new URL(process.env.APP_URL).origin : `${process.env.VERCEL ? 'https' : 'http'}://${fallbackHost}`;
+    const canonical = new URL(`/p/${publicId}`, origin).toString();
+    const image = new URL('/social-card.png', origin).toString();
+    const template = await fs.promises.readFile(path.join(root, 'share.html'), 'utf8');
+    const html = renderSharedHtml(template, prompt, canonical, image);
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+    response.end(html);
+  } catch {
+    json(response, 503, { error: 'Shared prompt service is unavailable.' });
+  }
+}
+
 async function handleRequest(request, response) {
   let pathname;
   try {
@@ -63,6 +94,8 @@ async function handleRequest(request, response) {
     pathname = route ? `/api/${route}` : decodeURIComponent(url.pathname);
   }
   catch { response.writeHead(400).end('Bad request'); return; }
+  const sharedPageId = new URL(request.url, 'http://localhost').searchParams.get('share') || pathname.match(/^\/p\/([0-9a-f-]{36})$/i)?.[1];
+  if (sharedPageId && request.method === 'GET') { await serveSharedPage(request, response, sharedPageId); return; }
   if (pathname === '/api/status' && request.method === 'GET') {
     try {
       const user = database.configured ? await auth.currentUser(request) : null;
@@ -237,7 +270,6 @@ async function handleRequest(request, response) {
     return;
   }
   if (pathname === '/') pathname = '/index.html';
-  if (/^\/p\/[0-9a-f-]{36}$/i.test(pathname)) pathname = '/share.html';
   if (!publicFiles.has(pathname)) {
     response.writeHead(404).end('Not found');
     return;
@@ -259,3 +291,4 @@ async function handleRequest(request, response) {
 
 if (require.main === module) http.createServer(handleRequest).listen(port, '0.0.0.0', () => console.log(`PromptDock is running on port ${port}`));
 module.exports = handleRequest;
+module.exports.renderSharedHtml = renderSharedHtml;
