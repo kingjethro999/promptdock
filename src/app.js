@@ -789,6 +789,22 @@ function renderLibrary() {
     share.addEventListener('click', () => openShare(item));
     sharing.append(visibility, share);
     if (currentUser) { const history = document.createElement('button'); history.type = 'button'; history.className = 'library-share-button'; history.textContent = 'History ↶'; history.addEventListener('click', () => openHistory(item)); sharing.append(history); }
+    const duplicate = document.createElement('button'); duplicate.type = 'button'; duplicate.className = 'library-share-button'; duplicate.textContent = 'Duplicate +';
+    duplicate.addEventListener('click', async () => {
+      try {
+        let copy;
+        if (currentUser) {
+          const response = await libraryFetch(`/api/prompts/${item.id}/duplicate`, { method: 'POST' });
+          const result = await readApiJson(response);
+          if (!response.ok) throw new Error(result.error || 'Could not duplicate prompt.');
+          copy = result.prompt; libraryTotal++;
+        } else copy = { ...item, id: crypto.randomUUID(), name: `${item.name.slice(0, 75)} copy`, publicId: null, forkedFrom: null, updatedAt: new Date().toISOString() };
+        if ($('librarySearch').value) { $('librarySearch').value = ''; searchResults = []; searchRequest++; }
+        setSaved([copy, ...getSaved()]);
+        showToast('Private copy added to your library.');
+      } catch (error) { showToast(error.message); }
+    });
+    sharing.append(duplicate);
     const footer = document.createElement('div'); footer.className = 'library-card-footer';
     const date = document.createElement('span'); date.textContent = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; currentAnalysis = item.analysis || null; $('ideaInput').value = item.idea || ''; setForm(item.data); renderInterpretation(currentAnalysis); updateIdeaButton(); switchView('builder'); });

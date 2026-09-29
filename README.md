@@ -27,6 +27,7 @@ Create an account, verify the link sent by email, and sign in to sync prompts ac
 
 Saved prompts can have up to eight tags. Library search runs on the server across names, ideas, tasks, and tags; results load in pages of 100 so older prompts remain searchable beyond the first screen.
 Every changed save keeps the previous version in a prompt's **History**. The 10 most recent earlier versions can be restored, and a restore keeps the current version in history too. Deleting a prompt removes its revisions.
+Use **Duplicate** on any library card to create a private, independent copy with its idea, notes, fields, and tags.
 
 To share a prompt, save it to **My library**, then choose **Publish & share** on its card. Anyone with the `/p/<id>` link can view and copy the finished prompt without signing in. Shared pages render prompt-specific Open Graph and Twitter metadata on the server, so link previews do not depend on JavaScript. The public API exposes the prompt name and fields, but not the account email, original idea, or analysis notes. A guest who chooses **Save to my library** is taken through signup or sign-in; PromptDock creates an independent private copy. Repeating the action returns the same copy. **Make private** disables the old link while existing copies remain in their owners' libraries. Review prompt fields before publishing because the full finished prompt is public.
 

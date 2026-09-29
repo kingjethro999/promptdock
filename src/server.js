@@ -226,6 +226,10 @@ async function handleRequest(request, response) {
         const prompt = await database.restoreRevision(key, parts[3], parts[5]);
         json(response, prompt ? 200 : 404, prompt ? { prompt } : { error: 'Revision not found.' });
       }
+      else if (/^\/api\/prompts\/[0-9a-f-]{36}\/duplicate$/i.test(pathname) && request.method === 'POST') {
+        const prompt = await database.duplicatePrompt(key, pathname.split('/')[3]);
+        json(response, prompt ? 201 : 404, prompt ? { prompt } : { error: 'Prompt not found.' });
+      }
       else if (pathname.startsWith('/api/prompts/') && request.method === 'DELETE') {
         await database.deletePrompt(key, pathname.slice('/api/prompts/'.length)); json(response, 200, { ok: true });
       } else json(response, 405, { error: 'Method not allowed.' });
