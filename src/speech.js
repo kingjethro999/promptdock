@@ -1,4 +1,4 @@
-const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 const audioTypes = {
   'audio/webm': 'webm',
   'audio/mp4': 'mp4',
@@ -20,7 +20,7 @@ async function transcribeAudio(audio, contentType, env = process.env, request = 
   if (!env.GROQ_API_KEY) throw new Error('Voice transcription is not configured.');
   const { mime, extension } = normalizeAudioType(contentType);
   if (!Buffer.isBuffer(audio) || audio.length < 100) throw new Error('Recording is too short. Try speaking again.');
-  if (audio.length > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 10 MB.');
+  if (audio.length > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 4 MB.');
 
   const form = new FormData();
   form.append('file', new Blob([audio], { type: mime }), `idea.${extension}`);

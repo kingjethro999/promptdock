@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'promptdock.prompts.v1';
 const DRAFT_KEY = 'promptdock.draft.v1';
 const TOKEN_KEY = 'promptdock.workspace-token.v1';
-const config = window.PROMPTDOCK_CONFIG || { apiBase: '', version: 'development' };
+const config = window.PROMPTDOCK_CONFIG || { version: 'development' };
 const fields = ['task', 'role', 'audience', 'context', 'format', 'tone', 'approach', 'focus', 'depth', 'constraints'];
 const templates = [
   { id: 'writing', icon: '✎', name: 'Write anything', data: { task: 'Write a compelling piece about [topic]', role: 'An experienced writer', audience: '[target audience]', context: 'The key idea is [main idea]. The reader should come away knowing [takeaway].', format: 'Article', tone: 'Clear and concise', constraints: 'Use specific examples. Avoid filler and jargon.' } },
@@ -41,7 +41,7 @@ if (!/^[a-f0-9]{64}$/.test(workspaceToken || '')) {
   localStorage.setItem(TOKEN_KEY, workspaceToken);
 }
 
-function apiFetch(path, options = {}) { return fetch(`${config.apiBase}${path}`, options); }
+function apiFetch(path, options = {}) { return fetch(path, options); }
 function libraryFetch(path, options = {}) {
   return apiFetch(path, { ...options, headers: { ...options.headers, 'X-Workspace-Token': workspaceToken } });
 }
@@ -197,6 +197,7 @@ async function finishVoiceRecording(mimeType) {
   voiceState = 'transcribing'; updateIdeaButton();
   $('voiceStatus').textContent = 'Transcribing your idea…';
   try {
+    if (audio.size > 4 * 1024 * 1024) throw new Error('Recording is too large. Try a shorter idea.');
     const response = await apiFetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': audio.type }, body: audio });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not transcribe the recording.');

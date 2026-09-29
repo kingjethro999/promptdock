@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { MAX_AUDIO_BYTES, normalizeAudioType, transcribeAudio } = require('../backend/speech');
+const { MAX_AUDIO_BYTES, normalizeAudioType, transcribeAudio } = require('../src/speech');
 
 test('audio MIME types are checked before upload', () => {
   assert.deepEqual(normalizeAudioType('audio/webm;codecs=opus'), { mime: 'audio/webm', extension: 'webm' });

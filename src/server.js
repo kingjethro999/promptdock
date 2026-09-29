@@ -6,7 +6,7 @@ const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
 const { version } = require('../package.json');
 const database = require('./database');
 
-const root = path.join(__dirname, '..', 'frontend', 'dist');
+const root = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT) || 3000;
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -34,12 +34,12 @@ async function readBody(request) {
 }
 
 async function readAudio(request) {
-  if (Number(request.headers['content-length']) > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 10 MB.');
+  if (Number(request.headers['content-length']) > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 4 MB.');
   const chunks = [];
   let bytes = 0;
   for await (const chunk of request) {
     bytes += chunk.length;
-    if (bytes > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 10 MB.');
+    if (bytes > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 4 MB.');
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
@@ -47,29 +47,25 @@ async function readAudio(request) {
 
 function validOrigin(request) {
   const origin = request.headers.origin;
-  const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, ...(process.env.FRONTEND_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean)];
-  return !origin || allowed.includes(origin);
+  if (!origin) return true;
+  const host = request.headers['x-forwarded-host'] || request.headers.host;
+  return origin === `https://${host}` || (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host || '') && origin === `http://${host}`);
 }
 
-http.createServer(async (request, response) => {
-  if (request.url?.startsWith('/api/') && request.headers.origin && validOrigin(request)) {
-    response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
-    response.setHeader('Vary', 'Origin');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Workspace-Token');
-  }
-  if (request.method === 'OPTIONS' && request.url?.startsWith('/api/')) {
-    response.writeHead(validOrigin(request) ? 204 : 403).end(); return;
-  }
+async function handleRequest(request, response) {
   let pathname;
-  try { pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname); }
+  try {
+    const url = new URL(request.url, 'http://localhost');
+    const route = url.searchParams.get('route');
+    pathname = route ? `/api/${route}` : decodeURIComponent(url.pathname);
+  }
   catch { response.writeHead(400).end('Bad request'); return; }
   if (pathname === '/api/status' && request.method === 'GET') {
     json(response, 200, { aiAvailable: configuredProviders().length > 0, voiceAvailable: Boolean(process.env.GROQ_API_KEY), databaseAvailable: database.configured, version: `v${version}` });
     return;
   }
   if (pathname === '/api/health' && request.method === 'GET') {
-    try { if (database.pool) await database.pool.query('SELECT 1'); json(response, 200, { ok: true }); }
+    try { if (database.pool) await database.ensureSchema(); json(response, 200, { ok: true }); }
     catch { json(response, 503, { ok: false }); }
     return;
   }
@@ -118,7 +114,6 @@ http.createServer(async (request, response) => {
     response.writeHead(405, { Allow: 'GET, HEAD' }).end('Method not allowed');
     return;
   }
-  if (process.env.SERVE_FRONTEND === 'false') { response.writeHead(404).end('Not found'); return; }
   if (pathname === '/') pathname = '/index.html';
   if (!publicFiles.has(pathname)) {
     response.writeHead(404).end('Not found');
@@ -137,4 +132,7 @@ http.createServer(async (request, response) => {
     });
     response.end(data);
   });
-}).listen(port, '0.0.0.0', () => console.log(`PromptDock API is running on port ${port}`));
+}
+
+if (require.main === module) http.createServer(handleRequest).listen(port, '0.0.0.0', () => console.log(`PromptDock is running on port ${port}`));
+module.exports = handleRequest;

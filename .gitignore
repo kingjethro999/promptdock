@@ -1,5 +1,5 @@
 .env
 database/.env
 node_modules/
-frontend/dist/
+src/dist/
 *.log

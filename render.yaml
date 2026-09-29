@@ -1,55 +1,10 @@
-services:
-  - type: pserv
-    name: promptdock-postgres
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./database/Dockerfile
-    dockerContext: ./database
-    disk:
-      name: promptdock-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 5
-    envVars:
-      - key: POSTGRES_DB
-        value: promptdock
-      - key: POSTGRES_USER
-        value: promptdock
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-      - key: PGDATA
-        value: /var/lib/postgresql/data/pgdata
-
-  - type: web
-    name: promptdock-api
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
-    healthCheckPath: /api/health
-    envVars:
-      - key: PORT
-        value: "10000"
-      - key: SERVE_FRONTEND
-        value: "false"
-      - key: PGHOST
-        fromService:
-          type: pserv
-          name: promptdock-postgres
-          property: host
-      - key: PGPORT
-        value: "5432"
-      - key: PGDATABASE
-        value: promptdock
-      - key: PGUSER
-        value: promptdock
-      - key: PGPASSWORD
-        fromService:
-          type: pserv
-          name: promptdock-postgres
-          envVarKey: POSTGRES_PASSWORD
-      - key: FRONTEND_ORIGIN
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: openai/gpt-oss-120b
+databases:
+  - name: promptdock-postgres
+    databaseName: promptdock
+    user: promptdock
+    postgresMajorVersion: '17'
+    plan: 0.1c-256mb
+    connectionPool: pgbouncer
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Vercel functions and local administration

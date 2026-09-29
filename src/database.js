@@ -1,5 +1,6 @@
 const { createHash } = require('node:crypto');
 const { Pool } = require('pg');
+const schema = require('../database/schema');
 
 const configured = Boolean(process.env.DATABASE_URL || process.env.PGHOST);
 const pool = configured ? new Pool({
@@ -10,8 +11,27 @@ const pool = configured ? new Pool({
   password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD,
   database: process.env.DATABASE_URL ? undefined : process.env.PGDATABASE,
   max: 5,
-  connectionTimeoutMillis: 5000
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 1000
 }) : null;
+let schemaReady;
+
+async function ensureSchema() {
+  if (!pool) return;
+  if (!schemaReady) schemaReady = (async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(4736291)');
+      for (const statement of schema) await client.query(statement);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    } finally { client.release(); }
+  })().catch(error => { schemaReady = null; throw error; });
+  await schemaReady;
+}
 
 function ownerKey(request) {
   const token = request.headers['x-workspace-token'];
@@ -32,12 +52,14 @@ function validatePrompt(item) {
 }
 
 async function listPrompts(key) {
+  await ensureSchema();
   const result = await pool.query('SELECT id, name, data, idea, analysis, updated_at AS "updatedAt" FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC LIMIT 500', [key]);
   return result.rows;
 }
 
 async function putPrompt(key, input) {
   const item = validatePrompt(input);
+  await ensureSchema();
   const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis)
     VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT (owner_key, id) DO UPDATE SET name = EXCLUDED.name, data = EXCLUDED.data,
@@ -49,7 +71,8 @@ async function putPrompt(key, input) {
 
 async function deletePrompt(key, id) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new Error('Invalid prompt ID.');
+  await ensureSchema();
   await pool.query('DELETE FROM prompts WHERE owner_key = $1 AND id = $2', [key, id]);
 }
 
-module.exports = { configured, pool, ownerKey, validatePrompt, listPrompts, putPrompt, deletePrompt };
+module.exports = { configured, pool, ensureSchema, ownerKey, validatePrompt, listPrompts, putPrompt, deletePrompt };

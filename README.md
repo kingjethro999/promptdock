@@ -1,43 +1,40 @@
 # PromptDock
 
-Turn a rough idea or spoken note into a structured, editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes templates, a searchable prompt library, copy, and Markdown export.
+Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes templates, a searchable library, copy, and Markdown export.
 
 ## Project layout
 
-| Directory | Purpose |
+| Path | Purpose |
 | --- | --- |
-| `frontend/` | Static browser app; `npm run build:frontend` writes `frontend/dist/` for Vercel. |
-| `backend/` | Node API for AI, transcription, and saved prompts; Dockerfile for Render. |
-| `database/` | PostgreSQL image, initialization schema, and local Compose setup. |
+| `src/` | Browser UI and server-side API code. |
+| `api/index.js` | Small Vercel route entry point that forwards requests to `src/server.js`. |
+| `database/` | PostgreSQL schema, local Docker setup, and Render connection helper. |
 
-The browser sends AI requests to the backend. The backend alone holds provider keys and connects to PostgreSQL. A database private service has no public web link; share the **backend web service URL** after deployment to connect the frontend.
+The UI and API deploy together as **one Vercel project**. The browser calls `/api/*` on the same site; no separate backend URL or CORS setting is needed. API keys and `DATABASE_URL` belong in Vercel's server-side environment variables, never in the browser build.
 
 ## Run locally
 
-Requires Node.js 20.12+ and Docker for database sync. Copy `.env.example` to `.env` and add at least one AI provider key for AI features. The manual builder works without a key.
+Requires Node.js 20.12+. Copy `.env.example` to `.env` and set a provider key for AI features. The manual builder works without one.
 
 ```bash
-cp database/.env.example database/.env
-# Set a long POSTGRES_PASSWORD in database/.env.
-docker compose --env-file database/.env -f database/compose.yaml up -d --build
-# Copy the same password into the optional PG* values in the root .env (PGPORT=5434).
 npm ci
 npm start
 ```
 
-Open <http://localhost:3000>. `npm start` builds the frontend with the current `VERSION` and starts the API, which serves it locally. Without a database connection, saved prompts stay in browser storage. When database sync is configured, existing prompts from that same browser origin are imported on first load and new saves go through the API. Each browser has a random workspace token stored locally; this is not an account system, so clearing browser storage loses access to that workspace. Keep the token private.
+Open <http://localhost:3000>. Without `DATABASE_URL` or local `PG*` settings, saved prompts stay in browser storage. For local PostgreSQL, see [database/README.md](database/README.md).
 
-Choose **Record idea**, allow microphone access, speak, then **Stop & send**. PromptDock transcribes with Groq, adds the text to the idea box, and automatically generates a structured prompt. **Cancel** and the two-minute limit discard the recording. Audio is not stored in the prompt library. Microphone access requires localhost or HTTPS.
+When a database is connected, saved prompts sync through the same-origin API. Existing prompts from the same browser origin are imported on first load. Each browser has a random local workspace token. There is no account system yet, so clearing browser storage loses access to that browser's workspace.
 
-## Deploy to Render and Vercel
+To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The server transcribes with Groq and sends the resulting idea through prompt generation. **Cancel** or the two-minute limit discards the recording. Vercel's function payload limit caps recordings at 4 MB.
 
-1. In Render, create a Blueprint from this repository's `render.yaml`. It creates a private PostgreSQL Docker service with a persistent disk and a public backend Docker web service. A persistent disk requires a paid Render service. Set `GROQ_API_KEY` and any other provider keys on the backend. Set `FRONTEND_ORIGIN` to the exact Vercel site origin once known. The backend health check is `/api/health`.
-2. In Vercel, import the same repository. Keep the repository root as the project root; `vercel.json` builds only the static frontend. Set build environment variable `PUBLIC_API_URL` to the public Render backend origin, such as `https://promptdock-api.onrender.com` (no trailing path). Redeploy after changing it.
-3. Open the Vercel site and confirm its sidebar version, AI status, voice, and library. If the site and API cannot communicate, check that `FRONTEND_ORIGIN` exactly matches the site origin. For preview deployments, add those origins as a comma-separated list or use the production domain.
+## Deploy
 
-Render's database service is private and speaks PostgreSQL, so Vercel cannot connect directly to it. Do not put database credentials or AI keys in Vercel environment variables. Render's Docker PostgreSQL data requires the disk mounted at `/var/lib/postgresql/data`; the image uses `PGDATA=/var/lib/postgresql/data/pgdata`. The schema in `database/schema.sql` runs when the database volume is first initialized. If you later choose Render-managed PostgreSQL instead, point the backend at its `DATABASE_URL` and apply the same schema.
+1. Create a Render Blueprint using `render.yaml`. It creates **only Render Postgres**, with an external connection pool URL for Vercel. Render's private Docker service cannot provide a public PostgreSQL URL to Vercel, so the Docker image in `database/` is for local development.
+2. After the database is ready, run `database/print-connection.sh` from a terminal with the Render CLI installed and logged in. It prints the external URL to copy. You can also find it under Render Dashboard → database → **Connect** → **External** → **Connection Pool**. Keep the URL private.
+3. Import this repository into Vercel with the repository root as its project root. Add `DATABASE_URL` with that **external pooled URL**. Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for AI and voice, or configure another supported provider using `.env.example`. Deploy. The app creates its `prompts` table and index on first database access.
+4. Open the Vercel site. The sidebar version comes from the same frontend build as the deployed code. Check `/api/health` on that domain for database readiness.
 
-The platform buttons copy the prompt and open the selected AI platform in a new tab. AI requests send the idea or current draft to a configured provider. The server follows `AI_PROVIDER_ORDER` and `AI_MAX_FALLBACKS`, supporting APMIX, Groq, and Gemini. The root `.env` and `database/.env` are ignored by Git.
+The provider keys and database URL are never written to Git or the static frontend. The root `.env` and `database/.env` are ignored by Git. Voice uses a browser with `MediaRecorder` on localhost or HTTPS.
 
 ## Versioning
 

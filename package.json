@@ -1,11 +1,11 @@
 {
   "name": "promptdock",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "scripts": {
-    "start": "npm run build:frontend && node backend/server.js",
-    "start:api": "node backend/server.js",
+    "start": "npm run build:frontend && node src/server.js",
+    "start:api": "node src/server.js",
     "build:frontend": "node scripts/build-frontend.js",
     "test": "node --test",
     "version:bump": "node scripts/bump-version.js",
