@@ -8,6 +8,7 @@ const database = require('./database');
 const auth = require('./auth');
 const settings = require('./settings');
 const rateLimit = require('./rate-limit');
+const securityHeaders = require('./security');
 
 const root = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT) || 3000;
@@ -87,6 +88,7 @@ async function serveSharedPage(request, response, publicId) {
 }
 
 async function handleRequest(request, response) {
+  for (const [name, value] of Object.entries(securityHeaders)) response.setHeader(name, value);
   let pathname;
   try {
     const url = new URL(request.url, 'http://localhost');

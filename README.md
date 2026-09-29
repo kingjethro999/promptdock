@@ -35,6 +35,8 @@ To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The ser
 
 AI routes use a shared PostgreSQL token bucket per client IP to control provider spend across Vercel function instances: 20 idea generations, 30 enhancements, and 10 voice transcriptions per hour, replenished gradually. Exceeding a limit returns HTTP 429 with `Retry-After`. Local development without PostgreSQL uses a process-local bucket.
 
+The API and static deployment send a content security policy, frame protection, referrer policy, permissions policy, and MIME sniffing protection. The policy allows PromptDock's own scripts and Google Fonts while keeping API requests on the same origin.
+
 ## Deploy
 
 1. Import this repository into Vercel. Keep **Root Directory** as `./` and **Application Preset** as `Node`. The repository's `vercel.json` sets **Build Command** to `npm run build:frontend` and **Output Directory** to `src/dist`; set **Install Command** to `npm ci` if you override Vercel's default.
