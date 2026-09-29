@@ -1,6 +1,6 @@
 # Database setup
 
-Production uses the Render Postgres instance in the root `render.yaml`. This is the only separate service. It provides an external PostgreSQL connection URL that Vercel functions can use.
+Production uses a Render Postgres instance as the only separate service. If one already exists, use it. The root `render.yaml` can create a Free instance if needed. Use its external PostgreSQL URL for Vercel functions.
 
 After Render finishes provisioning, run from the repository root:
 
@@ -8,7 +8,7 @@ After Render finishes provisioning, run from the repository root:
 ./database/print-connection.sh
 ```
 
-The script calls `render pg get promptdock-postgres --include-sensitive-connection-info --output json` and prints the external pooled URL. The Render CLI must be installed and logged in. Copy the URL into Vercel's `DATABASE_URL` environment variable. Render Dashboard → **Connect** → **External** → **Connection Pool** provides the same value. Managed databases do not provide a Docker container terminal; use the CLI or dashboard to retrieve credentials. Never commit the URL or paste it into frontend code.
+The script calls `render pg get promptdock-postgres --include-sensitive-connection-info --output json` and prints the external URL. Pass your database's Render service name as an argument if it differs. The Render CLI must be installed and logged in. Copy the URL into Vercel's `DATABASE_URL` environment variable. Render Dashboard → **Connect** → **External** provides the same value. Free databases have no managed connection pool. Never commit the URL or paste it into frontend code.
 
 For local development with Docker:
 

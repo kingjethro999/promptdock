@@ -2,15 +2,22 @@ const { createHash } = require('node:crypto');
 const { Pool } = require('pg');
 const schema = require('../database/schema');
 
+function normalizeDatabaseUrl(value) {
+  if (!value) return undefined;
+  const url = new URL(value);
+  if (url.hostname.endsWith('.render.com') && !url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
+  return url.toString();
+}
+
 const configured = Boolean(process.env.DATABASE_URL || process.env.PGHOST);
 const pool = configured ? new Pool({
-  connectionString: process.env.DATABASE_URL || undefined,
+  connectionString: normalizeDatabaseUrl(process.env.DATABASE_URL),
   host: process.env.DATABASE_URL ? undefined : process.env.PGHOST,
   port: process.env.DATABASE_URL ? undefined : Number(process.env.PGPORT) || 5432,
   user: process.env.DATABASE_URL ? undefined : process.env.PGUSER,
   password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD,
   database: process.env.DATABASE_URL ? undefined : process.env.PGDATABASE,
-  max: 5,
+  max: process.env.VERCEL ? 1 : 5,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 1000
 }) : null;
@@ -75,4 +82,4 @@ async function deletePrompt(key, id) {
   await pool.query('DELETE FROM prompts WHERE owner_key = $1 AND id = $2', [key, id]);
 }
 
-module.exports = { configured, pool, ensureSchema, ownerKey, validatePrompt, listPrompts, putPrompt, deletePrompt };
+module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, ownerKey, validatePrompt, listPrompts, putPrompt, deletePrompt };

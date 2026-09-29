@@ -3,8 +3,7 @@ databases:
     databaseName: promptdock
     user: promptdock
     postgresMajorVersion: '17'
-    plan: 0.1c-256mb
-    connectionPool: pgbouncer
+    plan: free
     ipAllowList:
       - source: 0.0.0.0/0
         description: Vercel functions and local administration

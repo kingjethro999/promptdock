@@ -29,12 +29,14 @@ To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The ser
 
 ## Deploy
 
-1. Create a Render Blueprint using `render.yaml`. It creates **only Render Postgres**, with an external connection pool URL for Vercel. Render's private Docker service cannot provide a public PostgreSQL URL to Vercel, so the Docker image in `database/` is for local development.
-2. After the database is ready, run `database/print-connection.sh` from a terminal with the Render CLI installed and logged in. It prints the external URL to copy. You can also find it under Render Dashboard → database → **Connect** → **External** → **Connection Pool**. Keep the URL private.
-3. Import this repository into Vercel with the repository root as its project root. Add `DATABASE_URL` with that **external pooled URL**. Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for AI and voice, or configure another supported provider using `.env.example`. Deploy. The app creates its `prompts` table and index on first database access.
+1. Use a Render Postgres database. If you already created one, keep it; otherwise `render.yaml` can create a Free instance. The Docker image in `database/` is for local development.
+2. Get the database's **External URL** from Render Dashboard → database → **Connect** → **External**, or run `database/print-connection.sh` in a terminal with the Render CLI installed and logged in. Free Render Postgres instances do not provide a connection pool URL. Keep the URL private.
+3. Import this repository into Vercel with the repository root as its project root. Add `DATABASE_URL` with that **external URL**. The server adds `sslmode=require` automatically for Render external hosts when it is absent. Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for AI and voice, or configure another supported provider using `.env.example`. Deploy. The app creates its `prompts` table and index on first database access.
 4. Open the Vercel site. The sidebar version comes from the same frontend build as the deployed code. Check `/api/health` on that domain for database readiness.
 
 The provider keys and database URL are never written to Git or the static frontend. The root `.env` and `database/.env` are ignored by Git. Voice uses a browser with `MediaRecorder` on localhost or HTTPS.
+
+Render Free Postgres has a 1 GB limit and expires after 30 days; plan an upgrade or export before expiry if you need to keep the data.
 
 ## Versioning
 
