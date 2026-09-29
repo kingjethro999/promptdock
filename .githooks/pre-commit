@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+# The first commit records v0.0.1. Every later commit bumps the version.
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  node scripts/bump-version.js
+  git add package.json VERSION
+fi

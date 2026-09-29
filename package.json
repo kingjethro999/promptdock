@@ -1,0 +1,15 @@
+{
+  "name": "promptdock",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A local-first prompt workspace for everyday AI tools",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "version:bump": "node scripts/bump-version.js",
+    "setup:hooks": "git config core.hooksPath .githooks"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}
