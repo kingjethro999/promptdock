@@ -40,10 +40,28 @@ async function ensureSchema() {
   await schemaReady;
 }
 
-function ownerKey(request) {
-  const token = request.headers['x-workspace-token'];
-  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) throw new Error('A valid workspace token is required.');
+function accountKey(userId) { return createHash('sha256').update(`account:${userId}`).digest('hex'); }
+function legacyKey(token) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) throw new Error('A valid legacy workspace token is required.');
   return createHash('sha256').update(token).digest('hex');
+}
+
+async function importLegacy(userId, token) {
+  const source = legacyKey(token);
+  const target = accountKey(userId);
+  await ensureSchema();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis, updated_at)
+      SELECT $1, id, name, data, idea, analysis, updated_at FROM prompts WHERE owner_key = $2
+      ON CONFLICT (owner_key, id) DO NOTHING`, [target, source]);
+    await client.query('DELETE FROM prompts WHERE owner_key = $1', [source]);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally { client.release(); }
 }
 
 function validatePrompt(item) {
@@ -82,4 +100,4 @@ async function deletePrompt(key, id) {
   await pool.query('DELETE FROM prompts WHERE owner_key = $1 AND id = $2', [key, id]);
 }
 
-module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, ownerKey, validatePrompt, listPrompts, putPrompt, deletePrompt };
+module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, deletePrompt };

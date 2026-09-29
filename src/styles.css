@@ -89,3 +89,9 @@
 .voice-cancel:hover{background:#f6f8f3}
 .voice-status{min-height:16px;margin-top:8px;color:#82977d;font-size:10px;line-height:1.5}
 @keyframes voice-pulse{50%{transform:scale(1.16);opacity:.65}}
+.account-trigger{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #d9e5d4;border-radius:20px;background:#fff;color:#426a43;padding:8px 12px;font-size:11px;font-weight:800}
+.account-trigger:hover{background:#eef7e8;border-color:#b8d59d}
+.account-trigger:disabled{opacity:.55;cursor:not-allowed}
+.auth-error{min-height:16px;margin:12px 0 0!important;color:#aa3f34!important}
+#accountDialog{position:relative}
+@media(max-width:520px){.account-trigger{max-width:125px}}

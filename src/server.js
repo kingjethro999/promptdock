@@ -5,6 +5,7 @@ const { configuredProviders, enhanceWithAI, ideaToPrompt } = require('./ai');
 const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
 const { version } = require('../package.json');
 const database = require('./database');
+const auth = require('./auth');
 
 const root = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT) || 3000;
@@ -16,8 +17,8 @@ const types = {
 };
 const publicFiles = new Set(['/index.html', '/styles.css', '/app.js', '/config.js', '/favicon.svg']);
 
-function json(response, status, body) {
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+function json(response, status, body, headers = {}) {
+  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers });
   response.end(JSON.stringify(body));
 }
 
@@ -69,11 +70,40 @@ async function handleRequest(request, response) {
     catch { json(response, 503, { ok: false }); }
     return;
   }
+  if (pathname === '/api/auth/me' && request.method === 'GET') {
+    try { json(response, 200, { user: await auth.currentUser(request) }); }
+    catch { json(response, 503, { error: 'Account service is unavailable.' }); }
+    return;
+  }
+  if (['/api/auth/register', '/api/auth/login', '/api/auth/logout', '/api/auth/import-legacy'].includes(pathname) && request.method === 'POST') {
+    if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    if (!database.configured) { json(response, 503, { error: 'Database is not configured.' }); return; }
+    try {
+      if (pathname === '/api/auth/logout') {
+        await auth.logout(request);
+        json(response, 200, { ok: true }, { 'Set-Cookie': auth.clearCookie(request) });
+      } else if (pathname === '/api/auth/import-legacy') {
+        const user = await auth.currentUser(request);
+        if (!user) { json(response, 401, { error: 'Sign in to sync your library.' }); return; }
+        await database.importLegacy(user.id, request.headers['x-workspace-token']);
+        json(response, 200, { ok: true });
+      } else {
+        if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
+        const result = await (pathname === '/api/auth/register' ? auth.register : auth.login)(await readBody(request), request);
+        json(response, 200, { user: result.user }, { 'Set-Cookie': result.cookie });
+      }
+    } catch (error) {
+      json(response, error.status || 503, { error: error.status ? error.message : 'Account service is unavailable.' });
+    }
+    return;
+  }
   if (pathname === '/api/prompts' || pathname.startsWith('/api/prompts/')) {
     if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!database.configured) { json(response, 503, { error: 'Database is not configured.' }); return; }
     try {
-      const key = database.ownerKey(request);
+      const user = await auth.currentUser(request);
+      if (!user) { json(response, 401, { error: 'Sign in to sync your library.' }); return; }
+      const key = database.accountKey(user.id);
       if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, { prompts: await database.listPrompts(key) });
       else if (pathname === '/api/prompts' && request.method === 'PUT') json(response, 200, { prompt: await database.putPrompt(key, await readBody(request)) });
       else if (pathname.startsWith('/api/prompts/') && request.method === 'DELETE') {
