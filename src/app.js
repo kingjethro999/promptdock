@@ -60,6 +60,17 @@ function readJSON(key, fallback) {
   catch { return fallback; }
 }
 function dataFromForm() { return Object.fromEntries(fields.map(field => [field, elements[field].value.trim()])); }
+function suggestedPromptName() {
+  const source = $('ideaInput').value.trim() || elements.task.value.trim();
+  const firstLine = source.split(/[\n.!?]/, 1)[0].replace(/\s+/g, ' ').trim();
+  const words = firstLine.split(' ');
+  let name = '';
+  for (const word of words) {
+    if ((name ? `${name} ${word}` : word).length > 80) break;
+    name = name ? `${name} ${word}` : word;
+  }
+  return name.replace(/[,:;\s]+$/, '') || firstLine.slice(0, 80).trim() || 'New prompt';
+}
 function setForm(data) { fields.forEach(field => { elements[field].value = data[field] || ''; }); Object.keys(selectOptions).forEach(syncSelect); updatePreview(); persistDraft(); }
 function getSaved() {
   if (currentUser) return accountPrompts;
@@ -491,7 +502,7 @@ async function submitAuth(event) {
     await completePendingFork();
     if (pendingSave) {
       pendingSave = false;
-      $('promptName').value = '';
+      $('promptName').value = suggestedPromptName();
       $('saveDialog').showModal();
       $('promptName').focus();
     }
@@ -770,7 +781,7 @@ $('downloadButton').addEventListener('click', downloadPrompt);
 $('saveButton').addEventListener('click', () => {
   if (!elements.task.value.trim()) return;
   if (databaseAvailable && !currentUser) { pendingSave = true; openAuth(); return; }
-  $('promptName').value = getSaved().find(item => item.id === currentId)?.name || '';
+  $('promptName').value = getSaved().find(item => item.id === currentId)?.name || suggestedPromptName();
   $('saveDialog').showModal(); $('promptName').focus();
 });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
