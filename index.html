@@ -20,7 +20,7 @@
 
       <div class="sidebar-label">WORKSPACE</div>
       <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-item active" data-view="builder"><span class="nav-icon">✦</span><span>Prompt builder</span></button>
+        <button class="nav-item active" data-view="builder"><span class="nav-icon">✦</span><span>Idea to prompt</span></button>
         <button class="nav-item" data-view="library"><span class="nav-icon">▦</span><span>My library</span><span class="nav-count" id="libraryCount">0</span></button>
       </nav>
 
@@ -38,19 +38,40 @@
     <main class="main-content" id="workspace">
       <header class="topbar">
         <button class="mobile-menu icon-button" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
-        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-chevron">›</span><strong id="breadcrumbCurrent">Prompt builder</strong></div>
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-chevron">›</span><strong id="breadcrumbCurrent">Idea to prompt</strong></div>
         <div class="top-actions"><span class="local-pill"><span class="status-dot"></span> Local workspace</span><button class="help-button" id="helpButton" aria-label="How PromptDock works">?</button></div>
       </header>
 
       <section class="builder-view" id="builderView">
-        <div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-star">✳</span> THE PROMPT WORKSPACE</div><h1>Make every prompt <em>count.</em></h1><p>Shape your idea into a clear, reusable prompt for the AI tools you already use.</p></div><div class="intro-decoration" aria-hidden="true"><span>✳</span></div></div>
+        <div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-star">✳</span> THE PROMPT WORKSPACE</div><h1>Start with an idea. <em>Go further.</em></h1><p>Tell us what is on your mind. We will shape it into a prompt you can use anywhere.</p></div><div class="intro-decoration" aria-hidden="true"><span>✳</span></div></div>
 
         <div class="workflow-steps" aria-label="Workflow"><span class="step active"><b>01</b> Describe it</span><span class="step-line"></span><span class="step"><b>02</b> Shape it</span><span class="step-line"></span><span class="step"><b>03</b> Take it anywhere</span></div>
 
         <div class="work-grid">
+          <div class="creation-column">
+          <section class="idea-card" aria-labelledby="ideaHeading">
+            <div class="idea-card-top"><span class="idea-symbol">✳</span><span class="section-kicker">IDEA → PROMPT</span><span class="idea-step">START HERE</span></div>
+            <h2 id="ideaHeading">What is your idea?</h2>
+            <p>Write it naturally. A sentence, a messy thought, or a full brief all work.</p>
+            <label class="sr-only" for="ideaInput">Describe your idea</label>
+            <textarea id="ideaInput" maxlength="6000" rows="5" placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."></textarea>
+            <div class="idea-examples"><span>TRY AN EXAMPLE</span><button type="button" class="idea-example" data-example="I want to start a small online business selling handmade skincare, but I do not know where to begin.">Start a business</button><button type="button" class="idea-example" data-example="I have an idea for an app that helps people plan meals from ingredients they already have. Help me think it through.">Plan an app</button></div>
+            <div class="idea-footer"><button id="ideaGenerateButton" type="button" class="primary-button idea-generate" disabled><span>✦</span> Turn idea into prompt <span class="button-arrow">↗</span></button><span id="ideaStatus" role="status">Add your idea to begin</span></div>
+          </section>
+
+          <section class="interpretation-card hidden" id="interpretationCard" aria-labelledby="interpretationHeading">
+            <div class="interpretation-heading"><div><div class="section-kicker">HOW AI READ YOUR IDEA</div><h2 id="interpretationHeading">The direction behind your prompt</h2></div><span id="ideaDepthBadge" class="depth-badge">Balanced</span></div>
+            <div class="interpretation-goal"><span>YOUR GOAL</span><strong id="ideaGoal"></strong><p id="ideaDepthReason"></p></div>
+            <div class="interpretation-list hidden" id="ideaApproachSection"><span>THE PATH</span><ol id="ideaApproach"></ol></div>
+            <div class="interpretation-list"><span>WHERE AI WILL FOCUS</span><ol id="ideaFocusAreas"></ol></div>
+            <div class="missing-details hidden" id="missingDetails"><span>DETAILS STILL OPEN</span><ul id="ideaMissingDetails"></ul></div>
+            <p class="interpretation-footnote">This is an interpretation. Review and fine-tune the prompt below before using it.</p>
+          </section>
+
           <section class="composer-card" aria-labelledby="composerHeading">
-            <div class="card-heading"><div><div class="section-kicker">✦ &nbsp; PROMPT COMPOSER</div><h2 id="composerHeading">What are we working on?</h2><p>Start simple. Add detail where it matters.</p></div><button class="text-button" id="clearButton" type="button">↺ &nbsp; Clear</button></div>
-            <form id="promptForm">
+            <div class="card-heading"><div><div class="section-kicker">✦ &nbsp; PROMPT CONTROLS</div><h2 id="composerHeading">Fine-tune your prompt</h2><p>Edit what AI inferred or build one yourself.</p></div><button class="text-button" id="toggleComposer" type="button" aria-expanded="false" aria-controls="promptForm">Edit details ⌄</button></div>
+            <form id="promptForm" class="collapsed">
+              <div class="form-tools"><button class="text-button" id="clearButton" type="button">↺ &nbsp; Clear prompt</button></div>
               <div class="field"><label for="task">Your task <span class="required">*</span></label><p class="field-hint">The one thing you want AI to do</p><textarea id="task" rows="3" placeholder="e.g. Write a launch email for my new productivity app" required></textarea></div>
               <div class="ai-toolbar"><button class="ai-button" id="enhanceButton" type="button" disabled><span>✳</span> Enhance with AI</button><span id="aiStatus" role="status">Add a task to get AI suggestions</span></div>
               <div class="field-row"><div class="field"><label for="role">Act as <span class="optional">optional</span></label><input id="role" type="text" placeholder="e.g. A senior copywriter" autocomplete="off"></div><div class="field"><label for="audience">For whom <span class="optional">optional</span></label><input id="audience" type="text" placeholder="e.g. Busy founders" autocomplete="off"></div></div>
@@ -59,9 +80,13 @@
                 <div class="field"><label for="formatTrigger">Output format</label><div class="custom-select" data-select="format"><input id="format" type="hidden"><button id="formatTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="formatOptions"><span>Choose a format</span><span class="select-chevron">⌄</span></button><div id="formatOptions" class="select-menu" role="listbox" aria-label="Output format"></div></div></div>
                 <div class="field"><label for="toneTrigger">Tone</label><div class="custom-select" data-select="tone"><input id="tone" type="hidden"><button id="toneTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="toneOptions"><span>Choose a tone</span><span class="select-chevron">⌄</span></button><div id="toneOptions" class="select-menu" role="listbox" aria-label="Tone"></div></div></div>
               </div>
+              <div class="field"><label for="approach">Suggested flow <span class="optional">for multi-step work</span></label><textarea id="approach" rows="3" placeholder="e.g. Define the goal, compare options, then recommend next steps"></textarea></div>
+              <div class="field"><label for="focus">What should AI emphasize? <span class="optional">highest priority first</span></label><textarea id="focus" rows="3" placeholder="e.g. Practical first steps, likely obstacles, and how to measure progress"></textarea></div>
+              <div class="field"><label for="depthTrigger">Answer depth</label><div class="custom-select" data-select="depth"><input id="depth" type="hidden"><button id="depthTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="depthOptions"><span>Choose depth</span><span class="select-chevron">⌄</span></button><div id="depthOptions" class="select-menu" role="listbox" aria-label="Answer depth"></div></div></div>
               <div class="field"><label for="constraints">Must include / avoid <span class="optional">optional</span></label><textarea id="constraints" rows="2" placeholder="e.g. Keep it under 200 words. Avoid jargon. Include a call to action."></textarea></div>
             </form>
           </section>
+          </div>
 
           <aside class="preview-column">
             <section class="preview-card" aria-labelledby="previewHeading"><div class="preview-top"><div class="section-kicker">LIVE PREVIEW</div><span class="ready-badge" id="readyBadge"><span class="status-dot"></span> Ready to copy</span></div><h2 id="previewHeading">Your finished prompt</h2><p class="preview-subtitle">Built as you type, ready for any AI platform.</p><div class="prompt-output" id="promptOutput" tabindex="0" aria-live="polite"></div><div class="preview-actions"><button class="primary-button" id="copyButton" type="button"><span>▣</span> Copy prompt <span class="button-arrow">↗</span></button><button class="secondary-button" id="saveButton" type="button">♡ &nbsp; Save</button></div><div class="export-row"><button class="quiet-button" id="downloadButton" type="button">↓ &nbsp; Download .md</button><span class="word-count" id="wordCount">0 words</span></div></section>
@@ -77,7 +102,7 @@
   </div>
 
   <dialog id="saveDialog" class="app-dialog"><form method="dialog" id="saveForm"><button class="dialog-close" value="cancel" aria-label="Close">×</button><span class="dialog-icon">♡</span><h2>Save this prompt</h2><p>Give it a name so it is easy to find later.</p><label for="promptName">Prompt name</label><input id="promptName" type="text" maxlength="80" required placeholder="e.g. Weekly content ideas"><div class="dialog-actions"><button class="secondary-button" value="cancel" type="button" id="cancelSave">Cancel</button><button class="primary-button" value="save" type="submit">Save prompt</button></div></form></dialog>
-  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Describe what you need, add context and a format, then copy the finished prompt into your AI platform.</p><ul><li>Saved prompts live in this browser only.</li><li>“Enhance with AI” sends the current draft to the configured AI provider.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
+  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Saved prompts live in this browser only.</li><li>“Turn idea into prompt” and “Enhance with AI” send your writing to the configured AI provider.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

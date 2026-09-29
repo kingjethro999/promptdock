@@ -29,3 +29,47 @@
 .select-option[aria-selected="true"]{background:#e9f4dd;color:#3c7440;font-weight:700}
 .select-check{color:#669e4c;font-size:13px}
 @media(max-width:520px){.ai-toolbar{align-items:flex-start;flex-direction:column;gap:6px}.select-menu{max-height:190px}}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.creation-column{display:grid;gap:17px;min-width:0}
+.idea-card,.interpretation-card{border-radius:17px;box-shadow:0 4px 18px rgba(32,55,34,.025)}
+.idea-card{padding:28px 30px 25px;background:linear-gradient(145deg,#edf8df 0%,#f6fbed 60%,#eff7e5 100%);border:1px solid #dcebc9}
+.idea-card-top{display:flex;align-items:center;gap:9px}
+.idea-symbol{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#d2efaa;color:#478546;font-size:18px}
+.idea-step{margin-left:auto;border:1px solid #cee4b8;border-radius:30px;padding:5px 8px;color:#6a9663;font-size:9px;letter-spacing:.8px;font-weight:800}
+.idea-card h2{font-family:Manrope,sans-serif;font-size:23px;letter-spacing:-.9px;margin:19px 0 6px}
+.idea-card>p{font-size:12px;color:#738972;margin-bottom:18px;line-height:1.5}
+.idea-card textarea{display:block;width:100%;min-height:136px;resize:vertical;border:1px solid #cfe0c3;border-radius:11px;background:rgba(255,255,255,.88);padding:16px;color:#29402d;font-size:13px;line-height:1.65;outline:none;transition:border .2s,box-shadow .2s}
+.idea-card textarea:focus{border-color:#84b95f;box-shadow:0 0 0 3px #d9edc3}
+.idea-card textarea::placeholder{color:#9eaf9b}
+.idea-examples{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:13px 0 18px}
+.idea-examples>span{font-size:9px;letter-spacing:1px;color:#89a184;font-weight:800;margin-right:3px}
+.idea-example{border:1px solid #cde2bc;border-radius:30px;background:rgba(255,255,255,.56);padding:6px 10px;color:#568255;font-size:10px;font-weight:700}
+.idea-example:hover{background:#fff;border-color:#90bd6d}
+.idea-footer{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.idea-generate{padding:0 16px;white-space:nowrap}
+.idea-generate span:first-child{color:#d3f68c}
+.idea-generate.busy span:first-child{display:inline-block;animation:ai-spin 1.6s linear infinite}
+.idea-footer>span{font-size:10px;color:#7f967b;line-height:1.4}
+.interpretation-card{padding:22px 26px;background:#fff;border:1px solid #e1eacb}
+.interpretation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.interpretation-heading h2{font-family:Manrope,sans-serif;font-size:17px;letter-spacing:-.5px;margin:7px 0 15px}
+.depth-badge{border-radius:30px;background:#e7f4db;color:#5a8a50;padding:7px 10px;white-space:nowrap;font-size:10px;font-weight:800}
+.interpretation-goal{background:#f7faf3;border:1px solid #ebf0e6;border-radius:9px;padding:13px 15px}
+.interpretation-goal>span,.interpretation-list>span,.missing-details>span{display:block;color:#7c9b75;font-size:9px;letter-spacing:1.1px;font-weight:800;margin-bottom:7px}
+.interpretation-goal strong{display:block;font-size:12px;line-height:1.5;color:#354b38}
+.interpretation-goal p{font-size:11px;line-height:1.5;color:#819481;margin:6px 0 0}
+.interpretation-list,.missing-details{margin-top:17px}
+.interpretation-list ol,.missing-details ul{margin:0;padding-left:21px;color:#4d6550;font-size:11px;line-height:1.8}
+.interpretation-list li::marker{color:#79a45e;font-weight:800}
+.missing-details{border-top:1px solid #edf0e9;padding-top:14px}
+.missing-details ul{color:#7b8d7a}
+.interpretation-footnote{font-size:10px;color:#a1afa1;margin:18px 0 0;line-height:1.5}
+.composer-card.is-collapsed{padding:20px 25px}
+.composer-card.is-collapsed .card-heading{margin-bottom:0;align-items:center}
+.composer-card.is-collapsed .card-heading h2{font-size:16px}
+.composer-card.is-collapsed .card-heading p{font-size:11px}
+#promptForm.collapsed{display:none}
+.form-tools{display:flex;justify-content:flex-end;margin:-8px 0 7px}
+@media(max-width:760px){.idea-card{padding:24px 20px}.interpretation-card{padding:22px 20px}.composer-card.is-collapsed{padding:19px 20px}}
+@media(max-width:520px){.idea-card h2{font-size:21px}.idea-footer{align-items:stretch;flex-direction:column;gap:8px}.idea-generate{width:100%}.idea-step{font-size:8px}.interpretation-heading{align-items:center}}

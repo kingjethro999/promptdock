@@ -1,7 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { configuredProviders, enhanceWithAI } = require('./ai');
+const { configuredProviders, enhanceWithAI, ideaToPrompt } = require('./ai');
 const { version } = require('./package.json');
 
 const root = __dirname;
@@ -20,12 +20,14 @@ function json(response, status, body) {
 }
 
 async function readBody(request) {
-  let body = '';
+  const chunks = [];
+  let bytes = 0;
   for await (const chunk of request) {
-    body += chunk.toString();
-    if (body.length > 24000) throw new Error('Draft is too long.');
+    bytes += chunk.length;
+    if (bytes > 72000) throw new Error('Draft is too long.');
+    chunks.push(chunk);
   }
-  try { return JSON.parse(body); }
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
   catch { throw new Error('Invalid JSON.'); }
 }
 
@@ -37,12 +39,19 @@ http.createServer(async (request, response) => {
     json(response, 200, { aiAvailable: configuredProviders().length > 0, version: `v${version}` });
     return;
   }
-  if (pathname === '/api/enhance' && request.method === 'POST') {
+  if (['/api/enhance', '/api/idea-to-prompt'].includes(pathname) && request.method === 'POST') {
     const origin = request.headers.origin;
     if (origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(origin)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
-    try { json(response, 200, await enhanceWithAI(await readBody(request))); }
-    catch (error) { json(response, error.message === 'Draft is too long.' ? 413 : error.message === 'Invalid JSON.' || error.message === 'Add a task before enhancing.' ? 400 : 503, { error: error.message }); }
+    try {
+      const body = await readBody(request);
+      json(response, 200, await (pathname === '/api/idea-to-prompt' ? ideaToPrompt(body) : enhanceWithAI(body)));
+    } catch (error) {
+      const message = error.message;
+      const status = ['Draft is too long.', 'Idea is too long.'].includes(message) ? 413
+        : ['Invalid JSON.', 'Add a task before enhancing.', 'Describe your idea in a few words.'].includes(message) ? 400 : 503;
+      json(response, status, { error: message });
+    }
     return;
   }
   if (request.method !== 'GET' && request.method !== 'HEAD') {

@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'promptdock.prompts.v1';
 const DRAFT_KEY = 'promptdock.draft.v1';
-const fields = ['task', 'role', 'audience', 'context', 'format', 'tone', 'constraints'];
+const fields = ['task', 'role', 'audience', 'context', 'format', 'tone', 'approach', 'focus', 'depth', 'constraints'];
 const templates = [
   { id: 'writing', icon: '✎', name: 'Write anything', data: { task: 'Write a compelling piece about [topic]', role: 'An experienced writer', audience: '[target audience]', context: 'The key idea is [main idea]. The reader should come away knowing [takeaway].', format: 'Article', tone: 'Clear and concise', constraints: 'Use specific examples. Avoid filler and jargon.' } },
   { id: 'research', icon: '⌕', name: 'Research a topic', data: { task: 'Research [topic] and summarize the most useful findings', role: 'A careful research analyst', audience: 'A curious non-expert', context: 'I need this research to help me decide [decision or goal].', format: 'Bulleted list', tone: 'Educational', constraints: 'Separate established facts from uncertainty. Cite sources when available and say when you cannot verify a claim.' } },
@@ -11,7 +11,8 @@ const templates = [
 const platformUrls = { chatgpt: 'https://chatgpt.com/', claude: 'https://claude.ai/new', gemini: 'https://gemini.google.com/app' };
 const selectOptions = {
   format: ['Bulleted list', 'Step-by-step guide', 'Table', 'Email', 'Social post', 'Article', 'Code with explanation', 'JSON'],
-  tone: ['Clear and concise', 'Friendly', 'Professional', 'Persuasive', 'Creative', 'Educational']
+  tone: ['Clear and concise', 'Friendly', 'Professional', 'Persuasive', 'Creative', 'Educational'],
+  depth: ['Quick', 'Balanced', 'Deep']
 };
 
 const elements = Object.fromEntries(fields.map(field => [field, document.getElementById(field)]));
@@ -20,6 +21,7 @@ let currentId = null;
 let toastTimer;
 let aiAvailable = false;
 let aiBusy = false;
+let currentAnalysis = null;
 
 function readJSON(key, fallback) {
   try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; }
@@ -29,14 +31,14 @@ function dataFromForm() { return Object.fromEntries(fields.map(field => [field, 
 function setForm(data) { fields.forEach(field => { elements[field].value = data[field] || ''; }); Object.keys(selectOptions).forEach(syncSelect); updatePreview(); persistDraft(); }
 function getSaved() { const saved = readJSON(STORAGE_KEY, []); return Array.isArray(saved) ? saved : []; }
 function setSaved(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); renderLibrary(); }
-function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(dataFromForm())); } catch {} }
+function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: dataFromForm(), idea: $('ideaInput').value, analysis: currentAnalysis })); } catch {} }
 function showToast(message) { const toast = $('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 3200); }
 
 function syncSelect(name) {
   const wrapper = document.querySelector(`[data-select="${name}"]`);
   const value = elements[name].value;
   const trigger = wrapper.querySelector('.select-trigger');
-  trigger.firstElementChild.textContent = value || (name === 'format' ? 'Choose a format' : 'Choose a tone');
+  trigger.firstElementChild.textContent = value || (name === 'format' ? 'Choose a format' : name === 'tone' ? 'Choose a tone' : 'Choose depth');
   trigger.classList.toggle('has-value', Boolean(value));
   wrapper.querySelectorAll('.select-option').forEach(option => {
     option.setAttribute('aria-selected', String(option.dataset.value === value));
@@ -59,7 +61,7 @@ function initCustomSelects() {
       const option = document.createElement('button');
       option.type = 'button'; option.className = 'select-option'; option.dataset.value = value;
       option.setAttribute('role', 'option'); option.setAttribute('aria-selected', 'false');
-      const label = document.createElement('span'); label.textContent = value || `No ${name}`;
+      const label = document.createElement('span'); label.textContent = value || `Choose ${name}`;
       const check = document.createElement('span'); check.className = 'select-check';
       option.append(label, check);
       option.addEventListener('click', () => { elements[name].value = value; elements[name].dispatchEvent(new Event('change', { bubbles: true })); syncSelect(name); closeSelect(wrapper, true); });
@@ -84,6 +86,66 @@ function initCustomSelects() {
   document.addEventListener('pointerdown', event => { document.querySelectorAll('.custom-select.open').forEach(wrapper => { if (!wrapper.contains(event.target)) closeSelect(wrapper); }); });
 }
 
+function setComposerExpanded(expanded) {
+  $('promptForm').classList.toggle('collapsed', !expanded);
+  $('toggleComposer').setAttribute('aria-expanded', String(expanded));
+  $('toggleComposer').textContent = expanded ? 'Hide details ⌃' : 'Edit details ⌄';
+  document.querySelector('.composer-card').classList.toggle('is-collapsed', !expanded);
+}
+
+function renderInterpretation(analysis) {
+  $('interpretationCard').classList.toggle('hidden', !analysis);
+  if (!analysis) return;
+  $('ideaGoal').textContent = analysis.goal || '';
+  $('ideaDepthReason').textContent = analysis.originalDepth && analysis.originalDepth !== elements.depth.value
+    ? `You changed the answer depth from ${analysis.originalDepth} to ${elements.depth.value || 'an unspecified depth'}.`
+    : analysis.whyThisDepth || '';
+  $('ideaDepthBadge').textContent = `${elements.depth.value || 'Balanced'} depth`;
+  const makeItem = value => { const item = document.createElement('li'); item.textContent = value; return item; };
+  $('ideaFocusAreas').replaceChildren(...(analysis.focusAreas || []).map(makeItem));
+  renderApproach();
+  $('ideaMissingDetails').replaceChildren(...(analysis.missingDetails || []).map(makeItem));
+  $('missingDetails').classList.toggle('hidden', !analysis.missingDetails?.length);
+}
+
+function renderApproach() {
+  const steps = elements.approach.value.split(/\n/).map(item => item.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean).slice(0, 4);
+  $('ideaApproach').replaceChildren(...steps.map(value => { const item = document.createElement('li'); item.textContent = value; return item; }));
+  $('ideaApproachSection').classList.toggle('hidden', !steps.length);
+}
+
+function updateIdeaButton() {
+  $('ideaGenerateButton').disabled = !aiAvailable || aiBusy || $('ideaInput').value.trim().length < 4;
+}
+
+async function generateIdeaPrompt() {
+  const idea = $('ideaInput').value.trim();
+  if (!aiAvailable || aiBusy || idea.length < 4) return;
+  aiBusy = true;
+  $('ideaGenerateButton').classList.add('busy');
+  $('ideaStatus').textContent = 'Reading your idea and shaping the prompt…';
+  updateIdeaButton(); updatePreview();
+  try {
+    const response = await fetch('/api/idea-to-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idea }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not turn this idea into a prompt.');
+    if (idea !== $('ideaInput').value.trim()) { $('ideaStatus').textContent = 'Your idea changed. Run it again when ready.'; return; }
+    currentId = null;
+    currentAnalysis = { ...result.interpretation, originalDepth: result.data.depth };
+    setForm(result.data);
+    renderInterpretation(currentAnalysis);
+    $('ideaStatus').textContent = 'Prompt ready. Review its direction and edit any detail.';
+    showToast(`Idea shaped with ${result.provider}. Review the prompt before using it.`);
+  } catch (error) {
+    $('ideaStatus').textContent = error.message || 'Could not turn this idea into a prompt.';
+    showToast($('ideaStatus').textContent);
+  } finally {
+    aiBusy = false;
+    $('ideaGenerateButton').classList.remove('busy');
+    updateIdeaButton(); updatePreview();
+  }
+}
+
 async function loadAiStatus() {
   try {
     const response = await fetch('/api/status');
@@ -92,7 +154,9 @@ async function loadAiStatus() {
     aiAvailable = status.aiAvailable;
     if (status.version) $('appVersion').textContent = status.version;
     $('aiStatus').textContent = aiAvailable ? 'Sends this draft to your configured AI provider' : 'Add an API key to .env to enable AI suggestions';
-  } catch { $('aiStatus').textContent = 'AI suggestions are unavailable'; }
+    $('ideaStatus').textContent = aiAvailable ? ($('ideaInput').value.trim() ? 'Ready to turn this idea into a prompt' : 'Add your idea to begin') : 'Add an API key to .env to use AI';
+  } catch { $('aiStatus').textContent = 'AI suggestions are unavailable'; $('ideaStatus').textContent = 'AI is unavailable. Use the manual editor below.'; }
+  updateIdeaButton();
   updatePreview();
 }
 
@@ -106,7 +170,7 @@ async function enhancePrompt() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'AI suggestions are unavailable.');
     if (JSON.stringify(original) !== JSON.stringify(dataFromForm())) { showToast('Your draft changed. AI suggestions were not applied.'); return; }
-    currentId = null; setForm(result.data);
+    currentId = null; currentAnalysis = null; setForm(result.data); renderInterpretation(null);
     showToast(`Prompt enhanced with ${result.provider}. Review before using it.`);
   } catch (error) { showToast(error.message || 'AI suggestions are unavailable.'); }
   finally { aiBusy = false; $('enhanceButton').classList.remove('busy'); $('aiStatus').textContent = 'Sends this draft to your configured AI provider'; updatePreview(); }
@@ -119,8 +183,16 @@ function buildPrompt(data) {
   parts.push(`Task: ${data.task}`);
   if (data.context) parts.push(`Context:\n${data.context}`);
   if (data.audience) parts.push(`Audience: ${data.audience}`);
+  if (data.approach) parts.push(`Suggested approach:\n${data.approach}`);
   if (data.format) parts.push(`Output format: ${data.format}`);
   if (data.tone) parts.push(`Tone: ${data.tone}`);
+  if (data.focus) parts.push(`Priorities (spend the most attention on the first):\n${data.focus}`);
+  const depthInstructions = {
+    Quick: 'Keep the answer brief and give the essential result or next step.',
+    Balanced: 'Give a clear, practical answer with enough detail to act.',
+    Deep: 'Work through the important reasoning, tradeoffs, edge cases, and concrete next steps.'
+  };
+  if (depthInstructions[data.depth]) parts.push(`Answer depth: ${data.depth}. ${depthInstructions[data.depth]}`);
   if (data.constraints) parts.push(`Requirements:\n${data.constraints}`);
   return parts.join('\n\n');
 }
@@ -129,7 +201,7 @@ function updatePreview() {
   const data = dataFromForm();
   const prompt = buildPrompt(data);
   const output = $('promptOutput');
-  output.textContent = prompt || 'Your prompt will appear here as soon as you describe your task.\n\nTry a quick start template if you need inspiration.';
+  output.textContent = prompt || 'Your prompt will appear here. Start with a rough idea, or open the details editor to build it yourself.';
   output.classList.toggle('is-empty', !prompt);
   $('wordCount').textContent = `${prompt ? prompt.split(/\s+/).length : 0} words`;
   $('copyButton').disabled = !prompt;
@@ -137,14 +209,21 @@ function updatePreview() {
   $('saveButton').disabled = !prompt;
   $('readyBadge').style.visibility = prompt ? 'visible' : 'hidden';
   $('enhanceButton').disabled = !prompt || !aiAvailable || aiBusy;
-  const checks = [Boolean(data.task), Boolean(data.role || data.audience), Boolean(data.context), Boolean(data.format || data.tone), Boolean(data.constraints)];
+  if (currentAnalysis) {
+    $('ideaDepthBadge').textContent = `${data.depth || 'Balanced'} depth`;
+    $('ideaDepthReason').textContent = currentAnalysis.originalDepth && currentAnalysis.originalDepth !== data.depth
+      ? `You changed the answer depth from ${currentAnalysis.originalDepth} to ${data.depth || 'an unspecified depth'}.`
+      : currentAnalysis.whyThisDepth || '';
+    renderApproach();
+  }
+  const checks = [Boolean(data.task), Boolean(data.role || data.audience), Boolean(data.context), Boolean(data.format || data.tone), Boolean(data.constraints || data.focus)];
   const score = checks.filter(Boolean).length;
   $('qualityScore').textContent = score;
   document.querySelectorAll('#scoreBars i').forEach((bar, index) => bar.classList.toggle('filled', index < score));
   const advice = !data.task ? ['A good start', 'Add your task to get started.']
     : !data.context ? ['Add some context', 'A little background helps AI make a more useful answer.']
     : !data.format && !data.tone ? ['Shape the result', 'Choose a format or tone to make the answer easier to use.']
-    : !data.constraints ? ['Almost there', 'Add any limits or must-have details for a more focused result.']
+    : !data.constraints && !data.focus ? ['Almost there', 'Add priorities or must-have details for a more focused result.']
     : ['Looking strong', 'Your prompt gives AI a clear direction to follow.'];
   $('qualityTitle').textContent = advice[0];
   $('qualityTip').textContent = advice[1];
@@ -171,7 +250,7 @@ function savePrompt(name) {
   if (!data.task) return;
   const saved = getSaved();
   const existing = currentId ? saved.find(item => item.id === currentId) : null;
-  const item = { id: existing?.id || crypto.randomUUID(), name: name.trim(), data, updatedAt: new Date().toISOString() };
+  const item = { id: existing?.id || crypto.randomUUID(), name: name.trim(), data, idea: $('ideaInput').value.trim(), analysis: currentAnalysis, updatedAt: new Date().toISOString() };
   const next = [item, ...saved.filter(entry => entry.id !== item.id)];
   try { setSaved(next); currentId = item.id; showToast(existing ? 'Prompt updated in your library.' : 'Prompt saved to your library.'); }
   catch { showToast('Storage is full or unavailable. Download the prompt instead.'); }
@@ -183,7 +262,7 @@ function renderTemplates() {
     const icon = document.createElement('span'); icon.className = 'template-glyph'; icon.textContent = template.icon;
     const label = document.createElement('span'); label.textContent = template.name;
     button.append(icon, label);
-    button.addEventListener('click', () => { currentId = null; setForm(template.data); switchView('builder'); showToast(`${template.name} template loaded.`); });
+    button.addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm(template.data); renderInterpretation(null); setComposerExpanded(true); updateIdeaButton(); $('ideaStatus').textContent = 'Add a new idea whenever you like'; switchView('builder'); showToast(`${template.name} template loaded.`); });
     return button;
   }));
 }
@@ -191,7 +270,7 @@ function renderTemplates() {
 function renderLibrary() {
   const saved = getSaved();
   const query = $('librarySearch').value.toLowerCase().trim();
-  const filtered = saved.filter(item => `${item.name} ${Object.values(item.data).join(' ')}`.toLowerCase().includes(query));
+  const filtered = saved.filter(item => `${item.name} ${item.idea || ''} ${Object.values(item.data).join(' ')}`.toLowerCase().includes(query));
   $('libraryCount').textContent = saved.length;
   $('librarySummary').textContent = `${saved.length} saved prompt${saved.length === 1 ? '' : 's'}`;
   const grid = $('libraryGrid'); grid.replaceChildren();
@@ -212,7 +291,7 @@ function renderLibrary() {
     const summary = document.createElement('p'); summary.textContent = item.data.task;
     const footer = document.createElement('div'); footer.className = 'library-card-footer';
     const date = document.createElement('span'); date.textContent = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; setForm(item.data); switchView('builder'); });
+    const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; currentAnalysis = item.analysis || null; $('ideaInput').value = item.idea || ''; setForm(item.data); renderInterpretation(currentAnalysis); updateIdeaButton(); switchView('builder'); });
     footer.append(date, open); card.append(top, title, summary, footer); grid.append(card);
   }
 }
@@ -220,7 +299,7 @@ function renderLibrary() {
 function switchView(view) {
   $('builderView').classList.toggle('hidden', view !== 'builder');
   $('libraryView').classList.toggle('hidden', view !== 'library');
-  $('breadcrumbCurrent').textContent = view === 'builder' ? 'Prompt builder' : 'My library';
+  $('breadcrumbCurrent').textContent = view === 'builder' ? 'Idea to prompt' : 'My library';
   document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
   $('sidebar').classList.remove('open'); $('menuButton').setAttribute('aria-expanded', 'false');
   if (view === 'library') renderLibrary();
@@ -237,12 +316,18 @@ function downloadPrompt() {
 }
 
 initCustomSelects();
-fields.forEach(field => elements[field].addEventListener(field === 'format' || field === 'tone' ? 'change' : 'input', () => { updatePreview(); persistDraft(); }));
+setComposerExpanded(false);
+fields.forEach(field => elements[field].addEventListener(Object.hasOwn(selectOptions, field) ? 'change' : 'input', () => { updatePreview(); persistDraft(); }));
+$('toggleComposer').addEventListener('click', () => setComposerExpanded($('promptForm').classList.contains('collapsed')));
+$('ideaInput').addEventListener('input', () => { if (currentAnalysis) { currentAnalysis = null; renderInterpretation(null); } persistDraft(); updateIdeaButton(); $('ideaStatus').textContent = aiAvailable ? 'Ready to turn this idea into a prompt' : 'Add an API key to .env to use AI'; });
+$('ideaGenerateButton').addEventListener('click', generateIdeaPrompt);
+document.querySelectorAll('.idea-example').forEach(button => button.addEventListener('click', () => { $('ideaInput').value = button.dataset.example; $('ideaInput').dispatchEvent(new Event('input')); $('ideaInput').focus(); }));
 $('enhanceButton').addEventListener('click', enhancePrompt);
+$('promptForm').addEventListener('submit', event => event.preventDefault());
 document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => switchView(item.dataset.view)));
 $('librarySearch').addEventListener('input', renderLibrary);
-$('clearButton').addEventListener('click', () => { currentId = null; setForm({}); elements.task.focus(); showToast('Composer cleared.'); });
-$('newPromptButton').addEventListener('click', () => { currentId = null; setForm({}); switchView('builder'); elements.task.focus(); });
+$('clearButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; elements.task.focus(); showToast('Prompt cleared.'); });
+$('newPromptButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); setComposerExpanded(false); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; switchView('builder'); $('ideaInput').focus(); });
 $('copyButton').addEventListener('click', copyPrompt);
 $('downloadButton').addEventListener('click', downloadPrompt);
 $('saveButton').addEventListener('click', () => { if (!elements.task.value.trim()) return; $('promptName').value = getSaved().find(item => item.id === currentId)?.name || ''; $('saveDialog').showModal(); $('promptName').focus(); });
@@ -260,9 +345,13 @@ document.querySelectorAll('.platform-card').forEach(card => card.addEventListene
   if (tab) tab.location.href = url;
   else window.location.href = url;
 }));
-document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); copyPrompt(); } });
+document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); if (document.activeElement === $('ideaInput')) generateIdeaPrompt(); else copyPrompt(); } });
 
 renderTemplates();
-setForm(readJSON(DRAFT_KEY, {}));
+const savedDraft = readJSON(DRAFT_KEY, {});
+currentAnalysis = savedDraft.analysis || null;
+$('ideaInput').value = savedDraft.idea || '';
+setForm(savedDraft.data || savedDraft);
+renderInterpretation(currentAnalysis);
 renderLibrary();
 loadAiStatus();
