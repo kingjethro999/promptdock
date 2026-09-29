@@ -15,6 +15,7 @@ test('personal provider keys encrypt, decrypt, and stay bound to one user', () =
 
 test('personal provider settings require a supported provider and model', () => {
   assert.deepEqual(settings.validateSetting({ provider: 'groq', model: 'openai/gpt-oss-120b', apiKey: 'example-key' }), { provider: 'groq', model: 'openai/gpt-oss-120b', apiKey: 'example-key' });
+  assert.deepEqual(settings.validateSetting({ provider: 'apmix', model: 'provider/model', apiKey: 'example-key' }), { provider: 'apmix', model: 'provider/model', apiKey: 'example-key' });
   assert.throws(() => settings.validateSetting({ provider: 'custom', model: 'model', apiKey: 'example-key' }));
   assert.throws(() => settings.validateSetting({ provider: 'gemini', model: 'https://example.com/?x=1', apiKey: 'example-key' }));
 });

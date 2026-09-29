@@ -32,7 +32,7 @@ function validateSetting(input) {
   const provider = input?.provider;
   const model = typeof input?.model === 'string' ? input.model.trim() : '';
   const apiKey = typeof input?.apiKey === 'string' ? input.apiKey.trim() : '';
-  if (!['groq', 'gemini'].includes(provider)) throw new Error('Choose Groq or Gemini.');
+  if (!['groq', 'gemini', 'apmix'].includes(provider)) throw new Error('Choose Groq, Gemini, or APMIX.');
   if (!/^[A-Za-z0-9._:/-]{2,120}$/.test(model)) throw new Error('Enter a valid model ID.');
   if (apiKey && (apiKey.length < 8 || apiKey.length > 500 || /\s/.test(apiKey))) throw new Error('Enter a valid API key.');
   return { provider, model, apiKey };
@@ -74,6 +74,7 @@ async function effectiveEnv(userId, env = process.env) {
   const next = { ...env, AI_PROVIDER_ORDER: setting.provider, AI_MAX_FALLBACKS: '0' };
   if (setting.provider === 'groq') { next.GROQ_API_KEY = apiKey; next.GROQ_MODEL = setting.model; }
   if (setting.provider === 'gemini') { next.GEMINI_API_KEY = apiKey; next.GEMINI_MODEL = setting.model; }
+  if (setting.provider === 'apmix') { next.APMIX_API_KEY = apiKey; next.APMIX_MODEL = setting.model; next.APMIX_BASE_URL = env.APMIX_BASE_URL || 'https://api.apmix.ai/v1'; }
   return next;
 }
 

@@ -6,6 +6,18 @@ test('configured providers follow environment order', () => {
   assert.deepEqual(configuredProviders({ AI_PROVIDER_ORDER: 'apmix,groq,gemini', GROQ_API_KEY: 'x', GROQ_MODEL: 'm', GEMINI_API_KEY: 'y' }), ['groq', 'gemini']);
 });
 
+test('APMIX uses its configured model and OpenAI-compatible endpoint', async () => {
+  let request;
+  const fakeFetch = async (url, options) => {
+    request = { url, headers: options.headers, body: JSON.parse(options.body) };
+    return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ data: { task: 'Write a note', focus: 'Clarity first' } }) } }] }) };
+  };
+  await ideaToPrompt({ idea: 'Write a short note' }, { AI_PROVIDER_ORDER: 'apmix', APMIX_API_KEY: 'personal-key', APMIX_MODEL: 'provider/model', APMIX_BASE_URL: 'https://api.apmix.ai/v1' }, fakeFetch);
+  assert.equal(request.url, 'https://api.apmix.ai/v1/chat/completions');
+  assert.equal(request.headers.Authorization, 'Bearer personal-key');
+  assert.equal(request.body.model, 'provider/model');
+});
+
 test('draft validation requires a task', () => {
   assert.throws(() => normalizeDraft({ task: '   ' }), /Add a task/);
 });

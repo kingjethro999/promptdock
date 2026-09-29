@@ -553,7 +553,7 @@ function selectProvider(provider) {
     option.classList.toggle('active', active);
     option.setAttribute('aria-pressed', String(active));
   });
-  $('byokModel').placeholder = provider === 'groq' ? 'e.g. openai/gpt-oss-120b' : 'e.g. gemini-2.5-flash';
+  $('byokModel').placeholder = { groq: 'e.g. openai/gpt-oss-120b', gemini: 'e.g. gemini-2.5-flash', apmix: 'Your APMIX model ID' }[provider];
   if (savedProvider && savedProvider !== provider) $('byokKey').placeholder = 'Add a key for this provider';
 }
 
@@ -569,7 +569,7 @@ async function loadSettings() {
     $('byokKey').value = '';
     $('byokKey').placeholder = setting.hasKey ? 'Key saved — leave blank to keep it' : 'Paste your provider key';
     $('byokState').textContent = !setting.available ? 'Personal keys are unavailable right now.'
-      : setting.hasKey ? `Using your ${setting.provider === 'groq' ? 'Groq' : 'Gemini'} key and model.` : 'Using PromptDock’s configured provider.';
+      : setting.hasKey ? `Using your ${{ groq: 'Groq', gemini: 'Gemini', apmix: 'APMIX' }[setting.provider]} key and model.` : 'Using PromptDock’s configured provider.';
     $('byokForm').querySelector('button[type=submit]').disabled = !setting.available;
     $('removeByok').disabled = !setting.hasKey;
   } catch { $('byokState').textContent = 'Could not load your AI settings.'; }

@@ -34,6 +34,8 @@ module.exports = [
     encrypted_key text NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
+  'ALTER TABLE user_ai_settings DROP CONSTRAINT IF EXISTS user_ai_settings_provider_check',
+  "ALTER TABLE user_ai_settings ADD CONSTRAINT user_ai_settings_provider_check CHECK (provider IN ('groq', 'gemini', 'apmix'))",
   `CREATE TABLE IF NOT EXISTS prompts (
     owner_key char(64) NOT NULL,
     id uuid NOT NULL,
