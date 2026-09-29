@@ -6,7 +6,10 @@ function nextVersion(version) {
   if (!match) throw new Error(`Invalid version: ${version}`);
   const [major, minor, patch] = match.slice(1).map(Number);
   if (major === 0 && minor === 0) return patch < 9 ? `0.0.${patch + 1}` : '0.1.0';
-  if (major === 0) return minor < 599 ? `0.${minor + 1}.0` : '1.0.0';
+  if (major === 0) {
+    if (minor >= 599) return '1.0.0';
+    return patch < 9 ? `0.${minor}.${patch + 1}` : `0.${minor + 1}.0`;
+  }
   return `${major}.${minor}.${patch + 1}`;
 }
 

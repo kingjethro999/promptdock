@@ -46,4 +46,4 @@ Render Free Postgres has a 1 GB limit and expires after 30 days; plan an upgrade
 
 ## Versioning
 
-The project began at `v0.0.1`. The pre-commit hook bumps every later commit: `v0.0.9 → v0.1.0`, then increments the middle number through `v0.599.0 → v1.0.0`. From `v1.0.0` onward it increments the patch number. `package.json` uses numeric SemVer; `VERSION` and the frontend build use the `v` prefix. Run `npm run setup:hooks` after cloning.
+The project began at `v0.0.1`. The pre-commit hook bumps every later commit: `v0.0.9 → v0.1.0`, then `v0.1.0 → v0.1.1` and so on. Each `0.x.9` rolls to `0.(x+1).0`; `v0.599.0 → v1.0.0` is the requested major milestone. From `v1.0.0` onward, commits increment the patch number. `package.json` uses numeric SemVer; `VERSION` and the frontend build use the `v` prefix. Run `npm run setup:hooks` after cloning.
