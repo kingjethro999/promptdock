@@ -1,12 +1,13 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { configuredProviders, enhanceWithAI, ideaToPrompt } = require('./ai');
-const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
+const { configuredProviders, enhanceWithAI, ideaToPrompt, normalizeDraft, normalizeIdea } = require('./ai');
+const { MAX_AUDIO_BYTES, normalizeAudioType, transcribeAudio } = require('./speech');
 const { version } = require('../package.json');
 const database = require('./database');
 const auth = require('./auth');
 const settings = require('./settings');
+const rateLimit = require('./rate-limit');
 
 const root = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT) || 3000;
@@ -194,8 +195,13 @@ async function handleRequest(request, response) {
     try {
       const user = database.configured ? await auth.currentUser(request) : null;
       if (database.configured && !user) { json(response, 401, { error: 'Sign in first.' }); return; }
+      const audio = await readAudio(request);
+      normalizeAudioType(request.headers['content-type']);
+      if (audio.length < 100) { json(response, 400, { error: 'Recording is too short. Try speaking again.' }); return; }
+      const limit = await rateLimit.consume(request, pathname);
+      if (!limit.allowed) { json(response, 429, { error: 'Voice limit reached. Try again shortly.' }, { 'Retry-After': String(limit.retryAfter) }); return; }
       const env = user ? await settings.effectiveEnv(user.id) : process.env;
-      json(response, 200, { text: await transcribeAudio(await readAudio(request), request.headers['content-type'], env) });
+      json(response, 200, { text: await transcribeAudio(audio, request.headers['content-type'], env) });
     }
     catch (error) {
       const message = error.message;
@@ -211,8 +217,12 @@ async function handleRequest(request, response) {
     try {
       const user = database.configured ? await auth.currentUser(request) : null;
       if (database.configured && !user) { json(response, 401, { error: 'Sign in first.' }); return; }
-      const env = user ? await settings.effectiveEnv(user.id) : process.env;
       const body = await readBody(request);
+      if (pathname === '/api/idea-to-prompt') normalizeIdea(body);
+      else normalizeDraft(body);
+      const limit = await rateLimit.consume(request, pathname);
+      if (!limit.allowed) { json(response, 429, { error: 'AI request limit reached. Try again shortly.' }, { 'Retry-After': String(limit.retryAfter) }); return; }
+      const env = user ? await settings.effectiveEnv(user.id) : process.env;
       json(response, 200, await (pathname === '/api/idea-to-prompt' ? ideaToPrompt(body, env) : enhanceWithAI(body, env)));
     } catch (error) {
       const message = error.message;

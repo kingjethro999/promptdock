@@ -33,6 +33,8 @@ In Settings, choose Groq or Gemini, enter a model ID and your own API key, and s
 
 To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The server transcribes with Groq and sends the resulting idea through prompt generation. **Cancel** or the two-minute limit discards the recording. Vercel's function payload limit caps recordings at 4 MB.
 
+AI routes use a shared PostgreSQL token bucket per client IP to control provider spend across Vercel function instances: 20 idea generations, 30 enhancements, and 10 voice transcriptions per hour, replenished gradually. Exceeding a limit returns HTTP 429 with `Retry-After`. Local development without PostgreSQL uses a process-local bucket.
+
 ## Deploy
 
 1. Import this repository into Vercel. Keep **Root Directory** as `./` and **Application Preset** as `Node`. The repository's `vercel.json` sets **Build Command** to `npm run build:frontend` and **Output Directory** to `src/dist`; set **Install Command** to `npm ci` if you override Vercel's default.

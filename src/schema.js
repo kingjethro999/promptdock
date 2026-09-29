@@ -49,5 +49,10 @@ module.exports = [
   'ALTER TABLE prompts ADD COLUMN IF NOT EXISTS forked_from uuid',
   'CREATE UNIQUE INDEX IF NOT EXISTS prompts_public_id_idx ON prompts (public_id) WHERE public_id IS NOT NULL',
   'CREATE UNIQUE INDEX IF NOT EXISTS prompts_owner_fork_idx ON prompts (owner_key, forked_from) WHERE forked_from IS NOT NULL',
-  'CREATE INDEX IF NOT EXISTS prompts_owner_updated_idx ON prompts (owner_key, updated_at DESC)'
+  'CREATE INDEX IF NOT EXISTS prompts_owner_updated_idx ON prompts (owner_key, updated_at DESC)',
+  `CREATE TABLE IF NOT EXISTS api_rate_limits (
+    bucket_key char(64) PRIMARY KEY,
+    tokens double precision NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`
 ];
