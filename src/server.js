@@ -71,7 +71,11 @@ async function handleRequest(request, response) {
     return;
   }
   if (pathname === '/api/health' && request.method === 'GET') {
-    try { if (database.pool) await database.ensureSchema(); json(response, 200, { ok: true }); }
+    try {
+      if (!database.pool) { json(response, 503, { ok: false, error: 'Database is not configured.' }); return; }
+      await database.ensureSchema();
+      json(response, 200, { ok: true });
+    }
     catch { json(response, 503, { ok: false }); }
     return;
   }
