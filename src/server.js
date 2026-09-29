@@ -26,12 +26,12 @@ function json(response, status, body, headers = {}) {
   response.end(JSON.stringify(body));
 }
 
-async function readBody(request) {
+async function readBody(request, maxBytes = 72000) {
   const chunks = [];
   let bytes = 0;
   for await (const chunk of request) {
     bytes += chunk.length;
-    if (bytes > 72000) throw new Error('Draft is too long.');
+    if (bytes > maxBytes) throw new Error('Request is too large.');
     chunks.push(chunk);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
@@ -217,6 +217,7 @@ async function handleRequest(request, response) {
       const key = database.accountKey(user.id);
       if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, await database.listPrompts(key, { q: url.searchParams.get('q'), offset: url.searchParams.get('offset') }));
       else if (pathname === '/api/prompts' && request.method === 'PUT') json(response, 200, { prompt: await database.putPrompt(key, await readBody(request)) });
+      else if (pathname === '/api/prompts/import' && request.method === 'POST') json(response, 201, { imported: await database.importPrompts(key, await readBody(request, 1500000)) });
       else if (/^\/api\/prompts\/[0-9a-f-]{36}\/revisions$/i.test(pathname) && request.method === 'GET') {
         const id = pathname.split('/')[3];
         const revisions = await database.listRevisions(key, id);
@@ -234,7 +235,7 @@ async function handleRequest(request, response) {
         await database.deletePrompt(key, pathname.slice('/api/prompts/'.length)); json(response, 200, { ok: true });
       } else json(response, 405, { error: 'Method not allowed.' });
     } catch (error) {
-      const status = /required|Invalid|must be|too long|task/i.test(error.message) ? 400 : 503;
+      const status = /required|Invalid|must be|too long|too large|task|Import |Use up to/i.test(error.message) ? 400 : 503;
       json(response, status, { error: status === 400 ? error.message : 'Database is unavailable.' });
     }
     return;

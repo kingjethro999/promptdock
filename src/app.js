@@ -880,6 +880,62 @@ $('libraryLoadMore').addEventListener('click', async () => {
   } catch (error) { showToast(error.message); }
   finally { button.disabled = false; }
 });
+$('backupExport').addEventListener('click', async () => {
+  const button = $('backupExport'); button.disabled = true; button.textContent = 'Preparing backup…';
+  try {
+    let prompts = getSaved();
+    if (currentUser) {
+      prompts = [];
+      for (let offset = 0; ; offset += 100) {
+        const page = await fetchLibraryPage('', offset);
+        prompts.push(...page.prompts);
+        if (prompts.length >= page.total || !page.prompts.length) break;
+      }
+    }
+    const backup = { app: 'PromptDock', version: 1, exportedAt: new Date().toISOString(), prompts: prompts.map(({ name, data, idea, analysis, tags }) => ({ name, data, idea: idea || '', analysis: analysis || null, tags: tags || [] })) };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a'); link.href = url; link.download = `promptdock-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`Exported ${prompts.length} prompts.`);
+  } catch (error) { showToast(error.message || 'Could not export your library.'); }
+  finally { button.disabled = false; button.textContent = 'Export JSON ↓'; }
+});
+$('backupImport').addEventListener('click', () => $('backupFile').click());
+$('backupFile').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const button = $('backupImport'); button.disabled = true; button.textContent = 'Importing…';
+  let imported = 0;
+  try {
+    if (file.size > 25000000) throw new Error('Backup is too large (25 MB maximum).');
+    const backup = JSON.parse(await file.text());
+    if (backup.app !== 'PromptDock' || backup.version !== 1 || !Array.isArray(backup.prompts) || !backup.prompts.length || backup.prompts.length > 10000) throw new Error('Choose a PromptDock JSON backup with 1–10,000 prompts.');
+    if (currentUser) {
+      for (let i = 0; i < backup.prompts.length; i += 25) {
+        const response = await libraryFetch('/api/prompts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, prompts: backup.prompts.slice(i, i + 25) }) });
+        const result = await readApiJson(response);
+        if (!response.ok) throw new Error(result.error || 'Could not import prompts.');
+        imported += result.imported;
+        button.textContent = `Importing ${imported}/${backup.prompts.length}…`;
+      }
+      const page = await fetchLibraryPage();
+      accountPrompts = page.prompts; libraryTotal = page.total;
+    } else {
+      const copies = backup.prompts.map(prompt => {
+        if (typeof prompt.name !== 'string' || !prompt.name.trim() || !prompt.data || typeof prompt.data.task !== 'string' || !prompt.data.task.trim()) throw new Error('Backup contains an invalid prompt.');
+        return { id: crypto.randomUUID(), name: prompt.name.slice(0, 120), data: prompt.data, idea: prompt.idea || '', analysis: prompt.analysis || null, tags: Array.isArray(prompt.tags) ? prompt.tags : [], updatedAt: new Date().toISOString() };
+      });
+      imported = copies.length; setSaved([...copies, ...getSaved()]);
+    }
+    $('librarySearch').value = ''; searchResults = []; searchRequest++; renderLibrary();
+    showToast(`Imported ${imported} private prompts.`);
+  } catch (error) {
+    if (imported && currentUser) {
+      try { const page = await fetchLibraryPage(); accountPrompts = page.prompts; libraryTotal = page.total; renderLibrary(); } catch {}
+    }
+    showToast(imported ? `Imported ${imported} prompts; stopped: ${error.message}` : error.message || 'Could not import backup.');
+  } finally { button.disabled = false; button.textContent = 'Import JSON ↑'; event.target.value = ''; }
+});
 $('clearButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; elements.task.focus(); showToast('Prompt cleared.'); });
 $('newPromptButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); setComposerExpanded(false); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; switchView('builder'); $('ideaInput').focus(); });
 $('copyButton').addEventListener('click', copyPrompt);

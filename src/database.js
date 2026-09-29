@@ -161,6 +161,21 @@ async function duplicatePrompt(key, id) {
   return result.rows[0] || null;
 }
 
+async function importPrompts(key, input) {
+  if (!input || input.version !== 1 || !Array.isArray(input.prompts) || !input.prompts.length || input.prompts.length > 50) throw new Error('Import 1–50 prompts at a time from a PromptDock backup.');
+  const items = input.prompts.map(prompt => validatePrompt({ ...prompt, id: randomUUID() }));
+  await ensureSchema();
+  const values = [];
+  const rows = items.map((item, index) => {
+    const start = index * 7;
+    values.push(key, item.id, item.name, item.data, item.idea, item.analysis, item.tags);
+    return `(${Array.from({ length: 7 }, (_, n) => `$${start + n + 1}`).join(', ')})`;
+  });
+  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
+    VALUES ${rows.join(', ')} RETURNING id`, values);
+  return result.rowCount;
+}
+
 async function deletePrompt(key, id) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new Error('Invalid prompt ID.');
   await ensureSchema();
@@ -199,4 +214,4 @@ async function forkPublicPrompt(key, publicId) {
   return result.rows[0] || null;
 }
 
-module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, listRevisions, restoreRevision, duplicatePrompt, deletePrompt, setPromptPublic, getPublicPrompt, forkPublicPrompt };
+module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, listRevisions, restoreRevision, duplicatePrompt, importPrompts, deletePrompt, setPromptPublic, getPublicPrompt, forkPublicPrompt };
