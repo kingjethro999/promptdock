@@ -20,11 +20,17 @@ Write a plain-language idea in the main box and choose **Turn idea into prompt**
 
 You can also start from a template or build a prompt manually. Existing saved prompts remain usable.
 
+## Voice ideas
+
+Choose **Record idea**, allow microphone access, speak, then choose **Stop & send**. PromptDock transcribes the recording, adds the text to anything already in the idea box, and automatically runs **Turn idea into prompt**. **Cancel** discards the recording. Recordings are discarded automatically after two minutes.
+
+Voice requires a browser with `MediaRecorder` and microphone access on `localhost` or HTTPS. The server uses Groq's `GROQ_API_KEY` for transcription and defaults to `whisper-large-v3-turbo`. Audio is sent to Groq only after **Stop & send**; a cancelled recording is discarded. The audio is not saved in the prompt library. See [Groq's speech-to-text documentation](https://console.groq.com/docs/speech-to-text) for supported formats.
+
 ## AI suggestions
 
 The server reads the local `.env` file at startup. Copy `.env.example` to `.env` if you need a template. **Turn idea into prompt** sends the idea, and **Enhance with AI** sends the current prompt draft, to a configured provider. It follows `AI_PROVIDER_ORDER` and `AI_MAX_FALLBACKS`, supporting APMIX, Groq, and Gemini. Provider keys remain on the server. The `.env` file is ignored by Git. Restart the server after changing `.env`.
 
-The AI action is optional; ordinary typing, saving, copying, and exporting do not send prompts to a provider. The server listens only on `127.0.0.1`.
+AI and voice actions are optional; ordinary typing, saving, copying, and exporting do not send prompts or audio to a provider. The server listens only on `127.0.0.1`.
 
 ## Versioning
 

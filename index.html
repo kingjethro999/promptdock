@@ -54,7 +54,11 @@
             <h2 id="ideaHeading">What is your idea?</h2>
             <p>Write it naturally. A sentence, a messy thought, or a full brief all work.</p>
             <label class="sr-only" for="ideaInput">Describe your idea</label>
-            <textarea id="ideaInput" maxlength="6000" rows="5" placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."></textarea>
+            <div class="idea-input-wrap">
+              <textarea id="ideaInput" maxlength="6000" rows="5" placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."></textarea>
+              <div class="voice-controls"><button id="micButton" class="mic-button" type="button" aria-label="Record idea" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 17v5m-4 0h8"></path></svg><span id="micButtonLabel">Record idea</span></button><button id="voiceCancelButton" class="voice-cancel hidden" type="button">Cancel</button></div>
+            </div>
+            <div class="voice-status" id="voiceStatus" role="status">Speak your idea. Audio is sent for transcription only when you choose Stop &amp; send.</div>
             <div class="idea-examples"><span>TRY AN EXAMPLE</span><button type="button" class="idea-example" data-example="I want to start a small online business selling handmade skincare, but I do not know where to begin.">Start a business</button><button type="button" class="idea-example" data-example="I have an idea for an app that helps people plan meals from ingredients they already have. Help me think it through.">Plan an app</button></div>
             <div class="idea-footer"><button id="ideaGenerateButton" type="button" class="primary-button idea-generate" disabled><span>✦</span> Turn idea into prompt <span class="button-arrow">↗</span></button><span id="ideaStatus" role="status">Add your idea to begin</span></div>
           </section>
@@ -102,7 +106,7 @@
   </div>
 
   <dialog id="saveDialog" class="app-dialog"><form method="dialog" id="saveForm"><button class="dialog-close" value="cancel" aria-label="Close">×</button><span class="dialog-icon">♡</span><h2>Save this prompt</h2><p>Give it a name so it is easy to find later.</p><label for="promptName">Prompt name</label><input id="promptName" type="text" maxlength="80" required placeholder="e.g. Weekly content ideas"><div class="dialog-actions"><button class="secondary-button" value="cancel" type="button" id="cancelSave">Cancel</button><button class="primary-button" value="save" type="submit">Save prompt</button></div></form></dialog>
-  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Saved prompts live in this browser only.</li><li>“Turn idea into prompt” and “Enhance with AI” send your writing to the configured AI provider.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
+  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Use the mic to record. Stop &amp; send transcribes your speech with Groq, then turns the transcript into a prompt.</li><li>Saved prompts live in this browser only. Voice audio is sent to Groq only after Stop &amp; send.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

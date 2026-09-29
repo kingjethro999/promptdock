@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { configuredProviders, enhanceWithAI, ideaToPrompt } = require('./ai');
+const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
 const { version } = require('./package.json');
 
 const root = __dirname;
@@ -31,17 +32,44 @@ async function readBody(request) {
   catch { throw new Error('Invalid JSON.'); }
 }
 
+async function readAudio(request) {
+  if (Number(request.headers['content-length']) > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 10 MB.');
+  const chunks = [];
+  let bytes = 0;
+  for await (const chunk of request) {
+    bytes += chunk.length;
+    if (bytes > MAX_AUDIO_BYTES) throw new Error('Recording is too large. Keep it under 10 MB.');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function validOrigin(request) {
+  const origin = request.headers.origin;
+  return !origin || [`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(origin);
+}
+
 http.createServer(async (request, response) => {
   let pathname;
   try { pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname); }
   catch { response.writeHead(400).end('Bad request'); return; }
   if (pathname === '/api/status' && request.method === 'GET') {
-    json(response, 200, { aiAvailable: configuredProviders().length > 0, version: `v${version}` });
+    json(response, 200, { aiAvailable: configuredProviders().length > 0, voiceAvailable: Boolean(process.env.GROQ_API_KEY), version: `v${version}` });
+    return;
+  }
+  if (pathname === '/api/transcribe' && request.method === 'POST') {
+    if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    try { json(response, 200, { text: await transcribeAudio(await readAudio(request), request.headers['content-type']) }); }
+    catch (error) {
+      const message = error.message;
+      const status = message.startsWith('Recording is too large') ? 413
+        : ['This audio format is not supported.', 'Recording is too short. Try speaking again.'].includes(message) ? 400 : 503;
+      json(response, status, { error: message });
+    }
     return;
   }
   if (['/api/enhance', '/api/idea-to-prompt'].includes(pathname) && request.method === 'POST') {
-    const origin = request.headers.origin;
-    if (origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(origin)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
     try {
       const body = await readBody(request);

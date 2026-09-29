@@ -73,3 +73,19 @@
 .form-tools{display:flex;justify-content:flex-end;margin:-8px 0 7px}
 @media(max-width:760px){.idea-card{padding:24px 20px}.interpretation-card{padding:22px 20px}.composer-card.is-collapsed{padding:19px 20px}}
 @media(max-width:520px){.idea-card h2{font-size:21px}.idea-footer{align-items:stretch;flex-direction:column;gap:8px}.idea-generate{width:100%}.idea-step{font-size:8px}.interpretation-heading{align-items:center}}
+
+.idea-input-wrap{position:relative}
+.idea-input-wrap textarea{padding-bottom:62px}
+.voice-controls{position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:7px}
+.mic-button,.voice-cancel{height:34px;border-radius:8px;font-size:10px;font-weight:800}
+.mic-button{display:inline-flex;align-items:center;gap:7px;padding:0 11px;border:1px solid #d0e1c7;background:#f3f9ec;color:#4b7d49}
+.mic-button:hover:not(:disabled){background:#e5f3da;border-color:#94bd76}
+.mic-button:disabled{opacity:.55;cursor:not-allowed}
+.mic-button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mic-button.recording{background:#fff1ee;border-color:#f1b6a9;color:#b64431}
+.mic-button.recording svg{animation:voice-pulse 1s ease-in-out infinite}
+.mic-button.processing{background:#eaf2e3;color:#71856f}
+.voice-cancel{border:1px solid #d9e3d2;background:white;color:#697f69;padding:0 10px}
+.voice-cancel:hover{background:#f6f8f3}
+.voice-status{min-height:16px;margin-top:8px;color:#82977d;font-size:10px;line-height:1.5}
+@keyframes voice-pulse{50%{transform:scale(1.16);opacity:.65}}

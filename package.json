@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "A local-first prompt workspace for everyday AI tools",
   "scripts": {

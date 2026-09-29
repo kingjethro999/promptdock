@@ -22,6 +22,16 @@ let toastTimer;
 let aiAvailable = false;
 let aiBusy = false;
 let currentAnalysis = null;
+let voiceAvailable = false;
+let voiceState = 'idle';
+let voiceRecorder = null;
+let voiceStream = null;
+let voiceChunks = [];
+let voiceCancelled = false;
+let voiceStartedAt = 0;
+let voiceTimer = null;
+let voiceRequestId = 0;
+let voiceCancelReason = '';
 
 function readJSON(key, fallback) {
   try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; }
@@ -115,12 +125,124 @@ function renderApproach() {
 }
 
 function updateIdeaButton() {
-  $('ideaGenerateButton').disabled = !aiAvailable || aiBusy || $('ideaInput').value.trim().length < 4;
+  $('ideaGenerateButton').disabled = !aiAvailable || aiBusy || voiceState !== 'idle' || $('ideaInput').value.trim().length < 4;
+  updateVoiceControls();
+}
+
+function updateVoiceControls() {
+  const button = $('micButton');
+  button.classList.toggle('recording', voiceState === 'recording');
+  button.classList.toggle('processing', voiceState === 'transcribing' || voiceState === 'requesting');
+  $('voiceCancelButton').classList.toggle('hidden', voiceState !== 'recording');
+  if (voiceState === 'recording') {
+    const seconds = Math.floor((Date.now() - voiceStartedAt) / 1000);
+    const label = `Stop & send ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    $('micButtonLabel').textContent = label;
+    button.setAttribute('aria-label', label);
+    button.disabled = false;
+  } else if (voiceState === 'transcribing' || voiceState === 'requesting') {
+    const label = voiceState === 'requesting' ? 'Allow mic…' : 'Transcribing…';
+    $('micButtonLabel').textContent = label;
+    button.setAttribute('aria-label', label);
+    button.disabled = true;
+  } else {
+    $('micButtonLabel').textContent = 'Record idea';
+    button.setAttribute('aria-label', 'Record idea');
+    button.disabled = !voiceAvailable || aiBusy || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined';
+  }
+}
+
+function stopVoiceTracks() {
+  if (voiceTimer) clearInterval(voiceTimer);
+  voiceTimer = null;
+  voiceStream?.getTracks().forEach(track => track.stop());
+  voiceStream = null;
+}
+
+async function finishVoiceRecording(mimeType) {
+  stopVoiceTracks();
+  const cancelled = voiceCancelled;
+  const audio = new Blob(voiceChunks, { type: mimeType || voiceChunks[0]?.type || 'audio/webm' });
+  voiceRecorder = null;
+  voiceChunks = [];
+  if (cancelled) { voiceState = 'idle'; $('voiceStatus').textContent = voiceCancelReason || 'Recording discarded.'; updateIdeaButton(); return; }
+  voiceState = 'transcribing'; updateIdeaButton();
+  $('voiceStatus').textContent = 'Transcribing your idea…';
+  try {
+    const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': audio.type }, body: audio });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not transcribe the recording.');
+    const transcript = result.text?.trim();
+    if (!transcript) throw new Error('No speech was detected. Try speaking again.');
+    const existing = $('ideaInput').value.trim();
+    const combined = existing ? `${existing}\n${transcript}` : transcript;
+    if (combined.length > 6000) throw new Error('The combined idea is too long. Shorten it and try again.');
+    $('ideaInput').value = combined;
+    $('ideaInput').dispatchEvent(new Event('input'));
+    voiceState = 'idle'; updateIdeaButton();
+    $('voiceStatus').textContent = 'Transcribed. Sending your idea to AI…';
+    const sent = await generateIdeaPrompt();
+    $('voiceStatus').textContent = sent ? 'Voice idea transcribed and sent.' : 'Transcript added. Use Turn idea into prompt to try again.';
+  } catch (error) {
+    voiceState = 'idle'; updateIdeaButton();
+    $('voiceStatus').textContent = error.message || 'Voice recording could not be sent.';
+    showToast($('voiceStatus').textContent);
+  }
+}
+
+async function startVoiceRecording() {
+  if (voiceState !== 'idle' || aiBusy || !voiceAvailable) return;
+  const requestId = ++voiceRequestId;
+  voiceState = 'requesting';
+  $('voiceStatus').textContent = 'Waiting for microphone permission…';
+  updateIdeaButton();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    if (requestId !== voiceRequestId) { stream.getTracks().forEach(track => track.stop()); return; }
+    voiceStream = stream;
+    const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(type => MediaRecorder.isTypeSupported?.(type));
+    voiceRecorder = new MediaRecorder(voiceStream, mimeType ? { mimeType } : undefined);
+    voiceChunks = [];
+    voiceCancelled = false;
+    voiceCancelReason = '';
+    voiceRecorder.addEventListener('dataavailable', event => { if (event.data?.size) voiceChunks.push(event.data); });
+    voiceRecorder.addEventListener('stop', () => { finishVoiceRecording(voiceRecorder?.mimeType || mimeType); }, { once: true });
+    voiceRecorder.addEventListener('error', () => { voiceCancelReason = 'Recording failed. Try again.'; stopVoiceRecording(false); });
+    voiceRecorder.start();
+    voiceState = 'recording';
+    voiceStartedAt = Date.now();
+    voiceTimer = setInterval(() => {
+      updateVoiceControls();
+      if (Date.now() - voiceStartedAt >= 120000) {
+        voiceCancelReason = 'Two-minute limit reached. Recording discarded; try a shorter idea.';
+        stopVoiceRecording(false);
+      }
+    }, 500);
+    $('voiceStatus').textContent = 'Recording. Choose Stop & send to transcribe, or Cancel to discard.';
+    updateIdeaButton();
+  } catch (error) {
+    if (requestId !== voiceRequestId) return;
+    stopVoiceTracks(); voiceRecorder = null; voiceState = 'idle'; updateIdeaButton();
+    $('voiceStatus').textContent = error.name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser settings.' : 'Microphone is unavailable. Try typing your idea.';
+    showToast($('voiceStatus').textContent);
+  }
+}
+
+function stopVoiceRecording(send) {
+  if (voiceState !== 'recording' || !voiceRecorder) return;
+  voiceCancelled = !send;
+  voiceState = 'transcribing';
+  if (!send) $('voiceStatus').textContent = 'Discarding recording…';
+  else $('voiceStatus').textContent = 'Finishing recording…';
+  updateIdeaButton();
+  try { voiceRecorder.stop(); }
+  catch { voiceCancelled = true; stopVoiceTracks(); voiceRecorder = null; voiceState = 'idle'; $('voiceStatus').textContent = 'Recording stopped unexpectedly. Try again.'; updateIdeaButton(); }
+  if (!send) stopVoiceTracks();
 }
 
 async function generateIdeaPrompt() {
   const idea = $('ideaInput').value.trim();
-  if (!aiAvailable || aiBusy || idea.length < 4) return;
+  if (!aiAvailable || aiBusy || voiceState !== 'idle' || idea.length < 4) return false;
   aiBusy = true;
   $('ideaGenerateButton').classList.add('busy');
   $('ideaStatus').textContent = 'Reading your idea and shaping the prompt…';
@@ -129,16 +251,18 @@ async function generateIdeaPrompt() {
     const response = await fetch('/api/idea-to-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idea }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not turn this idea into a prompt.');
-    if (idea !== $('ideaInput').value.trim()) { $('ideaStatus').textContent = 'Your idea changed. Run it again when ready.'; return; }
+    if (idea !== $('ideaInput').value.trim()) { $('ideaStatus').textContent = 'Your idea changed. Run it again when ready.'; return false; }
     currentId = null;
     currentAnalysis = { ...result.interpretation, originalDepth: result.data.depth };
     setForm(result.data);
     renderInterpretation(currentAnalysis);
     $('ideaStatus').textContent = 'Prompt ready. Review its direction and edit any detail.';
     showToast(`Idea shaped with ${result.provider}. Review the prompt before using it.`);
+    return true;
   } catch (error) {
     $('ideaStatus').textContent = error.message || 'Could not turn this idea into a prompt.';
     showToast($('ideaStatus').textContent);
+    return false;
   } finally {
     aiBusy = false;
     $('ideaGenerateButton').classList.remove('busy');
@@ -152,10 +276,14 @@ async function loadAiStatus() {
     if (!response.ok) throw new Error('Unavailable');
     const status = await response.json();
     aiAvailable = status.aiAvailable;
+    voiceAvailable = status.voiceAvailable;
     if (status.version) $('appVersion').textContent = status.version;
     $('aiStatus').textContent = aiAvailable ? 'Sends this draft to your configured AI provider' : 'Add an API key to .env to enable AI suggestions';
     $('ideaStatus').textContent = aiAvailable ? ($('ideaInput').value.trim() ? 'Ready to turn this idea into a prompt' : 'Add your idea to begin') : 'Add an API key to .env to use AI';
-  } catch { $('aiStatus').textContent = 'AI suggestions are unavailable'; $('ideaStatus').textContent = 'AI is unavailable. Use the manual editor below.'; }
+    $('voiceStatus').textContent = !voiceAvailable ? 'Add GROQ_API_KEY to .env to enable voice.'
+      : !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined' ? 'This browser cannot record audio here. Try typing your idea.'
+      : 'Speak your idea. Audio goes to Groq only after Stop & send.';
+  } catch { $('aiStatus').textContent = 'AI suggestions are unavailable'; $('ideaStatus').textContent = 'AI is unavailable. Use the manual editor below.'; $('voiceStatus').textContent = 'Voice is unavailable right now.'; }
   updateIdeaButton();
   updatePreview();
 }
@@ -297,6 +425,10 @@ function renderLibrary() {
 }
 
 function switchView(view) {
+  if (view !== 'builder') {
+    if (voiceState === 'recording') { voiceCancelReason = 'Recording discarded when leaving the idea page.'; stopVoiceRecording(false); }
+    else if (voiceState === 'requesting') { voiceRequestId++; voiceState = 'idle'; $('voiceStatus').textContent = 'Recording cancelled.'; updateIdeaButton(); }
+  }
   $('builderView').classList.toggle('hidden', view !== 'builder');
   $('libraryView').classList.toggle('hidden', view !== 'library');
   $('breadcrumbCurrent').textContent = view === 'builder' ? 'Idea to prompt' : 'My library';
@@ -321,6 +453,8 @@ fields.forEach(field => elements[field].addEventListener(Object.hasOwn(selectOpt
 $('toggleComposer').addEventListener('click', () => setComposerExpanded($('promptForm').classList.contains('collapsed')));
 $('ideaInput').addEventListener('input', () => { if (currentAnalysis) { currentAnalysis = null; renderInterpretation(null); } persistDraft(); updateIdeaButton(); $('ideaStatus').textContent = aiAvailable ? 'Ready to turn this idea into a prompt' : 'Add an API key to .env to use AI'; });
 $('ideaGenerateButton').addEventListener('click', generateIdeaPrompt);
+$('micButton').addEventListener('click', () => { if (voiceState === 'recording') stopVoiceRecording(true); else startVoiceRecording(); });
+$('voiceCancelButton').addEventListener('click', () => stopVoiceRecording(false));
 document.querySelectorAll('.idea-example').forEach(button => button.addEventListener('click', () => { $('ideaInput').value = button.dataset.example; $('ideaInput').dispatchEvent(new Event('input')); $('ideaInput').focus(); }));
 $('enhanceButton').addEventListener('click', enhancePrompt);
 $('promptForm').addEventListener('submit', event => event.preventDefault());
@@ -337,6 +471,7 @@ $('helpButton').addEventListener('click', () => $('helpDialog').showModal());
 $('closeHelp').addEventListener('click', () => $('helpDialog').close());
 $('gotItButton').addEventListener('click', () => $('helpDialog').close());
 $('menuButton').addEventListener('click', () => { const open = $('sidebar').classList.toggle('open'); $('menuButton').setAttribute('aria-expanded', String(open)); });
+window.addEventListener('pagehide', () => { voiceRequestId++; if (voiceState === 'recording') stopVoiceRecording(false); else stopVoiceTracks(); });
 document.querySelectorAll('.platform-card').forEach(card => card.addEventListener('click', async () => {
   const url = platformUrls[card.dataset.platform];
   const tab = window.open('about:blank', '_blank');
