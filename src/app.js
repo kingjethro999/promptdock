@@ -38,6 +38,11 @@ let voiceCancelReason = '';
 let databaseAvailable = false;
 let currentUser = null;
 let accountPrompts = [];
+let libraryTotal = 0;
+let searchResults = [];
+let searchTotal = 0;
+let searchRequest = 0;
+let searchTimer;
 let authMode = 'login';
 let pendingSave = false;
 let resetToken = null;
@@ -77,6 +82,15 @@ function getSaved() {
   const saved = readJSON(STORAGE_KEY, []);
   return Array.isArray(saved) ? saved : [];
 }
+function findPrompt(id) { return getSaved().find(item => item.id === id) || searchResults.find(item => item.id === id); }
+async function fetchLibraryPage(q = '', offset = 0) {
+  const params = new URLSearchParams({ offset: String(offset) });
+  if (q) params.set('q', q);
+  const response = await libraryFetch(`/api/prompts?${params}`);
+  const result = await readApiJson(response);
+  if (!response.ok) throw new Error(result.error || 'Could not load saved prompts.');
+  return result;
+}
 function setSaved(items) {
   if (currentUser) accountPrompts = items;
   else localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -91,9 +105,9 @@ async function loadRemoteLibrary() {
       const imported = await libraryFetch('/api/auth/import-legacy', { method: 'POST', headers: { 'X-Workspace-Token': legacyToken } });
       if (!imported.ok) throw new Error('Could not import your old workspace.');
     }
-    const response = await libraryFetch('/api/prompts');
-    if (!response.ok) throw new Error('Could not load saved prompts.');
-    const remote = (await response.json()).prompts;
+    const page = await fetchLibraryPage();
+    libraryTotal = page.total;
+    const remote = page.prompts;
     const remoteIds = new Set(remote.map(item => item.id));
     for (const item of (Array.isArray(legacyPrompts) ? legacyPrompts : []).filter(item => !remoteIds.has(item.id))) {
       const saved = await libraryFetch('/api/prompts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
@@ -503,6 +517,7 @@ async function submitAuth(event) {
     if (pendingSave) {
       pendingSave = false;
       $('promptName').value = suggestedPromptName();
+      $('promptTags').value = '';
       $('saveDialog').showModal();
       $('promptName').focus();
     }
@@ -632,13 +647,13 @@ async function copyPrompt() {
   } catch { showToast('Copy unavailable. Select the preview text to copy it.'); return false; }
 }
 
-async function savePrompt(name) {
+async function savePrompt(name, tags = []) {
   if (databaseAvailable && !currentUser) { pendingSave = true; openAuth(); return; }
   const data = dataFromForm();
   if (!data.task) return;
   const saved = getSaved();
-  const existing = currentId ? saved.find(item => item.id === currentId) : null;
-  const item = { id: existing?.id || crypto.randomUUID(), name: name.trim(), data, idea: $('ideaInput').value.trim(), analysis: currentAnalysis, updatedAt: new Date().toISOString() };
+  const existing = currentId ? findPrompt(currentId) : null;
+  const item = { id: existing?.id || crypto.randomUUID(), name: name.trim(), data, idea: $('ideaInput').value.trim(), analysis: currentAnalysis, tags, updatedAt: new Date().toISOString() };
   const next = [item, ...saved.filter(entry => entry.id !== item.id)];
   try {
     if (databaseAvailable && currentUser) {
@@ -647,6 +662,8 @@ async function savePrompt(name) {
       if (!response.ok) throw new Error(result.error || 'Could not save to the database.');
       Object.assign(item, result.prompt);
     }
+    if (currentUser && !existing) libraryTotal++;
+    if ($('librarySearch').value) { $('librarySearch').value = ''; searchResults = []; searchRequest++; }
     setSaved(next); currentId = item.id; showToast(existing ? 'Prompt updated in your library.' : 'Prompt saved to your library.');
   } catch (error) { showToast(error.message || 'Storage is unavailable. Download the prompt instead.'); }
 }
@@ -671,6 +688,8 @@ async function publishPrompt(item, published) {
   const saved = getSaved();
   const current = saved.find(prompt => prompt.id === item.id);
   if (current) Object.assign(current, result.prompt);
+  const searched = searchResults.find(prompt => prompt.id === item.id);
+  if (searched) Object.assign(searched, result.prompt);
   setSaved([...saved]);
   return result.prompt;
 }
@@ -693,9 +712,11 @@ async function openShare(item) {
 function renderLibrary() {
   const saved = getSaved();
   const query = $('librarySearch').value.toLowerCase().trim();
-  const filtered = saved.filter(item => `${item.name} ${item.idea || ''} ${Object.values(item.data).join(' ')}`.toLowerCase().includes(query));
-  $('libraryCount').textContent = saved.length;
-  $('librarySummary').textContent = `${saved.length} saved prompt${saved.length === 1 ? '' : 's'}`;
+  const filtered = currentUser ? (query ? searchResults : saved) : saved.filter(item => `${item.name} ${item.idea || ''} ${Object.values(item.data).join(' ')} ${(item.tags || []).join(' ')}`.toLowerCase().includes(query));
+  const total = currentUser ? (query ? searchTotal : libraryTotal) : filtered.length;
+  $('libraryCount').textContent = currentUser ? libraryTotal : saved.length;
+  $('librarySummary').textContent = `${total} ${query ? 'matching' : 'saved'} prompt${total === 1 ? '' : 's'}`;
+  $('libraryLoadMore').classList.toggle('hidden', !currentUser || filtered.length >= total);
   const grid = $('libraryGrid'); grid.replaceChildren();
   if (!filtered.length) {
     const empty = document.createElement('div'); empty.className = 'empty-state';
@@ -716,6 +737,7 @@ function renderLibrary() {
           if (!response.ok) throw new Error('Could not delete this prompt.');
         } catch { showToast('Could not delete this prompt. Try again.'); return; }
       }
+      if (currentUser) { libraryTotal = Math.max(0, libraryTotal - 1); searchTotal = Math.max(0, searchTotal - 1); searchResults = searchResults.filter(entry => entry.id !== item.id); }
       setSaved(getSaved().filter(entry => entry.id !== item.id));
       if (currentId === item.id) currentId = null;
       showToast('Prompt deleted.');
@@ -731,7 +753,9 @@ function renderLibrary() {
     const footer = document.createElement('div'); footer.className = 'library-card-footer';
     const date = document.createElement('span'); date.textContent = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; currentAnalysis = item.analysis || null; $('ideaInput').value = item.idea || ''; setForm(item.data); renderInterpretation(currentAnalysis); updateIdeaButton(); switchView('builder'); });
-    footer.append(date, open); card.append(top, title, summary, sharing, footer); grid.append(card);
+    const tags = document.createElement('div'); tags.className = 'prompt-tags';
+    for (const tag of item.tags || []) { const badge = document.createElement('span'); badge.textContent = tag; tags.append(badge); }
+    footer.append(date, open); card.append(top, title, summary, tags, sharing, footer); grid.append(card);
   }
 }
 
@@ -773,7 +797,34 @@ document.querySelectorAll('.idea-example').forEach(button => button.addEventList
 $('enhanceButton').addEventListener('click', enhancePrompt);
 $('promptForm').addEventListener('submit', event => event.preventDefault());
 document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => switchView(item.dataset.view)));
-$('librarySearch').addEventListener('input', renderLibrary);
+$('librarySearch').addEventListener('input', () => {
+  if (!currentUser) { renderLibrary(); return; }
+  clearTimeout(searchTimer);
+  const requestId = ++searchRequest;
+  const q = $('librarySearch').value.trim();
+  if (!q) { searchResults = []; renderLibrary(); return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const page = await fetchLibraryPage(q);
+      if (requestId !== searchRequest) return;
+      searchResults = page.prompts; searchTotal = page.total; renderLibrary();
+    } catch (error) { if (requestId === searchRequest) showToast(error.message); }
+  }, 250);
+});
+$('libraryLoadMore').addEventListener('click', async () => {
+  const button = $('libraryLoadMore'); button.disabled = true;
+  const q = $('librarySearch').value.trim();
+  const requestId = searchRequest;
+  try {
+    const items = q ? searchResults : accountPrompts;
+    const page = await fetchLibraryPage(q, items.length);
+    if (requestId !== searchRequest) return;
+    if (q) { searchResults.push(...page.prompts); searchTotal = page.total; }
+    else { accountPrompts.push(...page.prompts); libraryTotal = page.total; }
+    renderLibrary();
+  } catch (error) { showToast(error.message); }
+  finally { button.disabled = false; }
+});
 $('clearButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; elements.task.focus(); showToast('Prompt cleared.'); });
 $('newPromptButton').addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm({}); renderInterpretation(null); setComposerExpanded(false); updateIdeaButton(); $('ideaStatus').textContent = 'Add your idea to begin'; switchView('builder'); $('ideaInput').focus(); });
 $('copyButton').addEventListener('click', copyPrompt);
@@ -781,7 +832,9 @@ $('downloadButton').addEventListener('click', downloadPrompt);
 $('saveButton').addEventListener('click', () => {
   if (!elements.task.value.trim()) return;
   if (databaseAvailable && !currentUser) { pendingSave = true; openAuth(); return; }
-  $('promptName').value = getSaved().find(item => item.id === currentId)?.name || suggestedPromptName();
+  const existing = findPrompt(currentId);
+  $('promptName').value = existing?.name || suggestedPromptName();
+  $('promptTags').value = (existing?.tags || []).join(', ');
   $('saveDialog').showModal(); $('promptName').focus();
 });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
@@ -799,7 +852,7 @@ $('unpublishPrompt').addEventListener('click', async () => {
   try { await publishPrompt(item, false); $('shareDialog').close(); showToast('Prompt is private. The old link no longer works.'); }
   catch (error) { $('shareFeedback').textContent = error.message || 'Could not make this prompt private.'; }
 });
-$('saveForm').addEventListener('submit', async event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; await savePrompt(name); $('saveDialog').close(); });
+$('saveForm').addEventListener('submit', async event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; const tags = [...new Set($('promptTags').value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean))]; if (tags.length > 8 || tags.some(tag => tag.length > 24 || !/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(tag))) { showToast('Use up to 8 tags, each 1–24 letters or numbers.'); return; } await savePrompt(name, tags); $('saveDialog').close(); });
 $('accountButton').addEventListener('click', () => switchView('settings'));
 $('authForm').addEventListener('submit', submitAuth);
 $('authToggle').addEventListener('click', () => openAuth(authMode === 'login' ? 'register' : 'login'));

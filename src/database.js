@@ -74,24 +74,37 @@ function validatePrompt(item) {
   const idea = typeof item.idea === 'string' ? item.idea.slice(0, 6000) : '';
   const analysis = item.analysis && typeof item.analysis === 'object' && !Array.isArray(item.analysis) ? item.analysis : null;
   if (analysis && JSON.stringify(analysis).length > 12000) throw new Error('Analysis is too long.');
-  return { id: item.id, name, data: item.data, idea, analysis };
+  if (item.tags != null && !Array.isArray(item.tags)) throw new Error('Tags must be a list.');
+  const tags = [...new Set((item.tags || []).map(tag => typeof tag === 'string' ? tag.trim().toLowerCase() : ''))];
+  if (tags.length > 8 || tags.some(tag => !tag || tag.length > 24 || !/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(tag))) throw new Error('Use up to 8 tags, each 1–24 letters or numbers.');
+  return { id: item.id, name, data: item.data, idea, analysis, tags };
 }
 
-async function listPrompts(key) {
+async function listPrompts(key, options = {}) {
+  const q = String(options.q || '').trim();
+  if (q.length > 100) throw new Error('Search is too long.');
+  const offset = Number(options.offset || 0);
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000) throw new Error('Invalid offset.');
   await ensureSchema();
-  const result = await pool.query('SELECT id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC LIMIT 500', [key]);
-  return result.rows;
+  const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
+  const where = `owner_key = $1 AND ($2 = '' OR name ILIKE $3 ESCAPE '\\' OR idea ILIKE $3 ESCAPE '\\' OR data->>'task' ILIKE $3 ESCAPE '\\' OR EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE $3 ESCAPE '\\'))`;
+  const params = [key, q, pattern];
+  const [result, count] = await Promise.all([
+    pool.query(`SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY updated_at DESC LIMIT 100 OFFSET $4`, [...params, offset]),
+    pool.query(`SELECT count(*)::int AS total FROM prompts WHERE ${where}`, params)
+  ]);
+  return { prompts: result.rows, total: count.rows[0].total };
 }
 
 async function putPrompt(key, input) {
   const item = validatePrompt(input);
   await ensureSchema();
-  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis)
-    VALUES ($1, $2, $3, $4, $5, $6)
+  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     ON CONFLICT (owner_key, id) DO UPDATE SET name = EXCLUDED.name, data = EXCLUDED.data,
-      idea = EXCLUDED.idea, analysis = EXCLUDED.analysis, updated_at = now()
-    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
-  [key, item.id, item.name, item.data, item.idea, item.analysis]);
+      idea = EXCLUDED.idea, analysis = EXCLUDED.analysis, tags = EXCLUDED.tags, updated_at = now()
+    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+  [key, item.id, item.name, item.data, item.idea, item.analysis, item.tags]);
   return result.rows[0];
 }
 
@@ -109,7 +122,7 @@ async function setPromptPublic(key, id, published) {
   const result = await pool.query(`UPDATE prompts SET public_id = CASE WHEN $3 THEN COALESCE(public_id, $4::uuid) ELSE NULL END,
     published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END
     WHERE owner_key = $1 AND id = $2
-    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
   [key, id, published, randomUUID()]);
   return result.rows[0] || null;
 }
@@ -125,10 +138,10 @@ async function getPublicPrompt(publicId) {
 async function forkPublicPrompt(key, publicId) {
   if (!validUuid(publicId)) return null;
   await ensureSchema();
-  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, forked_from)
-    SELECT $1, $2, name, data, public_id FROM prompts WHERE public_id = $3
+  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, tags, forked_from)
+    SELECT $1, $2, name, data, tags, public_id FROM prompts WHERE public_id = $3
     ON CONFLICT (owner_key, forked_from) WHERE forked_from IS NOT NULL DO UPDATE SET name = prompts.name
-    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
   [key, randomUUID(), publicId]);
   return result.rows[0] || null;
 }

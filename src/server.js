@@ -90,8 +90,9 @@ async function serveSharedPage(request, response, publicId) {
 async function handleRequest(request, response) {
   for (const [name, value] of Object.entries(securityHeaders)) response.setHeader(name, value);
   let pathname;
+  let url;
   try {
-    const url = new URL(request.url, 'http://localhost');
+    url = new URL(request.url, 'http://localhost');
     const route = url.searchParams.get('route');
     pathname = route ? `/api/${route}` : decodeURIComponent(url.pathname);
   }
@@ -214,7 +215,7 @@ async function handleRequest(request, response) {
       const user = await auth.currentUser(request);
       if (!user) { json(response, 401, { error: 'Sign in to sync your library.' }); return; }
       const key = database.accountKey(user.id);
-      if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, { prompts: await database.listPrompts(key) });
+      if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, await database.listPrompts(key, { q: url.searchParams.get('q'), offset: url.searchParams.get('offset') }));
       else if (pathname === '/api/prompts' && request.method === 'PUT') json(response, 200, { prompt: await database.putPrompt(key, await readBody(request)) });
       else if (pathname.startsWith('/api/prompts/') && request.method === 'DELETE') {
         await database.deletePrompt(key, pathname.slice('/api/prompts/'.length)); json(response, 200, { ok: true });

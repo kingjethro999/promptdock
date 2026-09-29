@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeDatabaseUrl } = require('../src/database');
+const { normalizeDatabaseUrl, validatePrompt } = require('../src/database');
 
 test('Render external database URLs verify TLS without changing local URLs', () => {
   const external = normalizeDatabaseUrl('postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock');
@@ -11,4 +11,11 @@ test('Render external database URLs verify TLS without changing local URLs', () 
   assert.equal(normalizeDatabaseUrl(explicit), explicit);
   const local = 'postgresql://user:example@localhost:5434/promptdock';
   assert.equal(normalizeDatabaseUrl(local), local);
+});
+
+test('prompt tags are normalized and bounded', () => {
+  const item = { id: '123e4567-e89b-42d3-a456-426614174000', name: 'Build a game', data: { task: 'Build a game' }, tags: ['Game', ' game ', 'Story'] };
+  assert.deepEqual(validatePrompt(item).tags, ['game', 'story']);
+  assert.throws(() => validatePrompt({ ...item, tags: ['bad/tag'] }), /tags/);
+  assert.throws(() => validatePrompt({ ...item, tags: Array.from({ length: 9 }, (_, i) => `tag${i}`) }), /tags/);
 });

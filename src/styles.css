@@ -97,3 +97,4 @@
 @media(max-width:520px){.account-trigger{max-width:125px}}
 /* Keep navigation reachable on short screens and when templates grow. */
 .sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#58745d #172923}
+.prompt-tags{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 14px}.prompt-tags:empty{display:none}.prompt-tags span{padding:4px 8px;border-radius:20px;background:#edf5e5;color:#4d7750;font-size:10px;font-weight:700}.library-load-more{display:block;margin:24px auto 0;padding:0 20px}.app-dialog small{display:block;margin-top:6px;color:#8b9c8d;font-size:11px}
