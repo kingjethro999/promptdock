@@ -8,6 +8,7 @@
   <title>PromptDock — Your AI prompt workspace</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/config.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -30,8 +31,8 @@
 
       <div class="sidebar-bottom">
         <div class="tip-card"><span class="tip-icon">✦</span><strong>Better input. Better output.</strong><p>Give your AI a clear job, context, and a format to follow.</p></div>
-        <div class="privacy-note"><span class="status-dot"></span> Saved prompts stay in this browser</div>
-        <div class="sidebar-version">PromptDock <span id="appVersion">v0.0.1</span></div>
+        <div class="privacy-note"><span class="status-dot"></span> <span id="privacyNote">Saved prompts stay in this browser</span></div>
+        <div class="sidebar-version">PromptDock <span id="appVersion">Loading…</span></div>
       </div>
     </aside>
 
@@ -39,7 +40,7 @@
       <header class="topbar">
         <button class="mobile-menu icon-button" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
         <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-chevron">›</span><strong id="breadcrumbCurrent">Idea to prompt</strong></div>
-        <div class="top-actions"><span class="local-pill"><span class="status-dot"></span> Local workspace</span><button class="help-button" id="helpButton" aria-label="How PromptDock works">?</button></div>
+        <div class="top-actions"><span class="local-pill"><span class="status-dot"></span> My workspace</span><button class="help-button" id="helpButton" aria-label="How PromptDock works">?</button></div>
       </header>
 
       <section class="builder-view" id="builderView">
@@ -106,7 +107,7 @@
   </div>
 
   <dialog id="saveDialog" class="app-dialog"><form method="dialog" id="saveForm"><button class="dialog-close" value="cancel" aria-label="Close">×</button><span class="dialog-icon">♡</span><h2>Save this prompt</h2><p>Give it a name so it is easy to find later.</p><label for="promptName">Prompt name</label><input id="promptName" type="text" maxlength="80" required placeholder="e.g. Weekly content ideas"><div class="dialog-actions"><button class="secondary-button" value="cancel" type="button" id="cancelSave">Cancel</button><button class="primary-button" value="save" type="submit">Save prompt</button></div></form></dialog>
-  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Use the mic to record. Stop &amp; send transcribes your speech with Groq, then turns the transcript into a prompt.</li><li>Saved prompts live in this browser only. Voice audio is sent to Groq only after Stop &amp; send.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
+  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Use the mic to record. Stop &amp; send transcribes your speech with Groq, then turns the transcript into a prompt.</li><li>Saved prompts stay in your browser or sync to your private workspace when connected. Voice audio is sent to Groq only after Stop &amp; send.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

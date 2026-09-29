@@ -3,9 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { configuredProviders, enhanceWithAI, ideaToPrompt } = require('./ai');
 const { MAX_AUDIO_BYTES, transcribeAudio } = require('./speech');
-const { version } = require('./package.json');
+const { version } = require('../package.json');
+const database = require('./database');
 
-const root = __dirname;
+const root = path.join(__dirname, '..', 'frontend', 'dist');
 const port = Number(process.env.PORT) || 3000;
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -13,7 +14,7 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml'
 };
-const publicFiles = new Set(['/index.html', '/styles.css', '/app.js', '/favicon.svg']);
+const publicFiles = new Set(['/index.html', '/styles.css', '/app.js', '/config.js', '/favicon.svg']);
 
 function json(response, status, body) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
@@ -46,15 +47,46 @@ async function readAudio(request) {
 
 function validOrigin(request) {
   const origin = request.headers.origin;
-  return !origin || [`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(origin);
+  const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, ...(process.env.FRONTEND_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean)];
+  return !origin || allowed.includes(origin);
 }
 
 http.createServer(async (request, response) => {
+  if (request.url?.startsWith('/api/') && request.headers.origin && validOrigin(request)) {
+    response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
+    response.setHeader('Vary', 'Origin');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Workspace-Token');
+  }
+  if (request.method === 'OPTIONS' && request.url?.startsWith('/api/')) {
+    response.writeHead(validOrigin(request) ? 204 : 403).end(); return;
+  }
   let pathname;
   try { pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname); }
   catch { response.writeHead(400).end('Bad request'); return; }
   if (pathname === '/api/status' && request.method === 'GET') {
-    json(response, 200, { aiAvailable: configuredProviders().length > 0, voiceAvailable: Boolean(process.env.GROQ_API_KEY), version: `v${version}` });
+    json(response, 200, { aiAvailable: configuredProviders().length > 0, voiceAvailable: Boolean(process.env.GROQ_API_KEY), databaseAvailable: database.configured, version: `v${version}` });
+    return;
+  }
+  if (pathname === '/api/health' && request.method === 'GET') {
+    try { if (database.pool) await database.pool.query('SELECT 1'); json(response, 200, { ok: true }); }
+    catch { json(response, 503, { ok: false }); }
+    return;
+  }
+  if (pathname === '/api/prompts' || pathname.startsWith('/api/prompts/')) {
+    if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    if (!database.configured) { json(response, 503, { error: 'Database is not configured.' }); return; }
+    try {
+      const key = database.ownerKey(request);
+      if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, { prompts: await database.listPrompts(key) });
+      else if (pathname === '/api/prompts' && request.method === 'PUT') json(response, 200, { prompt: await database.putPrompt(key, await readBody(request)) });
+      else if (pathname.startsWith('/api/prompts/') && request.method === 'DELETE') {
+        await database.deletePrompt(key, pathname.slice('/api/prompts/'.length)); json(response, 200, { ok: true });
+      } else json(response, 405, { error: 'Method not allowed.' });
+    } catch (error) {
+      const status = /required|Invalid|must be|too long|task/i.test(error.message) ? 400 : 503;
+      json(response, status, { error: status === 400 ? error.message : 'Database is unavailable.' });
+    }
     return;
   }
   if (pathname === '/api/transcribe' && request.method === 'POST') {
@@ -86,6 +118,7 @@ http.createServer(async (request, response) => {
     response.writeHead(405, { Allow: 'GET, HEAD' }).end('Method not allowed');
     return;
   }
+  if (process.env.SERVE_FRONTEND === 'false') { response.writeHead(404).end('Not found'); return; }
   if (pathname === '/') pathname = '/index.html';
   if (!publicFiles.has(pathname)) {
     response.writeHead(404).end('Not found');
@@ -104,4 +137,4 @@ http.createServer(async (request, response) => {
     });
     response.end(data);
   });
-}).listen(port, '127.0.0.1', () => console.log(`PromptDock is running at http://localhost:${port}`));
+}).listen(port, '0.0.0.0', () => console.log(`PromptDock API is running on port ${port}`));

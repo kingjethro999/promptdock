@@ -1,39 +1,44 @@
 # PromptDock
 
-A prompt workspace for ChatGPT, Claude, Gemini, and other AI tools. Start with a rough idea; PromptDock turns it into an editable prompt with a suggested flow, ranked priorities, and an answer depth. It also includes quick-start templates, a prompt quality guide, a searchable saved library, and Markdown export.
+Turn a rough idea or spoken note into a structured, editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes templates, a searchable prompt library, copy, and Markdown export.
 
-## Run
+## Project layout
 
-Requires Node.js 20.12 or newer. No dependencies are needed. The manual builder works without an API key.
+| Directory | Purpose |
+| --- | --- |
+| `frontend/` | Static browser app; `npm run build:frontend` writes `frontend/dist/` for Vercel. |
+| `backend/` | Node API for AI, transcription, and saved prompts; Dockerfile for Render. |
+| `database/` | PostgreSQL image, initialization schema, and local Compose setup. |
+
+The browser sends AI requests to the backend. The backend alone holds provider keys and connects to PostgreSQL. A database private service has no public web link; share the **backend web service URL** after deployment to connect the frontend.
+
+## Run locally
+
+Requires Node.js 20.12+ and Docker for database sync. Copy `.env.example` to `.env` and add at least one AI provider key for AI features. The manual builder works without a key.
 
 ```bash
+cp database/.env.example database/.env
+# Set a long POSTGRES_PASSWORD in database/.env.
+docker compose --env-file database/.env -f database/compose.yaml up -d --build
+# Copy the same password into the optional PG* values in the root .env (PGPORT=5434).
+npm ci
 npm start
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3000>. `npm start` builds the frontend with the current `VERSION` and starts the API, which serves it locally. Without a database connection, saved prompts stay in browser storage. When database sync is configured, existing prompts from that same browser origin are imported on first load and new saves go through the API. Each browser has a random workspace token stored locally; this is not an account system, so clearing browser storage loses access to that workspace. Keep the token private.
 
-Prompts and their original ideas are saved in your browser's local storage. The platform buttons copy your prompt and open the selected platform in a new tab. Paste the prompt there to use it.
+Choose **Record idea**, allow microphone access, speak, then **Stop & send**. PromptDock transcribes with Groq, adds the text to the idea box, and automatically generates a structured prompt. **Cancel** and the two-minute limit discard the recording. Audio is not stored in the prompt library. Microphone access requires localhost or HTTPS.
 
-## Idea to prompt
+## Deploy to Render and Vercel
 
-Write a plain-language idea in the main box and choose **Turn idea into prompt**. AI identifies the goal, chooses a suitable answer depth, maps the steps for multi-stage work, ranks the areas that deserve the most attention, and flags essential details that are still open. The flow, priorities, and depth instruction become part of the prompt you copy. Open **Fine-tune your prompt** to edit any field before saving or using it.
+1. In Render, create a Blueprint from this repository's `render.yaml`. It creates a private PostgreSQL Docker service with a persistent disk and a public backend Docker web service. A persistent disk requires a paid Render service. Set `GROQ_API_KEY` and any other provider keys on the backend. Set `FRONTEND_ORIGIN` to the exact Vercel site origin once known. The backend health check is `/api/health`.
+2. In Vercel, import the same repository. Keep the repository root as the project root; `vercel.json` builds only the static frontend. Set build environment variable `PUBLIC_API_URL` to the public Render backend origin, such as `https://promptdock-api.onrender.com` (no trailing path). Redeploy after changing it.
+3. Open the Vercel site and confirm its sidebar version, AI status, voice, and library. If the site and API cannot communicate, check that `FRONTEND_ORIGIN` exactly matches the site origin. For preview deployments, add those origins as a comma-separated list or use the production domain.
 
-You can also start from a template or build a prompt manually. Existing saved prompts remain usable.
+Render's database service is private and speaks PostgreSQL, so Vercel cannot connect directly to it. Do not put database credentials or AI keys in Vercel environment variables. Render's Docker PostgreSQL data requires the disk mounted at `/var/lib/postgresql/data`; the image uses `PGDATA=/var/lib/postgresql/data/pgdata`. The schema in `database/schema.sql` runs when the database volume is first initialized. If you later choose Render-managed PostgreSQL instead, point the backend at its `DATABASE_URL` and apply the same schema.
 
-## Voice ideas
-
-Choose **Record idea**, allow microphone access, speak, then choose **Stop & send**. PromptDock transcribes the recording, adds the text to anything already in the idea box, and automatically runs **Turn idea into prompt**. **Cancel** discards the recording. Recordings are discarded automatically after two minutes.
-
-Voice requires a browser with `MediaRecorder` and microphone access on `localhost` or HTTPS. The server uses Groq's `GROQ_API_KEY` for transcription and defaults to `whisper-large-v3-turbo`. Audio is sent to Groq only after **Stop & send**; a cancelled recording is discarded. The audio is not saved in the prompt library. See [Groq's speech-to-text documentation](https://console.groq.com/docs/speech-to-text) for supported formats.
-
-## AI suggestions
-
-The server reads the local `.env` file at startup. Copy `.env.example` to `.env` if you need a template. **Turn idea into prompt** sends the idea, and **Enhance with AI** sends the current prompt draft, to a configured provider. It follows `AI_PROVIDER_ORDER` and `AI_MAX_FALLBACKS`, supporting APMIX, Groq, and Gemini. Provider keys remain on the server. The `.env` file is ignored by Git. Restart the server after changing `.env`.
-
-AI and voice actions are optional; ordinary typing, saving, copying, and exporting do not send prompts or audio to a provider. The server listens only on `127.0.0.1`.
+The platform buttons copy the prompt and open the selected AI platform in a new tab. AI requests send the idea or current draft to a configured provider. The server follows `AI_PROVIDER_ORDER` and `AI_MAX_FALLBACKS`, supporting APMIX, Groq, and Gemini. The root `.env` and `database/.env` are ignored by Git.
 
 ## Versioning
 
-The project starts at `v0.0.1`. The first Git commit keeps that version. The included pre-commit hook bumps every later commit: `v0.0.9 → v0.1.0`, then increments the middle number through `v0.599.0 → v1.0.0`. From `v1.0.0` onward it increments the patch number. `package.json` uses the numeric SemVer form; `VERSION` and the UI use the `v` prefix.
-
-Run `npm run setup:hooks` after cloning to activate the repository hook.
+The project began at `v0.0.1`. The pre-commit hook bumps every later commit: `v0.0.9 → v0.1.0`, then increments the middle number through `v0.599.0 → v1.0.0`. From `v1.0.0` onward it increments the patch number. `package.json` uses numeric SemVer; `VERSION` and the frontend build use the `v` prefix. Run `npm run setup:hooks` after cloning.

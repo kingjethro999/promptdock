@@ -1,15 +1,20 @@
 {
   "name": "promptdock",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
-  "description": "A local-first prompt workspace for everyday AI tools",
+  "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run build:frontend && node backend/server.js",
+    "start:api": "node backend/server.js",
+    "build:frontend": "node scripts/build-frontend.js",
     "test": "node --test",
     "version:bump": "node scripts/bump-version.js",
     "setup:hooks": "git config core.hooksPath .githooks"
   },
   "engines": {
     "node": ">=20.12"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
   }
 }

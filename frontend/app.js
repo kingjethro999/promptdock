@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'promptdock.prompts.v1';
 const DRAFT_KEY = 'promptdock.draft.v1';
+const TOKEN_KEY = 'promptdock.workspace-token.v1';
+const config = window.PROMPTDOCK_CONFIG || { apiBase: '', version: 'development' };
 const fields = ['task', 'role', 'audience', 'context', 'format', 'tone', 'approach', 'focus', 'depth', 'constraints'];
 const templates = [
   { id: 'writing', icon: '✎', name: 'Write anything', data: { task: 'Write a compelling piece about [topic]', role: 'An experienced writer', audience: '[target audience]', context: 'The key idea is [main idea]. The reader should come away knowing [takeaway].', format: 'Article', tone: 'Clear and concise', constraints: 'Use specific examples. Avoid filler and jargon.' } },
@@ -32,6 +34,17 @@ let voiceStartedAt = 0;
 let voiceTimer = null;
 let voiceRequestId = 0;
 let voiceCancelReason = '';
+let databaseAvailable = false;
+let workspaceToken = localStorage.getItem(TOKEN_KEY);
+if (!/^[a-f0-9]{64}$/.test(workspaceToken || '')) {
+  workspaceToken = [...crypto.getRandomValues(new Uint8Array(32))].map(byte => byte.toString(16).padStart(2, '0')).join('');
+  localStorage.setItem(TOKEN_KEY, workspaceToken);
+}
+
+function apiFetch(path, options = {}) { return fetch(`${config.apiBase}${path}`, options); }
+function libraryFetch(path, options = {}) {
+  return apiFetch(path, { ...options, headers: { ...options.headers, 'X-Workspace-Token': workspaceToken } });
+}
 
 function readJSON(key, fallback) {
   try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; }
@@ -41,6 +54,21 @@ function dataFromForm() { return Object.fromEntries(fields.map(field => [field, 
 function setForm(data) { fields.forEach(field => { elements[field].value = data[field] || ''; }); Object.keys(selectOptions).forEach(syncSelect); updatePreview(); persistDraft(); }
 function getSaved() { const saved = readJSON(STORAGE_KEY, []); return Array.isArray(saved) ? saved : []; }
 function setSaved(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); renderLibrary(); }
+async function loadRemoteLibrary() {
+  try {
+    const response = await libraryFetch('/api/prompts');
+    if (!response.ok) throw new Error('Could not load saved prompts.');
+    const remote = (await response.json()).prompts;
+    const local = getSaved();
+    const remoteIds = new Set(remote.map(item => item.id));
+    for (const item of local.filter(item => !remoteIds.has(item.id))) {
+      const saved = await libraryFetch('/api/prompts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
+      if (!saved.ok) throw new Error('Could not migrate browser prompts.');
+      remote.push((await saved.json()).prompt);
+    }
+    setSaved(remote.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+  } catch { showToast('Saved prompts could not sync. Your browser copy is still available.'); }
+}
 function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: dataFromForm(), idea: $('ideaInput').value, analysis: currentAnalysis })); } catch {} }
 function showToast(message) { const toast = $('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 3200); }
 
@@ -169,7 +197,7 @@ async function finishVoiceRecording(mimeType) {
   voiceState = 'transcribing'; updateIdeaButton();
   $('voiceStatus').textContent = 'Transcribing your idea…';
   try {
-    const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': audio.type }, body: audio });
+    const response = await apiFetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': audio.type }, body: audio });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not transcribe the recording.');
     const transcript = result.text?.trim();
@@ -248,7 +276,7 @@ async function generateIdeaPrompt() {
   $('ideaStatus').textContent = 'Reading your idea and shaping the prompt…';
   updateIdeaButton(); updatePreview();
   try {
-    const response = await fetch('/api/idea-to-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idea }) });
+    const response = await apiFetch('/api/idea-to-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idea }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not turn this idea into a prompt.');
     if (idea !== $('ideaInput').value.trim()) { $('ideaStatus').textContent = 'Your idea changed. Run it again when ready.'; return false; }
@@ -272,12 +300,14 @@ async function generateIdeaPrompt() {
 
 async function loadAiStatus() {
   try {
-    const response = await fetch('/api/status');
+    const response = await apiFetch('/api/status');
     if (!response.ok) throw new Error('Unavailable');
     const status = await response.json();
     aiAvailable = status.aiAvailable;
     voiceAvailable = status.voiceAvailable;
-    if (status.version) $('appVersion').textContent = status.version;
+    databaseAvailable = Boolean(status.databaseAvailable);
+    $('privacyNote').textContent = databaseAvailable ? 'Saved prompts sync to your private workspace' : 'Saved prompts stay in this browser';
+    if (databaseAvailable) await loadRemoteLibrary();
     $('aiStatus').textContent = aiAvailable ? 'Sends this draft to your configured AI provider' : 'Add an API key to .env to enable AI suggestions';
     $('ideaStatus').textContent = aiAvailable ? ($('ideaInput').value.trim() ? 'Ready to turn this idea into a prompt' : 'Add your idea to begin') : 'Add an API key to .env to use AI';
     $('voiceStatus').textContent = !voiceAvailable ? 'Add GROQ_API_KEY to .env to enable voice.'
@@ -294,7 +324,7 @@ async function enhancePrompt() {
   aiBusy = true; $('enhanceButton').disabled = true; $('enhanceButton').classList.add('busy');
   $('aiStatus').textContent = 'Improving your prompt…';
   try {
-    const response = await fetch('/api/enhance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(original) });
+    const response = await apiFetch('/api/enhance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(original) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'AI suggestions are unavailable.');
     if (JSON.stringify(original) !== JSON.stringify(dataFromForm())) { showToast('Your draft changed. AI suggestions were not applied.'); return; }
@@ -373,15 +403,21 @@ async function copyPrompt() {
   } catch { showToast('Copy unavailable. Select the preview text to copy it.'); return false; }
 }
 
-function savePrompt(name) {
+async function savePrompt(name) {
   const data = dataFromForm();
   if (!data.task) return;
   const saved = getSaved();
   const existing = currentId ? saved.find(item => item.id === currentId) : null;
   const item = { id: existing?.id || crypto.randomUUID(), name: name.trim(), data, idea: $('ideaInput').value.trim(), analysis: currentAnalysis, updatedAt: new Date().toISOString() };
   const next = [item, ...saved.filter(entry => entry.id !== item.id)];
-  try { setSaved(next); currentId = item.id; showToast(existing ? 'Prompt updated in your library.' : 'Prompt saved to your library.'); }
-  catch { showToast('Storage is full or unavailable. Download the prompt instead.'); }
+  try {
+    if (databaseAvailable) {
+      const response = await libraryFetch('/api/prompts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
+      if (!response.ok) throw new Error((await response.json()).error || 'Could not save to the database.');
+      Object.assign(item, (await response.json()).prompt);
+    }
+    setSaved(next); currentId = item.id; showToast(existing ? 'Prompt updated in your library.' : 'Prompt saved to your library.');
+  } catch (error) { showToast(error.message || 'Storage is unavailable. Download the prompt instead.'); }
 }
 
 function renderTemplates() {
@@ -413,7 +449,18 @@ function renderLibrary() {
     const top = document.createElement('div'); top.className = 'library-card-top';
     const icon = document.createElement('span'); icon.className = 'library-card-icon'; icon.textContent = '✦';
     const deleteButton = document.createElement('button'); deleteButton.className = 'card-menu'; deleteButton.type = 'button'; deleteButton.setAttribute('aria-label', `Delete ${item.name}`); deleteButton.title = 'Delete prompt'; deleteButton.textContent = '×';
-    deleteButton.addEventListener('click', () => { if (confirm(`Delete “${item.name}”?`)) { setSaved(getSaved().filter(entry => entry.id !== item.id)); if (currentId === item.id) currentId = null; showToast('Prompt deleted.'); } });
+    deleteButton.addEventListener('click', async () => {
+      if (!confirm(`Delete “${item.name}”?`)) return;
+      if (databaseAvailable) {
+        try {
+          const response = await libraryFetch(`/api/prompts/${item.id}`, { method: 'DELETE' });
+          if (!response.ok) throw new Error('Could not delete this prompt.');
+        } catch { showToast('Could not delete this prompt. Try again.'); return; }
+      }
+      setSaved(getSaved().filter(entry => entry.id !== item.id));
+      if (currentId === item.id) currentId = null;
+      showToast('Prompt deleted.');
+    });
     top.append(icon, deleteButton);
     const title = document.createElement('h3'); title.textContent = item.name;
     const summary = document.createElement('p'); summary.textContent = item.data.task;
@@ -466,7 +513,7 @@ $('copyButton').addEventListener('click', copyPrompt);
 $('downloadButton').addEventListener('click', downloadPrompt);
 $('saveButton').addEventListener('click', () => { if (!elements.task.value.trim()) return; $('promptName').value = getSaved().find(item => item.id === currentId)?.name || ''; $('saveDialog').showModal(); $('promptName').focus(); });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
-$('saveForm').addEventListener('submit', event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; savePrompt(name); $('saveDialog').close(); });
+$('saveForm').addEventListener('submit', async event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; await savePrompt(name); $('saveDialog').close(); });
 $('helpButton').addEventListener('click', () => $('helpDialog').showModal());
 $('closeHelp').addEventListener('click', () => $('helpDialog').close());
 $('gotItButton').addEventListener('click', () => $('helpDialog').close());
@@ -483,6 +530,7 @@ document.querySelectorAll('.platform-card').forEach(card => card.addEventListene
 document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); if (document.activeElement === $('ideaInput')) generateIdeaPrompt(); else copyPrompt(); } });
 
 renderTemplates();
+$('appVersion').textContent = config.version;
 const savedDraft = readJSON(DRAFT_KEY, {});
 currentAnalysis = savedDraft.analysis || null;
 $('ideaInput').value = savedDraft.idea || '';

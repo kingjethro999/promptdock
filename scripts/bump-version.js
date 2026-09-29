@@ -16,6 +16,13 @@ if (require.main === module) {
   const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
   pkg.version = nextVersion(pkg.version);
   fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+  const lockPath = path.join(root, 'package-lock.json');
+  if (fs.existsSync(lockPath)) {
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    lock.version = pkg.version;
+    if (lock.packages?.['']) lock.packages[''].version = pkg.version;
+    fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  }
   fs.writeFileSync(path.join(root, 'VERSION'), `v${pkg.version}\n`);
   console.log(`Version bumped to v${pkg.version}`);
 }

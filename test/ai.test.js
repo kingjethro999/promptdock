@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { configuredProviders, enhanceWithAI, ideaToPrompt, normalizeDraft, normalizeIdea, parseIdeaSuggestion } = require('../ai');
+const { configuredProviders, enhanceWithAI, ideaToPrompt, normalizeDraft, normalizeIdea, parseIdeaSuggestion } = require('../backend/ai');
 
 test('configured providers follow environment order', () => {
   assert.deepEqual(configuredProviders({ AI_PROVIDER_ORDER: 'apmix,groq,gemini', GROQ_API_KEY: 'x', GROQ_MODEL: 'm', GEMINI_API_KEY: 'y' }), ['groq', 'gemini']);

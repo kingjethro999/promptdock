@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const envPath = path.join(__dirname, '.env');
+const envPath = path.join(__dirname, '..', '.env');
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') process.loadEnvFile(envPath);
 
 const fieldNames = ['task', 'role', 'audience', 'context', 'format', 'tone', 'approach', 'focus', 'depth', 'constraints'];
