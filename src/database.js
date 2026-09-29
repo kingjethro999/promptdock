@@ -1,6 +1,6 @@
 const { createHash } = require('node:crypto');
 const { Pool } = require('pg');
-const schema = require('../database/schema');
+const schema = require('./schema');
 
 function normalizeDatabaseUrl(value) {
   if (!value) return undefined;

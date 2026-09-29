@@ -1,5 +1,4 @@
 .env
-database/.env
 node_modules/
 src/dist/
 *.log

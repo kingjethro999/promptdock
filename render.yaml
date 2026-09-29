@@ -1,9 +1,0 @@
-databases:
-  - name: promptdock-postgres
-    databaseName: promptdock
-    user: promptdock
-    postgresMajorVersion: '17'
-    plan: free
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: Vercel functions and local administration
