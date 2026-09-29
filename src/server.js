@@ -217,6 +217,15 @@ async function handleRequest(request, response) {
       const key = database.accountKey(user.id);
       if (pathname === '/api/prompts' && request.method === 'GET') json(response, 200, await database.listPrompts(key, { q: url.searchParams.get('q'), offset: url.searchParams.get('offset') }));
       else if (pathname === '/api/prompts' && request.method === 'PUT') json(response, 200, { prompt: await database.putPrompt(key, await readBody(request)) });
+      else if (/^\/api\/prompts\/[0-9a-f-]{36}\/revisions$/i.test(pathname) && request.method === 'GET') {
+        const id = pathname.split('/')[3];
+        const revisions = await database.listRevisions(key, id);
+        json(response, revisions ? 200 : 404, revisions ? { revisions } : { error: 'Prompt not found.' });
+      } else if (/^\/api\/prompts\/[0-9a-f-]{36}\/revisions\/\d+\/restore$/i.test(pathname) && request.method === 'POST') {
+        const parts = pathname.split('/');
+        const prompt = await database.restoreRevision(key, parts[3], parts[5]);
+        json(response, prompt ? 200 : 404, prompt ? { prompt } : { error: 'Revision not found.' });
+      }
       else if (pathname.startsWith('/api/prompts/') && request.method === 'DELETE') {
         await database.deletePrompt(key, pathname.slice('/api/prompts/'.length)); json(response, 200, { ok: true });
       } else json(response, 405, { error: 'Method not allowed.' });

@@ -99,13 +99,55 @@ async function listPrompts(key, options = {}) {
 async function putPrompt(key, input) {
   const item = validatePrompt(input);
   await ensureSchema();
-  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    ON CONFLICT (owner_key, id) DO UPDATE SET name = EXCLUDED.name, data = EXCLUDED.data,
-      idea = EXCLUDED.idea, analysis = EXCLUDED.analysis, tags = EXCLUDED.tags, updated_at = now()
-    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
-  [key, item.id, item.name, item.data, item.idea, item.analysis, item.tags]);
-  return result.rows[0];
+  const client = await pool.connect();
+  const params = [key, item.id, item.name, item.data, item.idea, item.analysis, item.tags];
+  try {
+    await client.query('BEGIN');
+    const inserted = await client.query(`INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
+      VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (owner_key, id) DO NOTHING`, params);
+    if (!inserted.rowCount) {
+      const previous = await client.query(`SELECT name, data, idea, analysis, tags,
+        (name IS DISTINCT FROM $3::text OR data IS DISTINCT FROM $4::jsonb OR idea IS DISTINCT FROM $5::text
+          OR analysis IS DISTINCT FROM $6::jsonb OR tags IS DISTINCT FROM $7::text[]) AS changed
+        FROM prompts WHERE owner_key = $1 AND id = $2 FOR UPDATE`, params);
+      const old = previous.rows[0];
+      if (old.changed) {
+        await client.query(`INSERT INTO prompt_revisions (owner_key, prompt_id, name, data, idea, analysis, tags)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`, [key, item.id, old.name, old.data, old.idea, old.analysis, old.tags]);
+        await client.query(`DELETE FROM prompt_revisions WHERE owner_key = $1 AND prompt_id = $2 AND revision_id NOT IN
+          (SELECT revision_id FROM prompt_revisions WHERE owner_key = $1 AND prompt_id = $2 ORDER BY revision_id DESC LIMIT 10)`, [key, item.id]);
+        await client.query(`UPDATE prompts SET name = $3, data = $4, idea = $5, analysis = $6, tags = $7, updated_at = now()
+          WHERE owner_key = $1 AND id = $2`, params);
+      }
+    }
+    const result = await client.query(`SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"
+      FROM prompts WHERE owner_key = $1 AND id = $2`, [key, item.id]);
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally { client.release(); }
+}
+
+async function listRevisions(key, id) {
+  if (!validUuid(id)) throw new Error('Invalid prompt ID.');
+  await ensureSchema();
+  const [prompt, revisions] = await Promise.all([
+    pool.query('SELECT 1 FROM prompts WHERE owner_key = $1 AND id = $2', [key, id]),
+    pool.query(`SELECT revision_id AS "revisionId", name, data, idea, analysis, tags, created_at AS "createdAt"
+      FROM prompt_revisions WHERE owner_key = $1 AND prompt_id = $2 ORDER BY revision_id DESC LIMIT 10`, [key, id])
+  ]);
+  return prompt.rowCount ? revisions.rows : null;
+}
+
+async function restoreRevision(key, id, revisionId) {
+  if (!validUuid(id) || !/^\d+$/.test(String(revisionId))) throw new Error('Invalid revision ID.');
+  await ensureSchema();
+  const result = await pool.query(`SELECT name, data, idea, analysis, tags FROM prompt_revisions
+    WHERE owner_key = $1 AND prompt_id = $2 AND revision_id = $3`, [key, id, revisionId]);
+  if (!result.rowCount) return null;
+  return putPrompt(key, { id, ...result.rows[0] });
 }
 
 async function deletePrompt(key, id) {
@@ -146,4 +188,4 @@ async function forkPublicPrompt(key, publicId) {
   return result.rows[0] || null;
 }
 
-module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, deletePrompt, setPromptPublic, getPublicPrompt, forkPublicPrompt };
+module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, listRevisions, restoreRevision, deletePrompt, setPromptPublic, getPublicPrompt, forkPublicPrompt };

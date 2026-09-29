@@ -52,6 +52,19 @@ module.exports = [
   'CREATE UNIQUE INDEX IF NOT EXISTS prompts_public_id_idx ON prompts (public_id) WHERE public_id IS NOT NULL',
   'CREATE UNIQUE INDEX IF NOT EXISTS prompts_owner_fork_idx ON prompts (owner_key, forked_from) WHERE forked_from IS NOT NULL',
   'CREATE INDEX IF NOT EXISTS prompts_owner_updated_idx ON prompts (owner_key, updated_at DESC)',
+  `CREATE TABLE IF NOT EXISTS prompt_revisions (
+    revision_id bigserial PRIMARY KEY,
+    owner_key char(64) NOT NULL,
+    prompt_id uuid NOT NULL,
+    name text NOT NULL,
+    data jsonb NOT NULL,
+    idea text NOT NULL,
+    analysis jsonb,
+    tags text[] NOT NULL DEFAULT '{}',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (owner_key, prompt_id) REFERENCES prompts(owner_key, id) ON DELETE CASCADE
+  )`,
+  'CREATE INDEX IF NOT EXISTS prompt_revisions_prompt_idx ON prompt_revisions (owner_key, prompt_id, revision_id DESC)',
   `CREATE TABLE IF NOT EXISTS api_rate_limits (
     bucket_key char(64) PRIMARY KEY,
     tokens double precision NOT NULL,

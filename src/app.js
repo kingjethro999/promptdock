@@ -49,6 +49,7 @@ let resetToken = null;
 let selectedProvider = 'groq';
 let savedProvider = null;
 let currentSharePromptId = null;
+let currentHistoryPromptId = null;
 const FORK_KEY = 'promptdock.pending-fork.v1';
 
 function apiFetch(path, options = {}) { return fetch(path, options); }
@@ -709,6 +710,43 @@ async function openShare(item) {
   catch (error) { showToast(error.message || 'Could not create a public link.'); }
 }
 
+async function openHistory(item) {
+  currentHistoryPromptId = item.id;
+  const list = $('historyList'); list.textContent = 'Loading earlier versions…';
+  $('historyDialog').showModal();
+  try {
+    const response = await libraryFetch(`/api/prompts/${item.id}/revisions`);
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || 'Could not load history.');
+    list.replaceChildren();
+    if (!result.revisions.length) { list.textContent = 'No earlier versions yet. Edit and save this prompt to create one.'; return; }
+    for (const revision of result.revisions) {
+      const row = document.createElement('div'); row.className = 'history-row';
+      const details = document.createElement('div');
+      const title = document.createElement('strong'); title.textContent = revision.name;
+      const date = document.createElement('small'); date.textContent = new Date(revision.createdAt).toLocaleString();
+      const task = document.createElement('p'); task.textContent = revision.data.task;
+      details.append(title, date, task);
+      const restore = document.createElement('button'); restore.type = 'button'; restore.className = 'secondary-button'; restore.textContent = 'Restore';
+      restore.addEventListener('click', async () => {
+        if (!confirm(`Restore “${revision.name}” from ${date.textContent}?`)) return;
+        restore.disabled = true;
+        try {
+          const response = await libraryFetch(`/api/prompts/${currentHistoryPromptId}/revisions/${revision.revisionId}/restore`, { method: 'POST' });
+          const result = await readApiJson(response);
+          if (!response.ok) throw new Error(result.error || 'Could not restore this version.');
+          setSaved([result.prompt, ...getSaved().filter(entry => entry.id !== result.prompt.id)]);
+          const searched = searchResults.find(entry => entry.id === result.prompt.id);
+          if (searched) Object.assign(searched, result.prompt);
+          if (currentId === result.prompt.id) { $('ideaInput').value = result.prompt.idea || ''; currentAnalysis = result.prompt.analysis; setForm(result.prompt.data); renderInterpretation(currentAnalysis); }
+          $('historyDialog').close(); showToast('Earlier version restored.');
+        } catch (error) { showToast(error.message); restore.disabled = false; }
+      });
+      row.append(details, restore); list.append(row);
+    }
+  } catch (error) { list.textContent = error.message || 'Could not load history.'; }
+}
+
 function renderLibrary() {
   const saved = getSaved();
   const query = $('librarySearch').value.toLowerCase().trim();
@@ -750,6 +788,7 @@ function renderLibrary() {
     const share = document.createElement('button'); share.type = 'button'; share.className = 'library-share-button'; share.textContent = item.publicId ? 'Share link ↗' : 'Publish & share ↗';
     share.addEventListener('click', () => openShare(item));
     sharing.append(visibility, share);
+    if (currentUser) { const history = document.createElement('button'); history.type = 'button'; history.className = 'library-share-button'; history.textContent = 'History ↶'; history.addEventListener('click', () => openHistory(item)); sharing.append(history); }
     const footer = document.createElement('div'); footer.className = 'library-card-footer';
     const date = document.createElement('span'); date.textContent = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; currentAnalysis = item.analysis || null; $('ideaInput').value = item.idea || ''; setForm(item.data); renderInterpretation(currentAnalysis); updateIdeaButton(); switchView('builder'); });
@@ -839,6 +878,7 @@ $('saveButton').addEventListener('click', () => {
 });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
 $('closeShare').addEventListener('click', () => $('shareDialog').close());
+$('closeHistory').addEventListener('click', () => $('historyDialog').close());
 $('copyShareLink').addEventListener('click', async () => {
   try {
     if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText($('shareLink').value);
