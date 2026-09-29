@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const source = path.join(root, 'src');
 const output = path.join(source, 'dist');
 fs.mkdirSync(output, { recursive: true });
-for (const file of ['index.html', 'app.js', 'styles.css', 'landing.css', 'favicon.svg']) fs.copyFileSync(path.join(source, file), path.join(output, file));
+for (const file of ['index.html', 'share.html', 'app.js', 'share.js', 'prompt-format.js', 'styles.css', 'landing.css', 'share.css', 'favicon.svg']) fs.copyFileSync(path.join(source, file), path.join(output, file));
 const version = fs.readFileSync(path.join(root, 'VERSION'), 'utf8').trim();
 fs.writeFileSync(path.join(output, 'config.js'), `window.PROMPTDOCK_CONFIG = ${JSON.stringify({ version })};\n`);
 console.log(`Built frontend ${version}`);

@@ -5,6 +5,7 @@
   "framework": null,
   "functions": { "api/index.js": { "maxDuration": 60 } },
   "rewrites": [
-    { "source": "/api/:route*", "destination": "/api/index?route=:route*" }
+    { "source": "/api/:route*", "destination": "/api/index?route=:route*" },
+    { "source": "/p/:id", "destination": "/share.html" }
   ]
 }

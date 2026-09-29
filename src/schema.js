@@ -44,5 +44,10 @@ module.exports = [
     updated_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (owner_key, id)
   )`,
+  'ALTER TABLE prompts ADD COLUMN IF NOT EXISTS public_id uuid',
+  'ALTER TABLE prompts ADD COLUMN IF NOT EXISTS published_at timestamptz',
+  'ALTER TABLE prompts ADD COLUMN IF NOT EXISTS forked_from uuid',
+  'CREATE UNIQUE INDEX IF NOT EXISTS prompts_public_id_idx ON prompts (public_id) WHERE public_id IS NOT NULL',
+  'CREATE UNIQUE INDEX IF NOT EXISTS prompts_owner_fork_idx ON prompts (owner_key, forked_from) WHERE forked_from IS NOT NULL',
   'CREATE INDEX IF NOT EXISTS prompts_owner_updated_idx ON prompts (owner_key, updated_at DESC)'
 ];

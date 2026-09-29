@@ -2,6 +2,7 @@ const STORAGE_KEY = 'promptdock.prompts.v1';
 const DRAFT_KEY = 'promptdock.draft.v1';
 const TOKEN_KEY = 'promptdock.workspace-token.v1';
 const config = window.PROMPTDOCK_CONFIG || { version: 'development' };
+const buildPrompt = window.PromptDockBuildPrompt;
 const fields = ['task', 'role', 'audience', 'context', 'format', 'tone', 'approach', 'focus', 'depth', 'constraints'];
 const templates = [
   { id: 'writing', icon: '✎', name: 'Write anything', data: { task: 'Write a compelling piece about [topic]', role: 'An experienced writer', audience: '[target audience]', context: 'The key idea is [main idea]. The reader should come away knowing [takeaway].', format: 'Article', tone: 'Clear and concise', constraints: 'Use specific examples. Avoid filler and jargon.' } },
@@ -42,6 +43,8 @@ let pendingSave = false;
 let resetToken = null;
 let selectedProvider = 'groq';
 let savedProvider = null;
+let currentSharePromptId = null;
+const FORK_KEY = 'promptdock.pending-fork.v1';
 
 function apiFetch(path, options = {}) { return fetch(path, options); }
 function libraryFetch(path, options = {}) { return apiFetch(path, options); }
@@ -92,6 +95,38 @@ async function loadRemoteLibrary() {
   } catch {
     if (Array.isArray(legacyPrompts) && legacyPrompts.length) setSaved(legacyPrompts);
     showToast(legacyPrompts?.length ? 'Library sync failed. Your old browser copy is still available.' : 'Library sync failed. Try again after refreshing.');
+  }
+}
+
+function captureForkIntent() {
+  const url = new URL(window.location.href);
+  const id = url.searchParams.get('fork');
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return false;
+  localStorage.setItem(FORK_KEY, JSON.stringify({ id, at: Date.now() }));
+  url.searchParams.delete('fork');
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  return true;
+}
+
+async function completePendingFork() {
+  if (!currentUser) return false;
+  const pending = readJSON(FORK_KEY, null);
+  if (!pending || !/^[0-9a-f-]{36}$/i.test(pending.id || '') || Date.now() - pending.at > 86400000) {
+    localStorage.removeItem(FORK_KEY); return false;
+  }
+  try {
+    const response = await apiFetch(`/api/public/prompts/${pending.id}/fork`, { method: 'POST' });
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || 'Could not save the shared prompt.');
+    localStorage.removeItem(FORK_KEY);
+    setSaved([result.prompt, ...getSaved().filter(item => item.id !== result.prompt.id)]);
+    switchView('library');
+    showToast('Shared prompt added to your library.');
+    return true;
+  } catch (error) {
+    if (/unavailable/i.test(error.message || '')) localStorage.removeItem(FORK_KEY);
+    showToast(error.message || 'Could not save the shared prompt.');
+    return false;
   }
 }
 function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: dataFromForm(), idea: $('ideaInput').value, analysis: currentAnalysis })); } catch {} }
@@ -453,6 +488,7 @@ async function submitAuth(event) {
     $('authPassword').value = '';
     $('authDialog').close();
     await loadAiStatus();
+    await completePendingFork();
     if (pendingSave) {
       pendingSave = false;
       $('promptName').value = '';
@@ -537,27 +573,6 @@ async function enhancePrompt() {
   finally { aiBusy = false; $('enhanceButton').classList.remove('busy'); $('aiStatus').textContent = 'Sends this draft to your configured AI provider'; updatePreview(); }
 }
 
-function buildPrompt(data) {
-  if (!data.task) return '';
-  const parts = [];
-  if (data.role) parts.push(`Act as ${data.role.replace(/[.\s]+$/, '')}.`);
-  parts.push(`Task: ${data.task}`);
-  if (data.context) parts.push(`Context:\n${data.context}`);
-  if (data.audience) parts.push(`Audience: ${data.audience}`);
-  if (data.approach) parts.push(`Suggested approach:\n${data.approach}`);
-  if (data.format) parts.push(`Output format: ${data.format}`);
-  if (data.tone) parts.push(`Tone: ${data.tone}`);
-  if (data.focus) parts.push(`Priorities (spend the most attention on the first):\n${data.focus}`);
-  const depthInstructions = {
-    Quick: 'Keep the answer brief and give the essential result or next step.',
-    Balanced: 'Give a clear, practical answer with enough detail to act.',
-    Deep: 'Work through the important reasoning, tradeoffs, edge cases, and concrete next steps.'
-  };
-  if (depthInstructions[data.depth]) parts.push(`Answer depth: ${data.depth}. ${depthInstructions[data.depth]}`);
-  if (data.constraints) parts.push(`Requirements:\n${data.constraints}`);
-  return parts.join('\n\n');
-}
-
 function updatePreview() {
   const data = dataFromForm();
   const prompt = buildPrompt(data);
@@ -617,8 +632,9 @@ async function savePrompt(name) {
   try {
     if (databaseAvailable && currentUser) {
       const response = await libraryFetch('/api/prompts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
-      if (!response.ok) throw new Error((await response.json()).error || 'Could not save to the database.');
-      Object.assign(item, (await response.json()).prompt);
+      const result = await readApiJson(response);
+      if (!response.ok) throw new Error(result.error || 'Could not save to the database.');
+      Object.assign(item, result.prompt);
     }
     setSaved(next); currentId = item.id; showToast(existing ? 'Prompt updated in your library.' : 'Prompt saved to your library.');
   } catch (error) { showToast(error.message || 'Storage is unavailable. Download the prompt instead.'); }
@@ -633,6 +649,34 @@ function renderTemplates() {
     button.addEventListener('click', () => { currentId = null; currentAnalysis = null; $('ideaInput').value = ''; setForm(template.data); renderInterpretation(null); setComposerExpanded(true); updateIdeaButton(); $('ideaStatus').textContent = 'Add a new idea whenever you like'; switchView('builder'); showToast(`${template.name} template loaded.`); });
     return button;
   }));
+}
+
+async function publishPrompt(item, published) {
+  const response = await libraryFetch(`/api/prompts/${item.id}/public`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ published })
+  });
+  const result = await readApiJson(response);
+  if (!response.ok) throw new Error(result.error || 'Could not change sharing.');
+  const saved = getSaved();
+  const current = saved.find(prompt => prompt.id === item.id);
+  if (current) Object.assign(current, result.prompt);
+  setSaved([...saved]);
+  return result.prompt;
+}
+
+function showShareDialog(item) {
+  currentSharePromptId = item.id;
+  $('shareLink').value = `${window.location.origin}/p/${item.publicId}`;
+  $('shareFeedback').textContent = '';
+  $('shareDialog').showModal();
+  $('shareLink').select();
+}
+
+async function openShare(item) {
+  if (!currentUser) { showToast('Sign in to share a prompt.'); return; }
+  if (!item.publicId && !confirm('Make this prompt public? Anyone with the link can view and copy its finished prompt.')) return;
+  try { showShareDialog(item.publicId ? item : await publishPrompt(item, true)); }
+  catch (error) { showToast(error.message || 'Could not create a public link.'); }
 }
 
 function renderLibrary() {
@@ -668,10 +712,15 @@ function renderLibrary() {
     top.append(icon, deleteButton);
     const title = document.createElement('h3'); title.textContent = item.name;
     const summary = document.createElement('p'); summary.textContent = item.data.task;
+    const sharing = document.createElement('div'); sharing.className = 'library-sharing';
+    const visibility = document.createElement('span'); visibility.className = item.publicId ? 'visibility-badge is-public' : 'visibility-badge'; visibility.textContent = item.publicId ? '● Public' : '○ Private';
+    const share = document.createElement('button'); share.type = 'button'; share.className = 'library-share-button'; share.textContent = item.publicId ? 'Share link ↗' : 'Publish & share ↗';
+    share.addEventListener('click', () => openShare(item));
+    sharing.append(visibility, share);
     const footer = document.createElement('div'); footer.className = 'library-card-footer';
     const date = document.createElement('span'); date.textContent = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const open = document.createElement('button'); open.textContent = 'Open prompt →'; open.addEventListener('click', () => { currentId = item.id; currentAnalysis = item.analysis || null; $('ideaInput').value = item.idea || ''; setForm(item.data); renderInterpretation(currentAnalysis); updateIdeaButton(); switchView('builder'); });
-    footer.append(date, open); card.append(top, title, summary, footer); grid.append(card);
+    footer.append(date, open); card.append(top, title, summary, sharing, footer); grid.append(card);
   }
 }
 
@@ -725,6 +774,20 @@ $('saveButton').addEventListener('click', () => {
   $('saveDialog').showModal(); $('promptName').focus();
 });
 $('cancelSave').addEventListener('click', () => $('saveDialog').close());
+$('closeShare').addEventListener('click', () => $('shareDialog').close());
+$('copyShareLink').addEventListener('click', async () => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText($('shareLink').value);
+    else { $('shareLink').select(); if (!document.execCommand('copy')) throw new Error('Copy failed'); }
+    $('shareFeedback').textContent = 'Link copied. Anyone with it can view this prompt.';
+  } catch { $('shareFeedback').textContent = 'Select the link above to copy it.'; $('shareLink').select(); }
+});
+$('unpublishPrompt').addEventListener('click', async () => {
+  const item = getSaved().find(prompt => prompt.id === currentSharePromptId);
+  if (!item) return;
+  try { await publishPrompt(item, false); $('shareDialog').close(); showToast('Prompt is private. The old link no longer works.'); }
+  catch (error) { $('shareFeedback').textContent = error.message || 'Could not make this prompt private.'; }
+});
 $('saveForm').addEventListener('submit', async event => { event.preventDefault(); const name = $('promptName').value.trim(); if (!name) return; await savePrompt(name); $('saveDialog').close(); });
 $('accountButton').addEventListener('click', () => switchView('settings'));
 $('authForm').addEventListener('submit', submitAuth);
@@ -814,4 +877,13 @@ $('ideaInput').value = savedDraft.idea || '';
 setForm(savedDraft.data || savedDraft);
 renderInterpretation(currentAnalysis);
 renderLibrary();
-(async () => { await loadAiStatus(); await handleAuthLink(); })();
+(async () => {
+  const forkIntent = captureForkIntent();
+  const openLibrary = new URLSearchParams(window.location.search).has('library');
+  await loadAiStatus();
+  await handleAuthLink();
+  if (currentUser) {
+    const forked = await completePendingFork();
+    if (!forked && openLibrary) switchView('library');
+  } else if (forkIntent && !$('authDialog').open) openAuth('register');
+})();

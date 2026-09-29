@@ -16,7 +16,7 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml'
 };
-const publicFiles = new Set(['/index.html', '/styles.css', '/landing.css', '/app.js', '/config.js', '/favicon.svg']);
+const publicFiles = new Set(['/index.html', '/share.html', '/styles.css', '/landing.css', '/share.css', '/app.js', '/share.js', '/prompt-format.js', '/config.js', '/favicon.svg']);
 
 function json(response, status, body, headers = {}) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers });
@@ -141,6 +141,36 @@ async function handleRequest(request, response) {
     }
     return;
   }
+  const sharedPrompt = pathname.match(/^\/api\/public\/prompts\/([^/]+)(\/fork)?$/);
+  if (sharedPrompt && (request.method === 'GET' || request.method === 'POST')) {
+    if (request.method === 'POST' && !validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    try {
+      if (request.method === 'GET' && !sharedPrompt[2]) {
+        const prompt = await database.getPublicPrompt(sharedPrompt[1]);
+        json(response, prompt ? 200 : 404, prompt ? { prompt } : { error: 'This shared prompt is unavailable.' });
+      } else if (request.method === 'POST' && sharedPrompt[2]) {
+        const user = await auth.currentUser(request);
+        if (!user) { json(response, 401, { error: 'Sign in to save this prompt.' }); return; }
+        const prompt = await database.forkPublicPrompt(database.accountKey(user.id), sharedPrompt[1]);
+        json(response, prompt ? 200 : 404, prompt ? { prompt } : { error: 'This shared prompt is unavailable.' });
+      } else json(response, 405, { error: 'Method not allowed.' });
+    } catch { json(response, 503, { error: 'Shared prompt service is unavailable.' }); }
+    return;
+  }
+  const publishPrompt = pathname.match(/^\/api\/prompts\/([^/]+)\/public$/);
+  if (publishPrompt && request.method === 'PATCH') {
+    if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) { json(response, 401, { error: 'Sign in to share a prompt.' }); return; }
+      if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
+      const body = await readBody(request);
+      if (typeof body?.published !== 'boolean') { json(response, 400, { error: 'Choose whether to make this prompt public.' }); return; }
+      const prompt = await database.setPromptPublic(database.accountKey(user.id), publishPrompt[1], body.published);
+      json(response, prompt ? 200 : 404, prompt ? { prompt } : { error: 'Prompt not found.' });
+    } catch (error) { json(response, error.message === 'Invalid sharing request.' ? 400 : 503, { error: error.message === 'Invalid sharing request.' ? error.message : 'Could not update sharing.' }); }
+    return;
+  }
   if (pathname === '/api/prompts' || pathname.startsWith('/api/prompts/')) {
     if (!validOrigin(request)) { json(response, 403, { error: 'Invalid origin.' }); return; }
     if (!database.configured) { json(response, 503, { error: 'Database is not configured.' }); return; }
@@ -197,6 +227,7 @@ async function handleRequest(request, response) {
     return;
   }
   if (pathname === '/') pathname = '/index.html';
+  if (/^\/p\/[0-9a-f-]{36}$/i.test(pathname)) pathname = '/share.html';
   if (!publicFiles.has(pathname)) {
     response.writeHead(404).end('Not found');
     return;

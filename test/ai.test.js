@@ -39,11 +39,33 @@ test('idea generation passes the raw idea and returns a structured prompt', asyn
     }) } }] }) };
   };
   const result = await ideaToPrompt({ idea: 'I want a meal planning app' }, env, fakeFetch);
-  assert.equal(submitted.messages[1].content, 'I want a meal planning app');
+  assert.deepEqual(JSON.parse(submitted.messages[1].content), { idea: 'I want a meal planning app' });
+  assert.match(submitted.messages[0].content, /build means build/);
   assert.equal(result.provider, 'groq');
   assert.equal(result.data.depth, 'Deep');
   assert.match(result.data.approach, /first release/);
   assert.equal(result.interpretation.focusAreas[0], 'User needs');
+});
+
+test('a working build keeps implementation depth even when a model undershoots', () => {
+  const result = parseIdeaSuggestion(JSON.stringify({
+    data: { task: 'Build a playable browser game', focus: 'Working game first', depth: 'Balanced' },
+    interpretation: { whyThisDepth: 'This is a moderate task.' }
+  }), 'Build a browser game with working code');
+  assert.equal(result.data.depth, 'Deep');
+  assert.match(result.interpretation.whyThisDepth, /working build/);
+});
+
+test('Gemini receives a separate system instruction and JSON output request', async () => {
+  let body;
+  const fakeFetch = async (_url, options) => {
+    body = JSON.parse(options.body);
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ data: { task: 'Write a note', focus: 'Clarity first', depth: 'Quick' } }) }] } }] }) };
+  };
+  await ideaToPrompt({ idea: 'Write a quick note' }, { AI_PROVIDER_ORDER: 'gemini', GEMINI_API_KEY: 'test', GEMINI_MODEL: 'gemini-test' }, fakeFetch);
+  assert.match(body.systemInstruction.parts[0].text, /prompt architect/);
+  assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), { idea: 'Write a quick note' });
+  assert.equal(body.generationConfig.responseMimeType, 'application/json');
 });
 
 test('idea generation retries a transient connection failure', async () => {

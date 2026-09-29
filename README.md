@@ -1,6 +1,6 @@
 # PromptDock
 
-Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes a public interactive landing page, templates, voice input, account-based library sync, bring-your-own-key settings, copy, and Markdown export.
+Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes a public interactive landing page, templates, voice input, account-based library sync, public prompt sharing, bring-your-own-key settings, copy, and Markdown export.
 
 ## Project layout
 
@@ -24,6 +24,10 @@ npm start
 Open <http://localhost:3000>. Set `DATABASE_URL`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `BYOK_ENCRYPTION_KEY` in `.env` to use all account features locally. The ignored `.env` file is loaded by the server. The landing page is public; verified users open directly into the workspace.
 
 Create an account, verify the link sent by email, and sign in to sync prompts across devices. The account flow includes password reset, password change, and signing out on all devices. Passwords are hashed with scrypt; sessions use HTTP-only cookies. Verification links expire after 24 hours and reset links after 1 hour. The first sign-in in a browser imports prompts saved by older PromptDock versions, then removes the old browser workspace token.
+
+To share a prompt, save it to **My library**, then choose **Publish & share** on its card. Anyone with the `/p/<id>` link can view and copy the finished prompt without signing in. The public API exposes the prompt name and fields, but not the account email, original idea, or analysis notes. A guest who chooses **Save to my library** is taken through signup or sign-in; PromptDock creates an independent private copy. Repeating the action returns the same copy. **Make private** disables the old link while existing copies remain in their owners' libraries. Review prompt fields before publishing because the full finished prompt is public.
+
+Prompt generation follows the source-backed design notes in [`docs/prompt-research.md`](docs/prompt-research.md). It preserves the user's requested action, separates instructions from idea input, gives concise examples to the model, and uses Gemini's system instruction field when Gemini is the provider.
 
 In Settings, choose Groq or Gemini, enter a model ID and your own API key, and save. Keys are encrypted with AES-256-GCM before being stored in PostgreSQL. The API never returns the saved key. Set one stable `BYOK_ENCRYPTION_KEY` (64 hex characters) on every deployment; changing or losing it makes previously saved keys unreadable. A Groq key also powers voice transcription. Removing a personal key returns the app to its configured provider.
 

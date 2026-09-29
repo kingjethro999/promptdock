@@ -1,4 +1,5 @@
 const { createHash } = require('node:crypto');
+const { randomUUID } = require('node:crypto');
 const { Pool } = require('pg');
 const schema = require('./schema');
 
@@ -18,8 +19,8 @@ const pool = configured ? new Pool({
   password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD,
   database: process.env.DATABASE_URL ? undefined : process.env.PGDATABASE,
   max: process.env.VERCEL ? 1 : 5,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 1000
+  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 30000
 }) : null;
 let schemaReady;
 
@@ -78,7 +79,7 @@ function validatePrompt(item) {
 
 async function listPrompts(key) {
   await ensureSchema();
-  const result = await pool.query('SELECT id, name, data, idea, analysis, updated_at AS "updatedAt" FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC LIMIT 500', [key]);
+  const result = await pool.query('SELECT id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC LIMIT 500', [key]);
   return result.rows;
 }
 
@@ -89,7 +90,7 @@ async function putPrompt(key, input) {
     VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT (owner_key, id) DO UPDATE SET name = EXCLUDED.name, data = EXCLUDED.data,
       idea = EXCLUDED.idea, analysis = EXCLUDED.analysis, updated_at = now()
-    RETURNING id, name, data, idea, analysis, updated_at AS "updatedAt"`,
+    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
   [key, item.id, item.name, item.data, item.idea, item.analysis]);
   return result.rows[0];
 }
@@ -100,4 +101,36 @@ async function deletePrompt(key, id) {
   await pool.query('DELETE FROM prompts WHERE owner_key = $1 AND id = $2', [key, id]);
 }
 
-module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, deletePrompt };
+function validUuid(value) { return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
+
+async function setPromptPublic(key, id, published) {
+  if (!validUuid(id) || typeof published !== 'boolean') throw new Error('Invalid sharing request.');
+  await ensureSchema();
+  const result = await pool.query(`UPDATE prompts SET public_id = CASE WHEN $3 THEN COALESCE(public_id, $4::uuid) ELSE NULL END,
+    published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END
+    WHERE owner_key = $1 AND id = $2
+    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+  [key, id, published, randomUUID()]);
+  return result.rows[0] || null;
+}
+
+async function getPublicPrompt(publicId) {
+  if (!validUuid(publicId)) return null;
+  await ensureSchema();
+  const result = await pool.query(`SELECT public_id AS "publicId", name, data, updated_at AS "updatedAt"
+    FROM prompts WHERE public_id = $1`, [publicId]);
+  return result.rows[0] || null;
+}
+
+async function forkPublicPrompt(key, publicId) {
+  if (!validUuid(publicId)) return null;
+  await ensureSchema();
+  const result = await pool.query(`INSERT INTO prompts (owner_key, id, name, data, forked_from)
+    SELECT $1, $2, name, data, public_id FROM prompts WHERE public_id = $3
+    ON CONFLICT (owner_key, forked_from) WHERE forked_from IS NOT NULL DO UPDATE SET name = prompts.name
+    RETURNING id, name, data, idea, analysis, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+  [key, randomUUID(), publicId]);
+  return result.rows[0] || null;
+}
+
+module.exports = { configured, pool, normalizeDatabaseUrl, ensureSchema, accountKey, legacyKey, importLegacy, validatePrompt, listPrompts, putPrompt, deletePrompt, setPromptPublic, getPublicPrompt, forkPublicPrompt };
