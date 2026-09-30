@@ -650,6 +650,38 @@
 .landing-final .landing-primary-cta:hover {
   background: #e5ffa1;
 }
+.landing-sponsor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 600px);
+  align-items: center;
+  gap: 30px;
+  padding: 64px max(34px, calc((100vw - 1232px) / 2));
+  background: #edf5e5;
+}
+.landing-sponsor h2 {
+  font: 800 clamp(24px, 3vw, 34px) Manrope, sans-serif;
+  letter-spacing: -1px;
+  margin: 12px 0;
+}
+.landing-sponsor p {
+  color: #617b62;
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 420px;
+}
+.landing-sponsor a {
+  color: #32693b;
+  font-size: 12px;
+  font-weight: 800;
+}
+.landing-sponsor iframe {
+  width: 100%;
+  max-width: 600px;
+  height: 225px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+}
 .landing-footer {
   background: #12291d;
   color: #91ad96;
@@ -668,6 +700,28 @@
 .landing-footer button {
   color: #d4f37e;
   background: transparent;
+}
+.sidebar-sponsor {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 13px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #3b5643;
+  border-radius: 9px;
+  color: #c7d9c9;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sidebar-sponsor iframe {
+  width: 114px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+}
+.sidebar-sponsor a {
+  color: #c9ef75;
+  font-size: 10px;
 }
 .sidebar-signout {
   width: 100%;
@@ -969,6 +1023,10 @@
   }
 }
 @media (max-width: 800px) {
+  .landing-sponsor {
+    grid-template-columns: 1fr;
+    padding: 48px 22px;
+  }
   .landing-header {
     height: 70px;
     padding: 0 22px;
@@ -1030,6 +1088,9 @@
   }
 }
 @media (max-width: 600px) {
+  .landing-sponsor {
+    padding: 42px 17px;
+  }
   .landing-header {
     padding: 0 16px;
   }

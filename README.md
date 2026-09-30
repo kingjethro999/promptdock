@@ -2,6 +2,8 @@
 
 Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes a public interactive landing page, templates, voice input, account-based library sync, public prompt sharing, bring-your-own-key settings, copy, and Markdown export.
 
+If PromptDock helps your work, [support the project on GitHub Sponsors](https://github.com/sponsors/kingjethro999).
+
 ## Project layout
 
 | Path            | Purpose                                                                   |
