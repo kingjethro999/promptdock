@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   clientIp,
   consume,
+  peek,
   policies,
   prune,
   localBucketCount,
@@ -158,6 +159,28 @@ test("pruning removes stale local buckets and deletes expired rows", async () =>
 test("test runs share the AI budget", () => {
   assert.deepEqual(policies["/api/run"], {
     capacity: 20,
+    periodSeconds: 3600,
+  });
+});
+
+test("usage peek reports the budget without spending it", async () => {
+  const request = { headers: {}, socket: { remoteAddress: "192.0.2.88" } };
+  const policy = { capacity: 3, periodSeconds: 100000 };
+  const options = { policy, env: {} };
+  assert.deepEqual(await peek(request, "/api/run", options), {
+    capacity: 3,
+    used: 0,
+    remaining: 3,
+    resetsIn: 0,
+  });
+  assert.equal((await consume(request, "/api/run", options)).allowed, true);
+  const after = await peek(request, "/api/run", options);
+  assert.equal(after.used, 1);
+  assert.equal(after.remaining, 2);
+  assert.ok(after.resetsIn > 0);
+  assert.equal((await peek(request, "/api/run", options)).remaining, 2);
+  assert.deepEqual(policies["/api/usage"], {
+    capacity: 120,
     periodSeconds: 3600,
   });
 });

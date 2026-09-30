@@ -262,6 +262,42 @@ async function handleRequest(request, response) {
     }
     return;
   }
+  if (pathname === "/api/usage" && request.method === "GET") {
+    if (!validOrigin(request)) {
+      json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    try {
+      const limit = await rateLimit.consume(request, pathname);
+      if (!limit.allowed) {
+        json(
+          response,
+          429,
+          { error: "Usage is being refreshed too often." },
+          { "Retry-After": String(limit.retryAfter) },
+        );
+        return;
+      }
+      const user = await auth.currentUser(request).catch(() => null);
+      const subject = rateSubject(user);
+      const usage = [];
+      for (const route of [
+        "/api/run",
+        "/api/enhance",
+        "/api/idea-to-prompt",
+        "/api/transcribe",
+      ]) {
+        usage.push({
+          route,
+          ...(await rateLimit.peek(request, route, subject ? { subject } : {})),
+        });
+      }
+      json(response, 200, { usage });
+    } catch (error) {
+      json(response, 503, { error: error.message || "Usage is unavailable." });
+    }
+    return;
+  }
   if (
     [
       "/api/auth/register",

@@ -1061,6 +1061,7 @@ async function loadSettings() {
     $("byokState").textContent = "Could not load your AI settings.";
   }
   refreshSessions();
+  refreshUsage();
 }
 
 function describeDevice(userAgent) {
@@ -1144,6 +1145,61 @@ function renderSessions(sessions) {
     });
     row.append(info, revoke);
     list.append(row);
+  }
+}
+
+const usageLabels = {
+  "/api/run": "Run prompt",
+  "/api/enhance": "Improve with AI",
+  "/api/idea-to-prompt": "Idea to prompt",
+  "/api/transcribe": "Voice transcription",
+};
+
+function renderUsage(items) {
+  const list = $("usageList");
+  list.replaceChildren();
+  if (!items.length) {
+    const note = document.createElement("p");
+    note.className = "usage-empty";
+    note.textContent = "Usage is unavailable right now.";
+    list.append(note);
+    return;
+  }
+  for (const item of items) {
+    const row = document.createElement("div");
+    row.className = "usage-row";
+    const head = document.createElement("div");
+    head.className = "usage-head";
+    const label = document.createElement("strong");
+    label.textContent = usageLabels[item.route] || item.route;
+    const count = document.createElement("span");
+    count.textContent = `${item.remaining} of ${item.capacity} left`;
+    head.append(label, count);
+    const bar = document.createElement("div");
+    bar.className = "usage-bar";
+    const fill = document.createElement("span");
+    const percent = Math.round((item.remaining / item.capacity) * 100);
+    fill.style.width = `${percent}%`;
+    if (percent <= 20) bar.classList.add("low");
+    bar.append(fill);
+    row.append(head, bar);
+    list.append(row);
+  }
+}
+
+async function refreshUsage() {
+  const list = $("usageList");
+  if (!list) return;
+  try {
+    const response = await apiFetch("/api/usage");
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || "Usage is unavailable.");
+    renderUsage(Array.isArray(result.usage) ? result.usage : []);
+  } catch (error) {
+    const note = document.createElement("p");
+    note.className = "usage-empty";
+    note.textContent = error.message || "Usage is unavailable.";
+    list.replaceChildren(note);
   }
 }
 

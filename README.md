@@ -38,6 +38,8 @@ Prompt generation follows the source-backed design notes in [`docs/prompt-resear
 
 In Settings, choose Groq, Gemini, or APMIX, enter a model ID and your own API key, and save. APMIX BYOK uses `https://api.apmix.ai/v1` unless `APMIX_BASE_URL` is configured on the server. Keys are encrypted with AES-256-GCM before being stored in PostgreSQL. The API never returns the saved key. Set one stable `BYOK_ENCRYPTION_KEY` (64 hex characters) on every deployment; changing or losing it makes previously saved keys unreadable. A Groq key also powers voice transcription. Removing a personal key returns the app to its configured provider.
 
+Settings also carries a **This hour** usage meter for each AI action — Run prompt, Improve with AI, Idea to prompt, and Voice transcription. Every action draws from a rolling hourly budget shared by your account (or your IP when signed out), and `GET /api/usage` reports how many uses are left and when the budget refills, so the meter shows the cost of a busy hour before you hit a 429.
+
 To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The server transcribes with Groq and sends the resulting idea through prompt generation. **Cancel** or the two-minute limit discards the recording. Vercel's function payload limit caps recordings at 4 MB.
 
 Run `npm test` for route, account, provider, voice, sharing, database validation, and version checks. The account flow test uses an in-memory query adapter, so it does not send email or require a live database.

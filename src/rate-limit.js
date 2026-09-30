@@ -13,6 +13,7 @@ const policies = Object.freeze({
   "/api/auth/resend": { capacity: 6, periodSeconds: 3600 },
   "/api/auth/reset": { capacity: 10, periodSeconds: 900 },
   "/api/auth/delete-account": { capacity: 5, periodSeconds: 900 },
+  "/api/usage": { capacity: 120, periodSeconds: 3600 },
 });
 const localBuckets = new Map();
 const bucketTtlSeconds =
@@ -102,6 +103,50 @@ async function consume(request, route, options = {}) {
   };
 }
 
+function usageOf(policy, available) {
+  const held = Math.min(policy.capacity, Math.max(0, available));
+  const remaining = Math.floor(held);
+  const refill = policy.capacity / policy.periodSeconds;
+  return {
+    capacity: policy.capacity,
+    used: policy.capacity - remaining,
+    remaining,
+    resetsIn: Math.ceil((policy.capacity - held) / refill),
+  };
+}
+
+async function peek(request, route, options = {}) {
+  const policy = options.policy || policies[route];
+  if (!policy) throw new Error("No rate limit policy for this route.");
+  const env = options.env || process.env;
+  const pool = options.pool || database.pool;
+  const subject = options.subject || `ip:${clientIp(request, env)}`;
+  const key = createHash("sha256").update(`${route}:${subject}`).digest("hex");
+  const refill = policy.capacity / policy.periodSeconds;
+  if (!pool) {
+    const now = Date.now();
+    const bucket = localBuckets.get(key);
+    const available = bucket
+      ? Math.min(
+          policy.capacity,
+          bucket.tokens + Math.max(0, (now - bucket.updatedAt) / 1000) * refill,
+        )
+      : policy.capacity;
+    return usageOf(policy, available);
+  }
+  if (!options.pool) await database.ensureSchema();
+  const result = await pool.query(
+    `SELECT LEAST($2::double precision, tokens +
+      GREATEST(0, EXTRACT(EPOCH FROM now() - updated_at)) * $3::double precision) AS available
+    FROM api_rate_limits WHERE bucket_key = $1`,
+    [key, policy.capacity, refill],
+  );
+  return usageOf(
+    policy,
+    result.rows[0] ? Number(result.rows[0].available) : policy.capacity,
+  );
+}
+
 function localBucketCount() {
   return localBuckets.size;
 }
@@ -110,6 +155,7 @@ module.exports = {
   policies,
   clientIp,
   consume,
+  peek,
   prune,
   localBucketCount,
   bucketTtlSeconds,

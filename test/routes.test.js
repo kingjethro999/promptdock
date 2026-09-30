@@ -491,3 +491,38 @@ test("session and account-deletion routes need a signed-in account", async () =>
     ["delete", "u1", "long-password"],
   ]);
 });
+
+test("usage endpoint reports the current AI budgets", async () => {
+  const stubs = [
+    [rateLimit, "consume", async () => ({ allowed: true, retryAfter: 60 })],
+    [
+      rateLimit,
+      "peek",
+      async (request, route) => ({
+        capacity: 20,
+        used: 5,
+        remaining: 15,
+        resetsIn: 120,
+        route,
+      }),
+    ],
+    [auth, "currentUser", async () => null],
+  ];
+  await withServer(stubs, async (base) => {
+    const response = await send(base, "/api/usage");
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.usage.length, 4);
+    assert.deepEqual(body.usage[0], {
+      route: "/api/run",
+      capacity: 20,
+      used: 5,
+      remaining: 15,
+      resetsIn: 120,
+    });
+    assert.deepEqual(
+      body.usage.map((item) => item.route),
+      ["/api/run", "/api/enhance", "/api/idea-to-prompt", "/api/transcribe"],
+    );
+  });
+});

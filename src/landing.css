@@ -878,6 +878,48 @@
   color: #8f8783;
   margin: 9px 0;
 }
+.usage-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.usage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.usage-head strong {
+  font-size: 11px;
+  color: #3e5840;
+}
+.usage-head span {
+  color: #8a9c8c;
+  white-space: nowrap;
+}
+.usage-bar {
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #eef3ea;
+  overflow: hidden;
+}
+.usage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #93c16c;
+  transition: width 0.2s ease;
+}
+.usage-bar.low span {
+  background: #d98b4a;
+}
+.usage-empty {
+  margin: 0;
+  font-size: 11px;
+  color: #8a9c8c;
+}
 .auth-forgot {
   display: block;
   margin: 13px 0 0 auto;
