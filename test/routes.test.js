@@ -421,3 +421,73 @@ test("the run endpoint executes a prompt for the signed-in account", async () =>
     assert.equal(signedOut.status, 401);
   });
 });
+
+test("session and account-deletion routes need a signed-in account", async () => {
+  const sessionId = "333e4567-e89b-42d3-a456-426614174000";
+  let signedIn = true;
+  const calls = [];
+  const stubs = [
+    [database, "configured", true],
+    [
+      auth,
+      "currentUser",
+      async () => (signedIn ? { id: "u1", email: "hello@example.com" } : null),
+    ],
+    [
+      auth,
+      "listSessions",
+      async (userId) => {
+        calls.push(["list", userId]);
+        return [{ sessionId, userAgent: "Chrome", current: true }];
+      },
+    ],
+    [
+      auth,
+      "revokeSession",
+      async (userId, id) => {
+        calls.push(["revoke", userId, id]);
+        return { revoked: id === sessionId, current: false };
+      },
+    ],
+    [
+      auth,
+      "deleteAccount",
+      async (user, body) => {
+        calls.push(["delete", user.id, body.password]);
+      },
+    ],
+    [rateLimit, "consume", async () => ({ allowed: true, retryAfter: 60 })],
+  ];
+  await withServer(stubs, async (base) => {
+    let response = await send(base, "/api/auth/sessions");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      sessions: [{ sessionId, userAgent: "Chrome", current: true }],
+    });
+    response = await send(base, `/api/auth/sessions/${sessionId}`, "DELETE");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, current: false });
+    response = await send(base, "/api/auth/sessions/not-a-uuid", "DELETE");
+    assert.equal(response.status, 404);
+    response = await send(base, "/api/auth/delete-account", "POST", {
+      password: "long-password",
+    });
+    assert.equal(response.status, 200);
+    signedIn = false;
+    assert.equal((await send(base, "/api/auth/sessions")).status, 401);
+    assert.equal(
+      (
+        await send(base, "/api/auth/delete-account", "POST", {
+          password: "long-password",
+        })
+      ).status,
+      401,
+    );
+  });
+  assert.deepEqual(calls, [
+    ["list", "u1"],
+    ["revoke", "u1", sessionId],
+    ["revoke", "u1", "not-a-uuid"],
+    ["delete", "u1", "long-password"],
+  ]);
+});

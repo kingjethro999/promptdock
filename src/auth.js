@@ -87,11 +87,18 @@ function clearCookie(request) {
   );
 }
 
+function userAgentFrom(request) {
+  const value = request.headers["user-agent"];
+  return typeof value === "string" && value.trim()
+    ? value.trim().slice(0, 300)
+    : null;
+}
+
 async function issueSession(user, request) {
   const token = randomBytes(32).toString("hex");
   await database.pool.query(
-    "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '30 days')",
-    [tokenHash(token), user.id],
+    "INSERT INTO sessions (token_hash, user_id, expires_at, user_agent) VALUES ($1, $2, now() + interval '30 days', $3)",
+    [tokenHash(token), user.id, userAgentFrom(request)],
   );
   return {
     user: { id: user.id, email: user.email },
@@ -314,6 +321,79 @@ async function logoutAll(userId) {
   ]);
 }
 
+const SESSION_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function listSessions(userId, request) {
+  if (!database.pool) return [];
+  await database.ensureSchema();
+  const token = tokenFrom(request);
+  const result = await database.pool.query(
+    `SELECT session_id AS "sessionId", created_at AS "createdAt", user_agent AS "userAgent",
+      token_hash = $1 AS current
+    FROM sessions WHERE user_id = $2 AND expires_at > now()
+    ORDER BY created_at DESC, session_id ASC`,
+    [token ? tokenHash(token) : "", userId],
+  );
+  return result.rows.map((row) => ({
+    sessionId: row.sessionId,
+    createdAt: row.createdAt,
+    userAgent: row.userAgent,
+    current: Boolean(row.current),
+  }));
+}
+
+async function revokeSession(userId, sessionId, request) {
+  if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId))
+    throw new AuthError("Invalid session.", 400);
+  if (!database.pool) return { revoked: false, current: false };
+  await database.ensureSchema();
+  const token = tokenFrom(request);
+  const result = await database.pool.query(
+    "DELETE FROM sessions WHERE user_id = $1 AND session_id = $2 RETURNING token_hash = $3 AS current",
+    [userId, sessionId, token ? tokenHash(token) : ""],
+  );
+  const row = result.rows[0];
+  return { revoked: Boolean(row), current: Boolean(row?.current) };
+}
+
+async function deleteAccount(user, body) {
+  if (typeof body?.password !== "string" || body.password.length > 200)
+    throw new AuthError("Enter your password to delete the account.", 400);
+  await database.ensureSchema();
+  const result = await database.pool.query(
+    "SELECT password_hash FROM users WHERE id = $1",
+    [user.id],
+  );
+  if (
+    !result.rows[0] ||
+    !(await verifyPassword(body.password, result.rows[0].password_hash))
+  )
+    throw new AuthError("Password is incorrect.", 401);
+  const ownerKey = database.accountKey(user.id);
+  const bucketKeys = ["idea-to-prompt", "enhance", "transcribe", "run"].map(
+    (route) =>
+      createHash("sha256").update(`${route}:user:${user.id}`).digest("hex"),
+  );
+  const client = await database.pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM prompts WHERE owner_key = $1", [ownerKey]);
+    await client.query(
+      "DELETE FROM api_rate_limits WHERE bucket_key = ANY($1::char(64)[])",
+      [bucketKeys],
+    );
+    await client.query("DELETE FROM sessions WHERE user_id = $1", [user.id]);
+    await client.query("DELETE FROM users WHERE id = $1", [user.id]);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function currentUser(request) {
   const token = tokenFrom(request);
   if (!token || !database.pool) return null;
@@ -352,6 +432,9 @@ module.exports = {
   consumeToken,
   changePassword,
   logoutAll,
+  listSessions,
+  revokeSession,
+  deleteAccount,
   currentUser,
   logout,
 };

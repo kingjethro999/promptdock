@@ -1060,17 +1060,115 @@ async function loadSettings() {
   } catch {
     $("byokState").textContent = "Could not load your AI settings.";
   }
+  refreshSessions();
 }
 
-async function signOut(all = false) {
-  const response = await apiFetch(
-    all ? "/api/auth/logout-all" : "/api/auth/logout",
-    { method: "POST" },
-  ).catch(() => null);
-  if (!response?.ok) {
-    showToast("Could not sign out. Try again.");
+function describeDevice(userAgent) {
+  if (!userAgent) return "Unknown device";
+  const browser = /Edg\//.test(userAgent)
+    ? "Edge"
+    : /OPR\//.test(userAgent)
+      ? "Opera"
+      : /Firefox\//.test(userAgent)
+        ? "Firefox"
+        : /Chrome\//.test(userAgent)
+          ? "Chrome"
+          : /Safari\//.test(userAgent)
+            ? "Safari"
+            : "Browser";
+  const platform = /Windows/.test(userAgent)
+    ? "Windows"
+    : /iPhone|iPad|iPod/.test(userAgent)
+      ? "iPhone or iPad"
+      : /Mac OS X|Macintosh/.test(userAgent)
+        ? "Mac"
+        : /Android/.test(userAgent)
+          ? "Android"
+          : /Linux/.test(userAgent)
+            ? "Linux"
+            : "";
+  return platform ? `${browser} on ${platform}` : browser;
+}
+
+function renderSessions(sessions) {
+  const list = $("sessionsList");
+  list.replaceChildren();
+  if (!sessions.length) {
+    const empty = document.createElement("p");
+    empty.className = "sessions-empty";
+    empty.textContent = "No active sessions.";
+    list.append(empty);
     return;
   }
+  for (const session of sessions) {
+    const row = document.createElement("div");
+    row.className = "session-row";
+    const info = document.createElement("div");
+    info.className = "session-info";
+    const name = document.createElement("strong");
+    name.textContent = describeDevice(session.userAgent);
+    const meta = document.createElement("small");
+    meta.textContent = `Signed in ${new Date(session.createdAt).toLocaleString()}`;
+    info.append(name, meta);
+    if (session.current) {
+      const badge = document.createElement("span");
+      badge.className = "session-badge";
+      badge.textContent = "This device";
+      info.append(badge);
+    }
+    const revoke = document.createElement("button");
+    revoke.type = "button";
+    revoke.className = "text-button";
+    revoke.textContent = "Sign out";
+    revoke.addEventListener("click", async () => {
+      revoke.disabled = true;
+      try {
+        const response = await apiFetch(
+          `/api/auth/sessions/${encodeURIComponent(session.sessionId)}`,
+          { method: "DELETE" },
+        );
+        const result = await readApiJson(response);
+        if (!response.ok)
+          throw new Error(result.error || "Could not end this session.");
+        if (result.current) {
+          resetAccountState();
+          showToast("Signed out on this device.");
+          return;
+        }
+        await refreshSessions();
+        showToast("Session ended.");
+      } catch (error) {
+        showToast(error.message);
+        revoke.disabled = false;
+      }
+    });
+    row.append(info, revoke);
+    list.append(row);
+  }
+}
+
+async function refreshSessions() {
+  const list = $("sessionsList");
+  if (!list) return;
+  if (!currentUser) {
+    renderSessions([]);
+    return;
+  }
+  try {
+    const response = await apiFetch("/api/auth/sessions");
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not load sessions.");
+    renderSessions(Array.isArray(result.sessions) ? result.sessions : []);
+  } catch (error) {
+    const note = document.createElement("p");
+    note.className = "sessions-empty";
+    note.textContent = error.message || "Sessions are unavailable.";
+    list.replaceChildren(note);
+  }
+}
+
+function resetAccountState() {
   currentUser = null;
   accountPrompts = [];
   currentId = null;
@@ -1083,6 +1181,18 @@ async function signOut(all = false) {
   switchView("builder");
   renderAccount();
   renderShell();
+}
+
+async function signOut(all = false) {
+  const response = await apiFetch(
+    all ? "/api/auth/logout-all" : "/api/auth/logout",
+    { method: "POST" },
+  ).catch(() => null);
+  if (!response?.ok) {
+    showToast("Could not sign out. Try again.");
+    return;
+  }
+  resetAccountState();
   showToast("Signed out.");
 }
 
@@ -2277,6 +2387,38 @@ $("authDialog").addEventListener("close", () => {
 });
 $("sidebarSignOut").addEventListener("click", () => signOut());
 $("logoutAllButton").addEventListener("click", () => signOut(true));
+$("deleteAccountForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const feedback = $("deleteAccountFeedback");
+  const button = $("deleteAccountForm").querySelector("button[type=submit]");
+  feedback.textContent = "";
+  feedback.classList.remove("error");
+  if (
+    !confirm(
+      "Delete your PromptDock account, every saved prompt, and all sessions? This cannot be undone.",
+    )
+  )
+    return;
+  button.disabled = true;
+  try {
+    const response = await apiFetch("/api/auth/delete-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: $("deleteAccountPassword").value }),
+    });
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not delete your account.");
+    resetAccountState();
+    event.target.reset();
+    showToast("Your account and its prompts were deleted.");
+  } catch (error) {
+    feedback.textContent = error.message;
+    feedback.classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
+});
 document
   .querySelectorAll("[data-auth-mode]")
   .forEach((button) =>

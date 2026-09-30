@@ -217,6 +217,52 @@ async function handleRequest(request, response) {
     return;
   }
   if (
+    (pathname === "/api/auth/sessions" && request.method === "GET") ||
+    (pathname.startsWith("/api/auth/sessions/") && request.method === "DELETE")
+  ) {
+    if (!validOrigin(request)) {
+      json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    if (!database.configured) {
+      json(response, 503, { error: "Database is not configured." });
+      return;
+    }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) {
+        json(response, 401, { error: "Sign in first." });
+        return;
+      }
+      if (request.method === "GET") {
+        json(response, 200, {
+          sessions: await auth.listSessions(user.id, request),
+        });
+        return;
+      }
+      const outcome = await auth.revokeSession(
+        user.id,
+        pathname.slice("/api/auth/sessions/".length),
+        request,
+      );
+      if (!outcome.revoked) {
+        json(response, 404, { error: "Session not found." });
+        return;
+      }
+      json(
+        response,
+        200,
+        { ok: true, current: outcome.current },
+        outcome.current ? { "Set-Cookie": auth.clearCookie(request) } : {},
+      );
+    } catch (error) {
+      json(response, error.status || 503, {
+        error: error.status ? error.message : "Account service is unavailable.",
+      });
+    }
+    return;
+  }
+  if (
     [
       "/api/auth/register",
       "/api/auth/login",
@@ -227,6 +273,7 @@ async function handleRequest(request, response) {
       "/api/auth/verify",
       "/api/auth/reset",
       "/api/auth/change-password",
+      "/api/auth/delete-account",
       "/api/auth/logout-all",
     ].includes(pathname) &&
     request.method === "POST"
@@ -325,6 +372,19 @@ async function handleRequest(request, response) {
           }
           const result = await auth.changePassword(user, body, request);
           json(response, 200, { ok: true }, { "Set-Cookie": result.cookie });
+        } else if (pathname === "/api/auth/delete-account") {
+          const user = await auth.currentUser(request);
+          if (!user) {
+            json(response, 401, { error: "Sign in first." });
+            return;
+          }
+          await auth.deleteAccount(user, body);
+          json(
+            response,
+            200,
+            { ok: true },
+            { "Set-Cookie": auth.clearCookie(request) },
+          );
         }
       }
     } catch (error) {

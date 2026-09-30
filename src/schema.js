@@ -16,9 +16,16 @@ module.exports = [
   `CREATE TABLE IF NOT EXISTS sessions (
     token_hash char(64) PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expires_at timestamptz NOT NULL
+    expires_at timestamptz NOT NULL,
+    session_id uuid NOT NULL DEFAULT gen_random_uuid(),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    user_agent text
   )`,
   "CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id)",
+  "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS session_id uuid NOT NULL DEFAULT gen_random_uuid()",
+  "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()",
+  "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_agent text",
+  "CREATE UNIQUE INDEX IF NOT EXISTS sessions_session_id_idx ON sessions (session_id)",
   `CREATE TABLE IF NOT EXISTS auth_tokens (
     token_hash char(64) PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,

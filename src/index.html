@@ -990,14 +990,44 @@
                 role="status"
               ></p>
               <div class="settings-session">
-                <strong>Sessions</strong>
+                <strong>Active sessions</strong>
                 <p>
-                  Sign out on this device, or end every session if you lost
-                  access to another device.
+                  Sign out on this device, or end a session you do not
+                  recognize. Sign out on all devices ends every session at once.
                 </p>
+                <div class="sessions-list" id="sessionsList" aria-live="polite">
+                  <p class="sessions-empty">Loading sessions…</p>
+                </div>
                 <button type="button" class="text-button" id="logoutAllButton">
                   Sign out on all devices ↗
                 </button>
+              </div>
+              <div class="settings-danger">
+                <strong>Delete account</strong>
+                <p>
+                  Permanently removes your prompts, revisions, saved provider
+                  keys, and every session. This cannot be undone.
+                </p>
+                <form id="deleteAccountForm">
+                  <label class="settings-label" for="deleteAccountPassword"
+                    >Confirm your password</label
+                  ><input
+                    id="deleteAccountPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                  /><button
+                    type="submit"
+                    class="secondary-button settings-submit"
+                  >
+                    Delete my account
+                  </button>
+                </form>
+                <p
+                  class="settings-feedback"
+                  id="deleteAccountFeedback"
+                  role="status"
+                ></p>
               </div>
             </section>
           </div>
