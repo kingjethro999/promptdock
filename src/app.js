@@ -192,6 +192,165 @@ function readJSON(key, fallback) {
     return fallback;
   }
 }
+function attachSearchableSelect(select, options = {}) {
+  if (select.searchSelect) return select.searchSelect;
+  const wrap = document.createElement("div");
+  wrap.className = "search-select";
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "search-select-trigger";
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+  const value = document.createElement("span");
+  value.className = "search-select-value";
+  const caret = document.createElement("span");
+  caret.className = "search-select-caret";
+  caret.setAttribute("aria-hidden", "true");
+  caret.textContent = "▾";
+  trigger.append(value, caret);
+  const panel = document.createElement("div");
+  panel.className = "search-select-panel hidden";
+  const input = document.createElement("input");
+  input.type = "search";
+  input.className = "search-select-input";
+  input.placeholder = options.placeholder || "Search…";
+  input.setAttribute("aria-label", options.placeholder || "Search options");
+  const list = document.createElement("ul");
+  list.className = "search-select-list";
+  list.setAttribute("role", "listbox");
+  const empty = document.createElement("p");
+  empty.className = "search-select-empty hidden";
+  empty.textContent = options.emptyText || "No matches";
+  panel.append(input, list, empty);
+  wrap.append(trigger, panel);
+  select.insertAdjacentElement("afterend", wrap);
+  select.classList.add("search-select-native");
+
+  let isOpen = false;
+  let activeIndex = -1;
+  let visible = [];
+
+  function draw() {
+    const needle = input.value.trim().toLowerCase();
+    visible = [...select.options].filter(
+      (option) =>
+        !needle || option.textContent.trim().toLowerCase().includes(needle),
+    );
+    if (activeIndex >= visible.length) activeIndex = visible.length - 1;
+    list.replaceChildren(
+      ...visible.map((option, index) => {
+        const item = document.createElement("li");
+        item.className = "search-select-option";
+        item.setAttribute("role", "option");
+        item.textContent = option.textContent.trim();
+        if (option.selected) item.setAttribute("aria-selected", "true");
+        item.classList.toggle("is-selected", Boolean(option.selected));
+        item.classList.toggle("is-active", index === activeIndex);
+        item.addEventListener("click", () => choose(option));
+        item.addEventListener("mousemove", () => setActive(index));
+        return item;
+      }),
+    );
+    empty.classList.toggle("hidden", visible.length > 0);
+  }
+
+  function setActive(index) {
+    activeIndex = index;
+    draw();
+  }
+
+  function sync() {
+    const option = select.selectedOptions[0];
+    value.textContent = option ? option.textContent.trim() : "";
+    trigger.disabled = select.disabled;
+    if (isOpen) draw();
+  }
+
+  function open() {
+    if (select.disabled) return;
+    isOpen = true;
+    panel.classList.remove("hidden");
+    wrap.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    input.value = "";
+    activeIndex = -1;
+    draw();
+    const selected = visible.findIndex((option) => option.selected);
+    activeIndex = selected < 0 ? (visible.length ? 0 : -1) : selected;
+    draw();
+    input.focus();
+  }
+
+  function close() {
+    isOpen = false;
+    panel.classList.add("hidden");
+    wrap.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+    activeIndex = -1;
+  }
+
+  function choose(option) {
+    select.value = option.value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    close();
+    trigger.focus();
+  }
+
+  trigger.addEventListener("click", () => (isOpen ? close() : open()));
+  trigger.addEventListener("keydown", (event) => {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      open();
+    }
+  });
+  input.addEventListener("input", () => {
+    activeIndex = -1;
+    draw();
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" || event.key === "Tab") {
+      close();
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!visible.length) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      const next = activeIndex < 0 ? 0 : activeIndex + step;
+      setActive(Math.min(visible.length - 1, Math.max(0, next)));
+      list.children[activeIndex]?.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (visible[activeIndex]) choose(visible[activeIndex]);
+    }
+  });
+  document.addEventListener("mousedown", (event) => {
+    if (isOpen && !wrap.contains(event.target)) close();
+  });
+  select.addEventListener("change", sync);
+  new MutationObserver(sync).observe(select, {
+    childList: true,
+    attributes: true,
+    attributeFilter: ["disabled"],
+  });
+
+  select.searchSelect = { sync, open, close };
+  sync();
+  return select.searchSelect;
+}
+
+function syncSearchable(select) {
+  select?.searchSelect?.sync();
+}
+
+function initSearchableSelects() {
+  document
+    .querySelectorAll("select[data-searchable]")
+    .forEach((select) => attachSearchableSelect(select));
+}
+
 function dataFromForm() {
   return Object.fromEntries(
     fields.map((field) => [field, elements[field].value.trim()]),
@@ -1070,6 +1229,7 @@ function renderByokSelect() {
     select.append(option);
   }
   select.value = byokActiveId || "__default__";
+  syncSearchable(select);
 }
 
 function loadByokForm(entry) {
@@ -1079,6 +1239,7 @@ function loadByokForm(entry) {
   $("byokBaseUrl").value = entry ? entry.baseUrl : "";
   $("byokModel").value = entry ? entry.model : "";
   $("byokKey").value = "";
+  syncSearchable($("byokType"));
   syncByokForm();
 }
 
@@ -1127,6 +1288,7 @@ async function loadSettings() {
     $("byokDelete").disabled = !usable;
     $("byokActive").disabled = !usable;
     $("removeByok").disabled = !usable || !byokActiveId;
+    syncSearchable($("byokActive"));
   } catch {
     $("byokState").textContent = "Could not load your AI settings.";
   }
@@ -2758,6 +2920,7 @@ $("demoAction").addEventListener("click", () => {
 
 renderTemplates();
 $("appVersion").textContent = config.version;
+initSearchableSelects();
 const savedDraft = readJSON(DRAFT_KEY, {});
 currentAnalysis = savedDraft.analysis || null;
 $("ideaInput").value = savedDraft.idea || "";

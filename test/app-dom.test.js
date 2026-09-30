@@ -552,3 +552,91 @@ test("settings switches saved providers and custom endpoints", async (t) => {
     false,
   );
 });
+
+test("long dropdowns open a searchable list that drives the select", async (t) => {
+  const idGroq = "33333333-3333-4333-8333-333333333333";
+  const idLocal = "44444444-4444-4444-8444-444444444444";
+  const settings = {
+    available: true,
+    providers: [
+      {
+        providerId: idGroq,
+        name: "Work Groq",
+        provider: "groq",
+        model: "openai/gpt-oss-120b",
+        baseUrl: "",
+        active: true,
+        updatedAt: "2026-09-30T00:00:00Z",
+      },
+      {
+        providerId: idLocal,
+        name: "Local Ollama",
+        provider: "openai",
+        model: "llama3",
+        baseUrl: "http://localhost:11434/v1",
+        active: false,
+        updatedAt: "2026-09-29T00:00:00Z",
+      },
+    ],
+    activeProviderId: idGroq,
+    provider: "groq",
+    model: "openai/gpt-oss-120b",
+    hasKey: true,
+    updatedAt: "2026-09-30T00:00:00Z",
+  };
+  const { window, state } = await createWorkspace([], {
+    user: { id: "u1", email: "hello@example.com" },
+    settings,
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  await waitFor(() =>
+    doc.getElementById("byokState").textContent.includes("Work Groq"),
+  );
+
+  const select = doc.getElementById("byokActive");
+  const wrap = select.nextElementSibling;
+  assert.ok(wrap.classList.contains("search-select"));
+  const trigger = wrap.querySelector(".search-select-trigger");
+  const label = wrap.querySelector(".search-select-value");
+  const input = wrap.querySelector(".search-select-input");
+  const panel = wrap.querySelector(".search-select-panel");
+  const empty = wrap.querySelector(".search-select-empty");
+  assert.equal(label.textContent, "Work Groq · Groq");
+  assert.equal(trigger.getAttribute("aria-expanded"), "false");
+
+  trigger.click();
+  assert.equal(trigger.getAttribute("aria-expanded"), "true");
+  assert.equal(panel.classList.contains("hidden"), false);
+  assert.equal(doc.activeElement, input);
+  assert.deepEqual(
+    [...wrap.querySelectorAll(".search-select-option")].map(
+      (item) => item.textContent,
+    ),
+    [
+      "PromptDock default",
+      "Work Groq · Groq",
+      "Local Ollama · OpenAI-compatible",
+    ],
+  );
+
+  input.value = "ollama";
+  input.dispatchEvent(new window.Event("input", { bubbles: true }));
+  const matches = [...wrap.querySelectorAll(".search-select-option")];
+  assert.deepEqual(
+    matches.map((item) => item.textContent),
+    ["Local Ollama · OpenAI-compatible"],
+  );
+  matches[0].click();
+
+  assert.equal(select.value, idLocal);
+  assert.equal(panel.classList.contains("hidden"), true);
+  await waitFor(() => state.settings.activeProviderId === idLocal);
+  await waitFor(() => label.textContent === "Local Ollama · OpenAI-compatible");
+
+  trigger.click();
+  input.value = "nothing here";
+  input.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.equal(wrap.querySelectorAll(".search-select-option").length, 0);
+  assert.equal(empty.classList.contains("hidden"), false);
+});

@@ -659,7 +659,9 @@
   background: #edf5e5;
 }
 .landing-sponsor h2 {
-  font: 800 clamp(24px, 3vw, 34px) Manrope, sans-serif;
+  font:
+    800 clamp(24px, 3vw, 34px) Manrope,
+    sans-serif;
   letter-spacing: -1px;
   margin: 12px 0;
 }
@@ -829,6 +831,110 @@
 }
 #byokActive {
   font-weight: 800;
+}
+/* Searchable stand-in for long dropdowns: the original select stays in the
+   DOM for value, events, and assistive technology. */
+.search-select {
+  position: relative;
+}
+.search-select .search-select-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+.search-select-trigger {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #dce7da;
+  border-radius: 8px;
+  background: #fafcf8;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #29402f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.search-select-trigger:focus-visible {
+  outline: 3px solid #d5f0be;
+  border-color: #8ac077;
+}
+.search-select-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.search-select.is-open .search-select-trigger {
+  border-color: #8ac077;
+}
+.search-select-value {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-select-caret {
+  color: #7d9580;
+}
+.search-select-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #dce7da;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(23, 41, 35, 0.16);
+  padding: 8px;
+}
+.search-select-input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #e2ebe0;
+  border-radius: 7px;
+  background: #fafcf8;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #29402f;
+}
+.search-select-input:focus {
+  outline: 3px solid #d5f0be;
+  border-color: #8ac077;
+}
+.search-select-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.search-select-option {
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: #29402f;
+  cursor: pointer;
+}
+.search-select-option.is-active,
+.search-select-option:hover {
+  background: #eef7e8;
+}
+.search-select-option.is-selected {
+  font-weight: 800;
+  color: #3f6a3f;
+}
+.search-select-empty {
+  margin: 10px 4px 4px;
+  font-size: 11px;
+  color: #8da18c;
 }
 .settings-card small code {
   font-family: inherit;

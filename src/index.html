@@ -259,8 +259,16 @@
         <div>
           <span class="landing-kicker">SUPPORT PROMPTDOCK</span>
           <h2 id="sponsorHeading">Help keep better prompts within reach.</h2>
-          <p>If PromptDock helps your work, you can support its development through GitHub Sponsors.</p>
-          <a href="https://github.com/sponsors/kingjethro999" target="_blank" rel="noopener noreferrer">Sponsor PromptDock on GitHub ↗</a>
+          <p>
+            If PromptDock helps your work, you can support its development
+            through GitHub Sponsors.
+          </p>
+          <a
+            href="https://github.com/sponsors/kingjethro999"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Sponsor PromptDock on GitHub ↗</a
+          >
         </div>
         <iframe
           src="https://github.com/sponsors/kingjethro999/card"
@@ -331,7 +339,12 @@
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
             ></iframe>
-            <a href="https://github.com/sponsors/kingjethro999" target="_blank" rel="noopener noreferrer">Open GitHub Sponsors ↗</a>
+            <a
+              href="https://github.com/sponsors/kingjethro999"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Open GitHub Sponsors ↗</a
+            >
           </div>
           <button type="button" class="sidebar-signout" id="sidebarSignOut">
             <span>↗</span> Sign out
@@ -924,7 +937,7 @@
               </p>
               <label class="settings-label" for="byokActive"
                 >Active provider</label
-              ><select id="byokActive">
+              ><select id="byokActive" data-searchable>
                 <option value="__default__">PromptDock default</option>
               </select>
               <div class="settings-actions">
@@ -946,7 +959,7 @@
                   required
                 /><label class="settings-label" for="byokType"
                   >Provider type</label
-                ><select id="byokType" name="provider">
+                ><select id="byokType" name="provider" data-searchable>
                   <option value="groq">Groq</option>
                   <option value="gemini">Gemini</option>
                   <option value="apmix">APMIX</option>

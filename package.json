@@ -1,8 +1,9 @@
 {
   "name": "promptdock",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
+  "license": "MIT",
   "scripts": {
     "start": "npm run build:frontend && node src/server.js",
     "start:api": "node src/server.js",
