@@ -42,6 +42,40 @@ test("token bucket allows its capacity then rejects until refilled", async () =>
   assert.equal(rejected.retryAfter, 50000);
 });
 
+test("a signed-in subject keeps its own bucket apart from other users and IPs", async () => {
+  const request = { headers: {}, socket: { remoteAddress: "192.0.2.9" } };
+  const policy = { capacity: 1, periodSeconds: 100000 };
+  const options = { policy, env: {} };
+  assert.equal(
+    (
+      await consume(request, "/api/enhance", {
+        ...options,
+        subject: "user:aaa",
+      })
+    ).allowed,
+    true,
+  );
+  assert.equal(
+    (
+      await consume(request, "/api/enhance", {
+        ...options,
+        subject: "user:aaa",
+      })
+    ).allowed,
+    false,
+  );
+  assert.equal(
+    (
+      await consume(request, "/api/enhance", {
+        ...options,
+        subject: "user:bbb",
+      })
+    ).allowed,
+    true,
+  );
+  assert.equal((await consume(request, "/api/enhance", options)).allowed, true);
+});
+
 test("shared bucket query stores only a hashed address", async () => {
   let argumentsSeen;
   const request = {
@@ -62,6 +96,24 @@ test("shared bucket query stores only a hashed address", async () => {
   assert.equal(argumentsSeen.length, 3);
   assert.match(argumentsSeen[0], /^[a-f0-9]{64}$/);
   assert.ok(!argumentsSeen[0].includes("198.51.100.9"));
+});
+
+test("the shared bucket key never stores the raw account id", async () => {
+  let argumentsSeen;
+  const request = { headers: {}, socket: {} };
+  const pool = {
+    query: async (_sql, args) => {
+      argumentsSeen = args;
+      return { rowCount: 0 };
+    },
+  };
+  await consume(request, "/api/idea-to-prompt", {
+    pool,
+    env: {},
+    subject: "user:12345678-1234-1234-1234-123456789012",
+  });
+  assert.match(argumentsSeen[0], /^[a-f0-9]{64}$/);
+  assert.ok(!argumentsSeen[0].includes("12345678"));
 });
 
 test("sign-in, sign-up, and email routes are rate limited", () => {

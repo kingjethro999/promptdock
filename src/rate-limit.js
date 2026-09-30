@@ -56,9 +56,8 @@ async function consume(request, route, options = {}) {
   if (!policy) throw new Error("No rate limit policy for this route.");
   const env = options.env || process.env;
   const pool = options.pool || database.pool;
-  const key = createHash("sha256")
-    .update(`${route}:${clientIp(request, env)}`)
-    .digest("hex");
+  const subject = options.subject || `ip:${clientIp(request, env)}`;
+  const key = createHash("sha256").update(`${route}:${subject}`).digest("hex");
   const refill = policy.capacity / policy.periodSeconds;
   if (!pool) {
     prune(options);

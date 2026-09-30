@@ -93,6 +93,10 @@ function validOrigin(request) {
   );
 }
 
+function rateSubject(user) {
+  return user ? `user:${user.id}` : null;
+}
+
 function escapeHtml(value) {
   return String(value).replace(
     /[&<>"']/g,
@@ -576,7 +580,9 @@ async function handleRequest(request, response) {
         });
         return;
       }
-      const limit = await rateLimit.consume(request, pathname);
+      const limit = await rateLimit.consume(request, pathname, {
+        subject: rateSubject(user),
+      });
       if (!limit.allowed) {
         json(
           response,
@@ -629,7 +635,9 @@ async function handleRequest(request, response) {
       const body = await readBody(request);
       if (pathname === "/api/idea-to-prompt") normalizeIdea(body);
       else normalizeDraft(body);
-      const limit = await rateLimit.consume(request, pathname);
+      const limit = await rateLimit.consume(request, pathname, {
+        subject: rateSubject(user),
+      });
       if (!limit.allowed) {
         json(
           response,
