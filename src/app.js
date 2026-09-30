@@ -2013,12 +2013,11 @@ $("backupExport").addEventListener("click", async () => {
   try {
     let prompts = getSaved();
     if (currentUser) {
-      prompts = [];
-      for (let offset = 0; ; offset += 100) {
-        const page = await fetchLibraryPage("", offset);
-        prompts.push(...page.prompts);
-        if (prompts.length >= page.total || !page.prompts.length) break;
-      }
+      const response = await libraryFetch("/api/prompts/export");
+      const result = await readApiJson(response);
+      if (!response.ok)
+        throw new Error(result.error || "Could not export your library.");
+      prompts = Array.isArray(result.prompts) ? result.prompts : [];
     }
     const backup = {
       app: "PromptDock",

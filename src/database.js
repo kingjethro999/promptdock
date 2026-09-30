@@ -185,6 +185,17 @@ async function listTags(key) {
   return result.rows;
 }
 
+async function exportPrompts(key) {
+  await ensureSchema();
+  const result = await pool.query(
+    `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
+      forked_from AS "forkedFrom", updated_at AS "updatedAt"
+    FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC, id ASC`,
+    [key],
+  );
+  return result.rows;
+}
+
 async function putPrompt(key, input) {
   const item = validatePrompt(input);
   await ensureSchema();
@@ -441,6 +452,7 @@ module.exports = {
   validatePrompt,
   listPrompts,
   listTags,
+  exportPrompts,
   putPrompt,
   listRevisions,
   restoreRevision,

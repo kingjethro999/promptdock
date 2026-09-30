@@ -492,6 +492,8 @@ async function handleRequest(request, response) {
         });
       else if (pathname === "/api/prompts/tags" && request.method === "GET")
         json(response, 200, { tags: await database.listTags(key) });
+      else if (pathname === "/api/prompts/export" && request.method === "GET")
+        json(response, 200, { prompts: await database.exportPrompts(key) });
       else if (pathname === "/api/prompts/import" && request.method === "POST")
         json(response, 201, {
           imported: await database.importPrompts(

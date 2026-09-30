@@ -222,6 +222,14 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     ],
     [
       database,
+      "exportPrompts",
+      async (key) => {
+        calls.push(["export", key]);
+        return [prompt];
+      },
+    ],
+    [
+      database,
       "putPrompt",
       async (key, body) => {
         calls.push(["put", key, body.id]);
@@ -299,6 +307,9 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     assert.deepEqual(await response.json(), {
       tags: [{ tag: "test", count: 1 }],
     });
+    response = await send(base, "/api/prompts/export");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { prompts: [prompt] });
     assert.equal((await send(base, "/api/prompts", "PUT", prompt)).status, 200);
     assert.equal(
       (
@@ -352,6 +363,7 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
       { q: "game", offset: "0", tag: "work", sort: "name" },
     ],
     ["tags", "owner-key"],
+    ["export", "owner-key"],
     ["put", "owner-key", id],
     ["publish", "owner-key", id, true],
     ["history", "owner-key", id],
