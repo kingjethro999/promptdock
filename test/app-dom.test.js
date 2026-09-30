@@ -688,3 +688,39 @@ test("pasting a prompt gives the library a named, tagged entry", async (t) => {
   assert.deepEqual(saved[0].tags, ["trading", "bots"]);
   assert.equal(window.document.getElementById("libraryCount").textContent, "1");
 });
+
+test("long builder dropdowns filter as you type", async (t) => {
+  const { window } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+
+  const wrapper = doc.querySelector('[data-select="format"]');
+  const trigger = wrapper.querySelector(".select-trigger");
+  trigger.click();
+  assert.equal(wrapper.classList.contains("open"), true);
+  const search = wrapper.querySelector(".select-search");
+  assert.ok(search, "format list is long enough to search");
+  assert.equal(doc.activeElement, search);
+
+  search.value = "table";
+  search.dispatchEvent(new window.Event("input", { bubbles: true }));
+  const visible = [...wrapper.querySelectorAll(".select-option")].filter(
+    (option) => !option.classList.contains("hidden"),
+  );
+  assert.deepEqual(
+    visible.map((option) => option.dataset.value),
+    ["Table"],
+  );
+  visible[0].click();
+  assert.equal(doc.getElementById("format").value, "Table");
+  assert.equal(wrapper.classList.contains("open"), false);
+  assert.equal(trigger.firstElementChild.textContent, "Table");
+
+  const depth = doc.querySelector('[data-select="depth"]');
+  depth.querySelector(".select-trigger").click();
+  assert.equal(
+    depth.querySelector(".select-search"),
+    null,
+    "short lists keep a plain menu",
+  );
+});

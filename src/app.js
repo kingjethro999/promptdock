@@ -547,6 +547,22 @@ function syncSelect(name) {
   });
 }
 
+function visibleSelectOptions(menu) {
+  return [...menu.querySelectorAll(".select-option")].filter(
+    (option) => !option.classList.contains("hidden"),
+  );
+}
+
+function filterSelectOptions(menu, value) {
+  const needle = value.trim().toLowerCase();
+  menu.querySelectorAll(".select-option").forEach((option) => {
+    const match =
+      !needle ||
+      option.textContent.replace("✓", "").trim().toLowerCase().includes(needle);
+    option.classList.toggle("hidden", !match);
+  });
+}
+
 function closeSelect(wrapper, restoreFocus = false) {
   wrapper.classList.remove("open");
   wrapper
@@ -580,6 +596,30 @@ function initCustomSelects() {
       });
       menu.append(option);
     }
+    /* Long lists get a filter box; short ones stay a single click. */
+    const search =
+      values.length >= 6
+        ? (() => {
+            const box = document.createElement("input");
+            box.type = "search";
+            box.className = "select-search";
+            box.placeholder = `Search ${name}…`;
+            box.setAttribute("aria-label", `Search ${name} options`);
+            box.addEventListener("input", () =>
+              filterSelectOptions(menu, box.value),
+            );
+            box.addEventListener("keydown", (event) => {
+              if (event.key !== "Enter") return;
+              const first = visibleSelectOptions(menu)[0];
+              if (first) {
+                event.preventDefault();
+                first.click();
+              }
+            });
+            menu.prepend(box);
+            return box;
+          })()
+        : null;
     trigger.addEventListener("click", () => {
       const opening = !wrapper.classList.contains("open");
       document
@@ -587,7 +627,12 @@ function initCustomSelects() {
         .forEach((open) => closeSelect(open));
       wrapper.classList.toggle("open", opening);
       trigger.setAttribute("aria-expanded", String(opening));
-      if (opening)
+      if (!opening) return;
+      if (search) {
+        search.value = "";
+        filterSelectOptions(menu, "");
+        search.focus();
+      } else
         menu
           .querySelector(`[data-value="${CSS.escape(elements[name].value)}"]`)
           ?.focus();
@@ -611,7 +656,7 @@ function initCustomSelects() {
         !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
       )
         return;
-      const options = [...menu.querySelectorAll(".select-option")];
+      const options = visibleSelectOptions(menu);
       const current = options.indexOf(document.activeElement);
       const next =
         event.key === "Home"
