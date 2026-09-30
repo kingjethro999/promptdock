@@ -68,7 +68,7 @@ test('registration, verification, login, password reset, and session invalidatio
   mailer.sendAuthLink = async (email, purpose, token) => { links.push({ email, purpose, token }); };
   const request = { headers: { 'x-forwarded-proto': 'https' } };
   try {
-    const pending = await auth.register({ email: '  TEST@example.com ', password: 'original-long-password' }, request);
+    const pending = await auth.register({ email: '  TEST@example.com ', password: 'original-long-password' });
     assert.deepEqual(pending, { pending: true, email: 'test@example.com' });
     assert.equal(links[0].purpose, 'verify');
     await assert.rejects(auth.login({ email: 'test@example.com', password: 'original-long-password' }, request), error => error.code === 'verification_required');

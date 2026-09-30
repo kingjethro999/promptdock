@@ -141,7 +141,7 @@ async function handleRequest(request, response) {
       } else {
         if (!request.headers['content-type']?.startsWith('application/json')) { json(response, 415, { error: 'Use JSON.' }); return; }
         const body = await readBody(request);
-        if (pathname === '/api/auth/register') json(response, 200, await auth.register(body, request));
+        if (pathname === '/api/auth/register') json(response, 200, await auth.register(body));
         else if (pathname === '/api/auth/login') {
           const result = await auth.login(body, request);
           json(response, 200, { user: result.user }, { 'Set-Cookie': result.cookie });

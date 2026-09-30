@@ -80,7 +80,7 @@ async function sendToken(user, purpose) {
   }
 }
 
-async function register(body, request) {
+async function register(body) {
   const email = emailFrom(body?.email);
   const password = passwordFrom(body?.password, true);
   await database.ensureSchema();

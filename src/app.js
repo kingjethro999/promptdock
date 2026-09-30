@@ -155,7 +155,7 @@ async function completePendingFork() {
     return false;
   }
 }
-function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: dataFromForm(), idea: $('ideaInput').value, analysis: currentAnalysis })); } catch {} }
+function persistDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: dataFromForm(), idea: $('ideaInput').value, analysis: currentAnalysis })); } catch { /* Browser storage may be unavailable. */ } }
 function showToast(message) { const toast = $('toast'); toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 3200); }
 
 function syncSelect(name) {
@@ -931,7 +931,7 @@ $('backupFile').addEventListener('change', async event => {
     showToast(`Imported ${imported} private prompts.`);
   } catch (error) {
     if (imported && currentUser) {
-      try { const page = await fetchLibraryPage(); accountPrompts = page.prompts; libraryTotal = page.total; renderLibrary(); } catch {}
+      try { const page = await fetchLibraryPage(); accountPrompts = page.prompts; libraryTotal = page.total; renderLibrary(); } catch { /* Keep the imported count visible. */ }
     }
     showToast(imported ? `Imported ${imported} prompts; stopped: ${error.message}` : error.message || 'Could not import backup.');
   } finally { button.disabled = false; button.textContent = 'Import JSON ↑'; event.target.value = ''; }

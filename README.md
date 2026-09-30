@@ -39,6 +39,7 @@ In Settings, choose Groq, Gemini, or APMIX, enter a model ID and your own API ke
 To dictate an idea, choose **Record idea**, speak, then **Stop & send**. The server transcribes with Groq and sends the resulting idea through prompt generation. **Cancel** or the two-minute limit discards the recording. Vercel's function payload limit caps recordings at 4 MB.
 
 Run `npm test` for route, account, provider, voice, sharing, database validation, and version checks. The account flow test uses an in-memory query adapter, so it does not send email or require a live database.
+Run `npm run lint` to check the browser and Node code with ESLint. GitHub Actions runs `npm ci`, lint, tests, and the frontend build on every push and pull request.
 
 AI routes use a shared PostgreSQL token bucket per client IP to control provider spend across Vercel function instances: 20 idea generations, 30 enhancements, and 10 voice transcriptions per hour, replenished gradually. Exceeding a limit returns HTTP 429 with `Retry-After`. Local development without PostgreSQL uses a process-local bucket.
 
