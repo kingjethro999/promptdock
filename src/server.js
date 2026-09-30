@@ -216,6 +216,34 @@ async function handleRequest(request, response) {
     }
     return;
   }
+  if (pathname === "/api/auth/username" && request.method === "PUT") {
+    if (!validOrigin(request)) {
+      json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    if (!database.configured) {
+      json(response, 503, { error: "Database is not configured." });
+      return;
+    }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) {
+        json(response, 401, { error: "Sign in first." });
+        return;
+      }
+      if (!request.headers["content-type"]?.startsWith("application/json")) {
+        json(response, 415, { error: "Use JSON." });
+        return;
+      }
+      const body = await readBody(request);
+      json(response, 200, await auth.updateUsername(user, body));
+    } catch (error) {
+      json(response, error.status || 503, {
+        error: error.status ? error.message : "Account service is unavailable.",
+      });
+    }
+    return;
+  }
   if (
     (pathname === "/api/auth/sessions" && request.method === "GET") ||
     (pathname.startsWith("/api/auth/sessions/") && request.method === "DELETE")
@@ -571,6 +599,7 @@ async function handleRequest(request, response) {
         database.accountKey(user.id),
         publishPrompt[1],
         body.published,
+        user.username || null,
       );
       json(
         response,

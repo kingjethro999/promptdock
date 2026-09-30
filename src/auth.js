@@ -43,6 +43,25 @@ function passwordFrom(value, registering = false) {
   return value;
 }
 
+function usernameFrom(value) {
+  const username = typeof value === "string" ? value.trim() : "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/.test(username))
+    throw new AuthError(
+      "Username must be 3-24 letters, numbers, or underscores.",
+    );
+  return username;
+}
+
+async function usernameTaken(username, userId = null) {
+  const result = await database.pool.query(
+    userId
+      ? "SELECT 1 FROM users WHERE lower(username) = lower($1) AND id <> $2"
+      : "SELECT 1 FROM users WHERE lower(username) = lower($1)",
+    userId ? [username, userId] : [username],
+  );
+  return Boolean(result.rows[0]);
+}
+
 async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
   const hash = await scrypt(password, Buffer.from(salt, "hex"), 64);
@@ -101,7 +120,7 @@ async function issueSession(user, request) {
     [tokenHash(token), user.id, userAgentFrom(request)],
   );
   return {
-    user: { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email, username: user.username || null },
     cookie: cookieHeader(token, request),
   };
 }
@@ -153,11 +172,14 @@ async function sendToken(user, purpose) {
 async function register(body) {
   const email = emailFrom(body?.email);
   const password = passwordFrom(body?.password, true);
+  const username = usernameFrom(body?.username);
   await database.ensureSchema();
+  if (await usernameTaken(username))
+    throw new AuthError("That username is taken.", 409);
   try {
     const result = await database.pool.query(
-      "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3) RETURNING id, email",
-      [randomUUID(), email, await hashPassword(password)],
+      "INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, email, username",
+      [randomUUID(), email, username, await hashPassword(password)],
     );
     await sendToken(result.rows[0], "verify");
     return { pending: true, email };
@@ -173,7 +195,7 @@ async function login(body, request) {
   const password = passwordFrom(body?.password);
   await database.ensureSchema();
   const result = await database.pool.query(
-    "SELECT id, email, password_hash, failed_logins, locked_until, email_verified_at FROM users WHERE email = $1",
+    "SELECT id, email, username, password_hash, failed_logins, locked_until, email_verified_at FROM users WHERE email = $1",
     [email],
   );
   const user = result.rows[0];
@@ -399,12 +421,25 @@ async function currentUser(request) {
   if (!token || !database.pool) return null;
   await database.ensureSchema();
   const result = await database.pool.query(
-    `SELECT users.id, users.email FROM sessions
+    `SELECT users.id, users.email, users.username FROM sessions
     JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = $1 AND sessions.expires_at > now() AND users.email_verified_at IS NOT NULL`,
     [tokenHash(token)],
   );
   return result.rows[0] || null;
+}
+
+async function updateUsername(user, body) {
+  const username = usernameFrom(body?.username);
+  await database.ensureSchema();
+  if (await usernameTaken(username, user.id))
+    throw new AuthError("That username is taken.", 409);
+  await database.pool.query("UPDATE users SET username = $1 WHERE id = $2", [
+    username,
+    user.id,
+  ]);
+  await database.setOwnerUsername(user.id, username);
+  return { username };
 }
 
 async function logout(request) {
@@ -431,6 +466,8 @@ module.exports = {
   forgotPassword,
   consumeToken,
   changePassword,
+  usernameFrom,
+  updateUsername,
   logoutAll,
   listSessions,
   revokeSession,

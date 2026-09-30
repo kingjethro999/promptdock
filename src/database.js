@@ -403,25 +403,36 @@ function validUuid(value) {
   );
 }
 
-async function setPromptPublic(key, id, published) {
+async function setPromptPublic(key, id, published, username = null) {
   if (!validUuid(id) || typeof published !== "boolean")
     throw new Error("Invalid sharing request.");
   await ensureSchema();
   const result = await pool.query(
     `UPDATE prompts SET public_id = CASE WHEN $3 THEN COALESCE(public_id, $4::uuid) ELSE NULL END,
-    published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END
+    published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END,
+    owner_username = CASE WHEN $3 THEN $5 ELSE owner_username END
     WHERE owner_key = $1 AND id = $2
     RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
-    [key, id, published, randomUUID()],
+    [key, id, published, randomUUID(), username],
   );
   return result.rows[0] || null;
+}
+
+async function setOwnerUsername(userId, username) {
+  if (!pool) return 0;
+  await ensureSchema();
+  const result = await pool.query(
+    "UPDATE prompts SET owner_username = $1 WHERE owner_key = $2",
+    [username, accountKey(userId)],
+  );
+  return result.rowCount;
 }
 
 async function getPublicPrompt(publicId) {
   if (!validUuid(publicId)) return null;
   await ensureSchema();
   const result = await pool.query(
-    `SELECT public_id AS "publicId", name, data, updated_at AS "updatedAt"
+    `SELECT public_id AS "publicId", name, data, owner_username AS "ownerUsername", updated_at AS "updatedAt"
     FROM prompts WHERE public_id = $1`,
     [publicId],
   );
@@ -461,6 +472,7 @@ module.exports = {
   normalizeImportedTimestamp,
   deletePrompt,
   setPromptPublic,
+  setOwnerUsername,
   getPublicPrompt,
   forkPublicPrompt,
 };

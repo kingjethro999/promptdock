@@ -14,13 +14,48 @@ function fakeAuthDatabase() {
       const user = {
         id: params[0],
         email: params[1],
-        password_hash: params[2],
+        username: params[2],
+        password_hash: params[3],
         failed_logins: 0,
         locked_until: null,
         email_verified_at: null,
       };
       users.set(user.email, user);
-      return { rows: [{ id: user.id, email: user.email }], rowCount: 1 };
+      return {
+        rows: [{ id: user.id, email: user.email, username: user.username }],
+        rowCount: 1,
+      };
+    }
+    if (sql.startsWith("SELECT 1 FROM users WHERE lower(username)")) {
+      const wanted = String(params[0]).toLowerCase();
+      for (const user of users.values())
+        if (
+          String(user.username || "").toLowerCase() === wanted &&
+          (!params[1] || user.id !== params[1])
+        )
+          return { rows: [{ taken: true }], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    }
+    if (sql.startsWith("UPDATE users SET username = $1")) {
+      for (const user of users.values())
+        if (user.id === params[1]) user.username = params[0];
+      return { rows: [], rowCount: 1 };
+    }
+    if (
+      sql.startsWith(
+        "SELECT users.id, users.email, users.username FROM sessions",
+      )
+    ) {
+      const userId = sessions.get(params[0]);
+      const user = [...users.values()].find(
+        (entry) => entry.id === userId && entry.email_verified_at,
+      );
+      return {
+        rows: user
+          ? [{ id: user.id, email: user.email, username: user.username }]
+          : [],
+        rowCount: user ? 1 : 0,
+      };
     }
     if (sql.startsWith("SELECT created_at FROM auth_tokens"))
       return { rows: [], rowCount: 0 };
@@ -46,7 +81,7 @@ function fakeAuthDatabase() {
         if (user.id === params[0]) user.email_verified_at = new Date();
       return { rows: [], rowCount: 1 };
     }
-    if (sql.startsWith("SELECT id, email, password_hash")) {
+    if (sql.startsWith("SELECT id, email, username, password_hash")) {
       const user = users.get(params[0]);
       return { rows: user ? [{ ...user }] : [], rowCount: user ? 1 : 0 };
     }
@@ -112,6 +147,7 @@ test("registration, verification, login, password reset, and session invalidatio
     const pending = await auth.register({
       email: "  TEST@example.com ",
       password: "original-long-password",
+      username: "KingJethro",
     });
     assert.deepEqual(pending, { pending: true, email: "test@example.com" });
     assert.equal(links[0].purpose, "verify");
@@ -132,6 +168,7 @@ test("registration, verification, login, password reset, and session invalidatio
       request,
     );
     assert.match(firstSession.cookie, /HttpOnly.*Secure/);
+    assert.equal(firstSession.user.username, "KingJethro");
     assert.equal(fake.sessions.size, 1);
     await auth.forgotPassword({ email: "test@example.com" });
     assert.equal(links[1].purpose, "reset");
@@ -156,6 +193,75 @@ test("registration, verification, login, password reset, and session invalidatio
   } finally {
     database.pool = original.pool;
     database.ensureSchema = original.ensureSchema;
+    mailer.configured = original.configured;
+    mailer.sendAuthLink = original.sendAuthLink;
+  }
+});
+
+test("usernames are unique, validated, and changeable", async () => {
+  const fake = fakeAuthDatabase();
+  const original = {
+    pool: database.pool,
+    ensureSchema: database.ensureSchema,
+    configured: mailer.configured,
+    sendAuthLink: mailer.sendAuthLink,
+    setOwnerUsername: database.setOwnerUsername,
+  };
+  const renames = [];
+  database.pool = fake.pool;
+  database.ensureSchema = async () => {};
+  database.setOwnerUsername = async (userId, username) => {
+    renames.push({ userId, username });
+    return 1;
+  };
+  mailer.configured = () => true;
+  mailer.sendAuthLink = async () => {};
+  try {
+    await assert.rejects(
+      auth.register({
+        email: "first@example.com",
+        password: "original-long-password",
+        username: "No spaces here",
+      }),
+      /3-24 letters, numbers, or underscores/,
+    );
+    await auth.register({
+      email: "first@example.com",
+      password: "original-long-password",
+      username: "KingJethro",
+    });
+    await assert.rejects(
+      auth.register({
+        email: "second@example.com",
+        password: "original-long-password",
+        username: "kingjethro",
+      }),
+      (error) => error.status === 409 && /taken/.test(error.message),
+    );
+    const user = {
+      id: [...fake.users.values()][0].id,
+      email: "first@example.com",
+    };
+    const renamed = await auth.updateUsername(user, { username: "Jethro_K" });
+    assert.equal(renamed.username, "Jethro_K");
+    assert.deepEqual(renames, [{ userId: user.id, username: "Jethro_K" }]);
+    await auth.register({
+      email: "second@example.com",
+      password: "original-long-password",
+      username: "kingjethro",
+    });
+    await assert.rejects(
+      auth.updateUsername(user, { username: "KingJethro" }),
+      (error) => error.status === 409 && /taken/.test(error.message),
+    );
+    await assert.rejects(
+      auth.updateUsername(user, { username: "no" }),
+      /3-24 letters, numbers, or underscores/,
+    );
+  } finally {
+    database.pool = original.pool;
+    database.ensureSchema = original.ensureSchema;
+    database.setOwnerUsername = original.setOwnerUsername;
     mailer.configured = original.configured;
     mailer.sendAuthLink = original.sendAuthLink;
   }

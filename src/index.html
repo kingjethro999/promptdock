@@ -1028,6 +1028,28 @@
               <span class="section-kicker">ACCOUNT</span>
               <h2>Sign-in &amp; security</h2>
               <p>Signed in as <strong id="settingsEmail"></strong></p>
+              <form id="usernameForm">
+                <label class="settings-label" for="settingsUsername"
+                  >Username</label
+                ><input
+                  id="settingsUsername"
+                  type="text"
+                  minlength="3"
+                  maxlength="24"
+                  pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}"
+                  placeholder="e.g. kingjethro"
+                /><small
+                  >Shown when you share a prompt. 3-24 letters, numbers, or
+                  underscores.</small
+                ><button type="submit" class="secondary-button settings-submit">
+                  Save username
+                </button>
+              </form>
+              <p
+                class="settings-feedback"
+                id="usernameFeedback"
+                role="status"
+              ></p>
               <form id="passwordForm">
                 <label class="settings-label" for="currentPassword"
                   >Current password</label
@@ -1137,6 +1159,18 @@
             autocomplete="email"
             required
           />
+        </div>
+        <div id="authUsernameWrap" class="hidden">
+          <label for="authUsername">Username</label
+          ><input
+            id="authUsername"
+            type="text"
+            minlength="3"
+            maxlength="24"
+            pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}"
+            autocomplete="username"
+            placeholder="e.g. kingjethro"
+          /><small>3-24 letters, numbers, or underscores.</small>
         </div>
         <div id="authPasswordWrap">
           <label for="authPassword">Password</label

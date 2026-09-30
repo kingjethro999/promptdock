@@ -1023,6 +1023,7 @@ async function loadAiStatus() {
 function renderAccount() {
   $("accountButton").textContent = currentUser ? currentUser.email : "Account";
   $("settingsEmail").textContent = currentUser?.email || "";
+  $("settingsUsername").value = currentUser?.username || "";
   $("privacyNote").textContent = currentUser
     ? "Library syncs with your account"
     : "Sign in to sync your library";
@@ -1091,10 +1092,13 @@ function openAuth(mode = "login") {
   const emailNeeded = !["reset", "verifying"].includes(mode);
   const passwordNeeded = ["login", "register", "reset"].includes(mode);
   const confirmNeeded = ["register", "reset"].includes(mode);
+  const usernameNeeded = mode === "register";
   $("authEmailWrap").classList.toggle("hidden", !emailNeeded);
+  $("authUsernameWrap").classList.toggle("hidden", !usernameNeeded);
   $("authPasswordWrap").classList.toggle("hidden", !passwordNeeded);
   $("authConfirmWrap").classList.toggle("hidden", !confirmNeeded);
   $("authEmail").required = emailNeeded;
+  $("authUsername").required = usernameNeeded;
   $("authPassword").required = passwordNeeded;
   $("authConfirm").required = confirmNeeded;
   $("authSubmit").classList.toggle("hidden", mode === "verifying");
@@ -1102,12 +1106,14 @@ function openAuth(mode = "login") {
   $("authForgot").classList.toggle("hidden", mode !== "login");
   $("authPassword").autocomplete =
     mode === "login" ? "current-password" : "new-password";
+  $("authUsername").value = "";
   $("authPassword").value = "";
   $("authConfirm").value = "";
   $("authError").textContent = "";
   $("authSuccess").textContent = "";
   if (!$("authDialog").open) $("authDialog").showModal();
   if (emailNeeded) $("authEmail").focus();
+  else if (usernameNeeded) $("authUsername").focus();
   else if (passwordNeeded) $("authPassword").focus();
 }
 
@@ -1122,6 +1128,13 @@ async function submitAuth(event) {
       $("authPassword").value !== $("authConfirm").value
     )
       throw new Error("Passwords do not match.");
+    if (
+      authMode === "register" &&
+      !/^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/.test($("authUsername").value.trim())
+    )
+      throw new Error(
+        "Username must be 3-24 letters, numbers, or underscores.",
+      );
     const route =
       { "pending-verify": "resend", "pending-reset": "forgot" }[authMode] ||
       authMode;
@@ -1129,6 +1142,7 @@ async function submitAuth(event) {
       authMode === "reset"
         ? { token: resetToken, password: $("authPassword").value }
         : { email: $("authEmail").value, password: $("authPassword").value };
+    if (authMode === "register") body.username = $("authUsername").value.trim();
     const response = await apiFetch(`/api/auth/${route}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3030,6 +3044,33 @@ $("removeByok").addEventListener("click", async () => {
     await loadAiStatus();
   } catch (error) {
     byokFeedback(error.message || "Could not switch provider.", true);
+  }
+});
+$("usernameForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const feedback = $("usernameFeedback");
+  feedback.textContent = "";
+  feedback.classList.remove("error");
+  try {
+    const username = $("settingsUsername").value.trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/.test(username))
+      throw new Error(
+        "Username must be 3-24 letters, numbers, or underscores.",
+      );
+    const response = await apiFetch("/api/auth/username", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not save your username.");
+    currentUser = { ...currentUser, username: result.username };
+    renderAccount();
+    feedback.textContent = `Saved. Your shares now say ${result.username}.`;
+  } catch (error) {
+    feedback.textContent = error.message || "Could not save your username.";
+    feedback.classList.add("error");
   }
 });
 $("passwordForm").addEventListener("submit", async (event) => {

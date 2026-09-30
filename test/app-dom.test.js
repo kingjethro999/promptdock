@@ -758,3 +758,51 @@ test("passwords can be shown and hidden on every form", async (t) => {
   assert.equal(toggle.textContent, "Show");
   assert.equal(toggle.getAttribute("aria-pressed"), "false");
 });
+
+test("creating an account asks for a username and sends it", async (t) => {
+  const signedOut = await createWorkspace([]);
+  t.after(() => signedOut.window.close());
+  const doc = signedOut.window.document;
+  await waitFor(() => cardNames(signedOut.window).length >= 0);
+
+  const usernameWrap = doc.getElementById("authUsernameWrap");
+  assert.equal(usernameWrap.classList.contains("hidden"), true);
+
+  doc.querySelector('[data-auth-mode="register"]').click();
+  assert.equal(doc.getElementById("authDialog").open, true);
+  assert.equal(usernameWrap.classList.contains("hidden"), false);
+  assert.equal(doc.getElementById("authUsername").required, true);
+
+  doc.getElementById("authEmail").value = "new@example.com";
+  doc.getElementById("authUsername").value = "kingjethro";
+  doc.getElementById("authPassword").value = "long-enough-password";
+  doc.getElementById("authConfirm").value = "long-enough-password";
+  doc.getElementById("authForm").dispatchEvent(
+    new signedOut.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  await waitFor(() =>
+    signedOut.requests.some(
+      (request) => request.pathname === "/api/auth/register",
+    ),
+  );
+  const register = signedOut.requests.find(
+    (request) => request.pathname === "/api/auth/register",
+  );
+  assert.equal(register.body.username, "kingjethro");
+
+  const signedIn = await createWorkspace([], {
+    user: { id: "4e1d", email: "king@example.com", username: "KingJethro" },
+  });
+  t.after(() => signedIn.window.close());
+  await waitFor(
+    () =>
+      signedIn.window.document.getElementById("settingsUsername").value !== "",
+  );
+  assert.equal(
+    signedIn.window.document.getElementById("settingsUsername").value,
+    "KingJethro",
+  );
+});

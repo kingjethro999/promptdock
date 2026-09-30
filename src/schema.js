@@ -2,12 +2,15 @@ module.exports = [
   `CREATE TABLE IF NOT EXISTS users (
     id uuid PRIMARY KEY,
     email text NOT NULL UNIQUE,
+    username text,
     password_hash text NOT NULL,
     failed_logins integer NOT NULL DEFAULT 0,
     locked_until timestamptz,
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS username text",
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users (lower(username))",
   "CREATE TABLE IF NOT EXISTS schema_migrations (key text PRIMARY KEY)",
   `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('grandfather_existing_accounts_v1')
     ON CONFLICT DO NOTHING RETURNING key)
@@ -79,6 +82,7 @@ module.exports = [
   "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS public_id uuid",
   "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS published_at timestamptz",
   "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS forked_from uuid",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS owner_username text",
   "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT '{}'",
   "CREATE INDEX IF NOT EXISTS prompts_tags_idx ON prompts USING gin (tags)",
   "CREATE UNIQUE INDEX IF NOT EXISTS prompts_public_id_idx ON prompts (public_id) WHERE public_id IS NOT NULL",
