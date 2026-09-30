@@ -1,6 +1,13 @@
 #!/bin/sh
 set -eu
 
+# Lint first: a broken commit must never land, and no version is spent on it.
+if [ -x node_modules/.bin/eslint ]; then
+  npm run lint
+else
+  echo "pre-commit: eslint is not installed; run npm install to lint before committing." >&2
+fi
+
 # The first commit records v0.0.1. Every later commit bumps the version.
 if git rev-parse --verify HEAD >/dev/null 2>&1; then
   node scripts/bump-version.js
