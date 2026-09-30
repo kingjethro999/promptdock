@@ -713,8 +713,21 @@
                     id="downloadButton"
                     type="button"
                   >
-                    ↓ &nbsp; Download .md</button
+                    ↓ &nbsp;Download .md</button
                   ><span class="word-count" id="wordCount">0 words</span>
+                </div>
+                <div class="run-row">
+                  <button
+                    class="ai-button run-button"
+                    id="runButton"
+                    type="button"
+                    disabled
+                  >
+                    <span>▶</span> Run prompt
+                  </button>
+                  <span class="run-note" id="runNote"
+                    >Tests this prompt on your configured AI</span
+                  >
                 </div>
               </section>
               <section class="quality-card">
@@ -731,6 +744,27 @@
                   <i></i><i></i><i></i><i></i><i></i>
                 </div>
                 <p id="qualityTip">Add your task to get started.</p>
+              </section>
+              <section class="run-card" id="runCard" hidden>
+                <div class="run-header">
+                  <div>
+                    <div class="section-kicker">TEST RUN</div>
+                    <h3>Model response</h3>
+                  </div>
+                  <span class="run-provider" id="runProvider"></span>
+                </div>
+                <div class="run-output" id="runOutput" aria-live="polite"></div>
+                <div class="run-actions">
+                  <button class="quiet-button" id="runCopyButton" type="button">
+                    ▣ &nbsp;Copy response</button
+                  ><button
+                    class="quiet-button"
+                    id="runDismissButton"
+                    type="button"
+                  >
+                    ✕ &nbsp;Dismiss
+                  </button>
+                </div>
               </section>
             </aside>
           </div>

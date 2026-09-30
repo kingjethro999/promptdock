@@ -6,6 +6,8 @@ const handleRequest = require("../src/server");
 const database = require("../src/database");
 const auth = require("../src/auth");
 const rateLimit = require("../src/rate-limit");
+const settings = require("../src/settings");
+const ai = require("../src/ai");
 
 async function withServer(stubs, run) {
   const originals = [];
@@ -330,4 +332,51 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     ["fork", "owner-key", publicId],
     ["delete", "owner-key", id],
   ]);
+});
+
+test("the run endpoint executes a prompt for the signed-in account", async () => {
+  let signedIn = true;
+  const stubs = [
+    [database, "configured", true],
+    [
+      auth,
+      "currentUser",
+      async () => (signedIn ? { id: "u1", email: "hello@example.com" } : null),
+    ],
+    [
+      settings,
+      "effectiveEnv",
+      async () => ({
+        AI_PROVIDER_ORDER: "groq",
+        GROQ_API_KEY: "test",
+        GROQ_MODEL: "test",
+      }),
+    ],
+    [rateLimit, "consume", async () => ({ allowed: true, retryAfter: 60 })],
+    [
+      ai,
+      "runPrompt",
+      async (body) => ({
+        text: `ran:${body.prompt}`,
+        provider: "groq",
+      }),
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    const ok = await send(base, "/api/run", "POST", {
+      prompt: "Task: say hello",
+    });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), {
+      text: "ran:Task: say hello",
+      provider: "groq",
+    });
+    const missingTask = await send(base, "/api/run", "POST", { prompt: "" });
+    assert.equal(missingTask.status, 400);
+    signedIn = false;
+    const signedOut = await send(base, "/api/run", "POST", {
+      prompt: "Task: say hello",
+    });
+    assert.equal(signedOut.status, 401);
+  });
 });

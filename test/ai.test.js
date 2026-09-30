@@ -6,7 +6,9 @@ const {
   ideaToPrompt,
   normalizeDraft,
   normalizeIdea,
+  normalizeRunInput,
   parseIdeaSuggestion,
+  runPrompt,
 } = require("../src/ai");
 
 test("configured providers follow environment order", () => {
@@ -296,4 +298,75 @@ test("AI enhancement falls back and keeps unknown details blank", async () => {
   } finally {
     console.warn = originalWarn;
   }
+});
+
+test("run input needs a useful prompt and stays within limits", () => {
+  assert.throws(() => normalizeRunInput({ prompt: "go" }), /Add a task/);
+  assert.throws(() => normalizeRunInput({}), /Add a task/);
+  assert.throws(
+    () => normalizeRunInput({ prompt: "x".repeat(24001) }),
+    /too long/,
+  );
+  assert.equal(
+    normalizeRunInput({ prompt: "  Summarize this article  " }),
+    "Summarize this article",
+  );
+});
+
+test("running a prompt sends it verbatim and returns the plain reply", async () => {
+  const env = {
+    AI_PROVIDER_ORDER: "groq",
+    GROQ_API_KEY: "test",
+    GROQ_MODEL: "test",
+  };
+  let request;
+  const fakeFetch = async (url, options) => {
+    request = { url, body: JSON.parse(options.body) };
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: "  Here is the result.  " } }],
+      }),
+    };
+  };
+  const result = await runPrompt(
+    { prompt: "Task: Write a haiku about rivers" },
+    env,
+    fakeFetch,
+  );
+  assert.equal(
+    request.body.messages[1].content,
+    "Task: Write a haiku about rivers",
+  );
+  assert.match(
+    request.body.messages[0].content,
+    /Follow the user's instructions/,
+  );
+  assert.equal(request.body.max_tokens, 4000);
+  assert.equal(result.text, "Here is the result.");
+  assert.equal(result.provider, "groq");
+});
+
+test("a Gemini test run asks for plain text instead of JSON", async () => {
+  let body;
+  const fakeFetch = async (_url, options) => {
+    body = JSON.parse(options.body);
+    return {
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: "Answer" }] } }],
+      }),
+    };
+  };
+  const result = await runPrompt(
+    { prompt: "Task: Explain photosynthesis" },
+    {
+      AI_PROVIDER_ORDER: "gemini",
+      GEMINI_API_KEY: "test",
+      GEMINI_MODEL: "gemini-test",
+    },
+    fakeFetch,
+  );
+  assert.equal(body.generationConfig, undefined);
+  assert.equal(result.text, "Answer");
 });

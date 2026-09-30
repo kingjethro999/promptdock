@@ -1,13 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const {
-  configuredProviders,
-  enhanceWithAI,
-  ideaToPrompt,
-  normalizeDraft,
-  normalizeIdea,
-} = require("./ai");
+const ai = require("./ai");
 const {
   MAX_AUDIO_BYTES,
   normalizeAudioType,
@@ -187,7 +181,7 @@ async function handleRequest(request, response) {
       const user = database.configured ? await auth.currentUser(request) : null;
       const env = user ? await settings.effectiveEnv(user.id) : process.env;
       json(response, 200, {
-        aiAvailable: configuredProviders(env).length > 0,
+        aiAvailable: ai.configuredProviders(env).length > 0,
         voiceAvailable: Boolean(env.GROQ_API_KEY),
         databaseAvailable: database.configured,
         byokAvailable: Boolean(settings.encryptionKey()),
@@ -615,7 +609,7 @@ async function handleRequest(request, response) {
     return;
   }
   if (
-    ["/api/enhance", "/api/idea-to-prompt"].includes(pathname) &&
+    ["/api/enhance", "/api/idea-to-prompt", "/api/run"].includes(pathname) &&
     request.method === "POST"
   ) {
     if (!validOrigin(request)) {
@@ -633,8 +627,9 @@ async function handleRequest(request, response) {
         return;
       }
       const body = await readBody(request);
-      if (pathname === "/api/idea-to-prompt") normalizeIdea(body);
-      else normalizeDraft(body);
+      if (pathname === "/api/idea-to-prompt") ai.normalizeIdea(body);
+      else if (pathname === "/api/enhance") ai.normalizeDraft(body);
+      else ai.normalizeRunInput(body);
       const limit = await rateLimit.consume(request, pathname, {
         subject: rateSubject(user),
       });
@@ -648,23 +643,29 @@ async function handleRequest(request, response) {
         return;
       }
       const env = user ? await settings.effectiveEnv(user.id) : process.env;
-      json(
-        response,
-        200,
-        await (pathname === "/api/idea-to-prompt"
-          ? ideaToPrompt(body, env)
-          : enhanceWithAI(body, env)),
-      );
+      if (pathname === "/api/run")
+        json(response, 200, await ai.runPrompt(body, env));
+      else
+        json(
+          response,
+          200,
+          await (pathname === "/api/idea-to-prompt"
+            ? ai.ideaToPrompt(body, env)
+            : ai.enhanceWithAI(body, env)),
+        );
     } catch (error) {
       const message = error.message;
-      const status = ["Draft is too long.", "Idea is too long."].includes(
-        message,
-      )
+      const status = [
+        "Draft is too long.",
+        "Idea is too long.",
+        "Prompt is too long to run.",
+      ].includes(message)
         ? 413
         : [
               "Invalid JSON.",
               "Add a task before enhancing.",
               "Describe your idea in a few words.",
+              "Add a task before running the prompt.",
             ].includes(message)
           ? 400
           : 503;

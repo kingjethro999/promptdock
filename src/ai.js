@@ -142,20 +142,22 @@ function parseIdeaSuggestion(content, idea) {
   return { idea, data, interpretation };
 }
 
-function providerRequest(provider, messages, env) {
+function providerRequest(provider, messages, env, options = {}) {
   if (provider === "gemini") {
     const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+    const body = {
+      systemInstruction: { parts: [{ text: messages[0].content }] },
+      contents: [{ role: "user", parts: [{ text: messages[1].content }] }],
+    };
+    if (options.json !== false)
+      body.generationConfig = { responseMimeType: "application/json" };
     return {
       url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": env.GEMINI_API_KEY,
       },
-      body: {
-        systemInstruction: { parts: [{ text: messages[0].content }] },
-        contents: [{ role: "user", parts: [{ text: messages[1].content }] }],
-        generationConfig: { responseMimeType: "application/json" },
-      },
+      body,
       extract: (json) =>
         json.candidates?.[0]?.content?.parts
           ?.map((part) => part.text || "")
@@ -180,17 +182,26 @@ function providerRequest(provider, messages, env) {
     body: {
       model: provider === "apmix" ? env.APMIX_MODEL : env.GROQ_MODEL,
       messages,
-      max_tokens: 2600,
+      max_tokens: options.maxTokens || 2600,
     },
     extract: (json) => json.choices?.[0]?.message?.content,
   };
 }
 
-async function generateWithProviders(messages, parse, env, request) {
+async function generateWithProviders(
+  messages,
+  parse,
+  env,
+  request,
+  options = {},
+) {
   const providers = configuredProviders(env);
   if (!providers.length) throw new Error("No AI provider is configured.");
   const timeout = Math.min(
-    Math.max(Number(env.AI_REQUEST_TIMEOUT_MS) || 12000, 1000),
+    Math.max(
+      Number(env.AI_REQUEST_TIMEOUT_MS) || options.timeoutMs || 12000,
+      1000,
+    ),
     60000,
   );
   const maxAttempts = Math.min(
@@ -200,7 +211,7 @@ async function generateWithProviders(messages, parse, env, request) {
   for (const provider of providers.slice(0, maxAttempts)) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const config = providerRequest(provider, messages, env);
+        const config = providerRequest(provider, messages, env, options);
         const response = await request(config.url, {
           method: "POST",
           headers: config.headers,
@@ -223,7 +234,8 @@ async function generateWithProviders(messages, parse, env, request) {
     }
   }
   throw new Error(
-    "AI suggestions are temporarily unavailable. Please try again.",
+    options.errorMessage ||
+      "AI suggestions are temporarily unavailable. Please try again.",
   );
 }
 
@@ -273,12 +285,49 @@ Examples of intent preservation:
   );
 }
 
+function normalizeRunInput(input) {
+  const text = typeof input?.prompt === "string" ? input.prompt.trim() : "";
+  if (text.length < 4) throw new Error("Add a task before running the prompt.");
+  if (text.length > 24000) throw new Error("Prompt is too long to run.");
+  return text;
+}
+
+async function runPrompt(input, env = process.env, request = fetch) {
+  const text = normalizeRunInput(input);
+  const messages = [
+    {
+      role: "system",
+      content:
+        "Follow the user's instructions exactly and produce the deliverable they asked for. Do not comment on the prompt itself.",
+    },
+    { role: "user", content: text },
+  ];
+  return generateWithProviders(
+    messages,
+    (content) => {
+      if (typeof content !== "string" || !content.trim())
+        throw new Error("Empty AI response");
+      return { text: content.trim() };
+    },
+    env,
+    request,
+    {
+      json: false,
+      maxTokens: 4000,
+      timeoutMs: 30000,
+      errorMessage: "The prompt could not be run right now. Please try again.",
+    },
+  );
+}
+
 module.exports = {
   configuredProviders,
   normalizeDraft,
   normalizeIdea,
+  normalizeRunInput,
   parseSuggestion,
   parseIdeaSuggestion,
   enhanceWithAI,
   ideaToPrompt,
+  runPrompt,
 };

@@ -128,6 +128,7 @@ let currentId = null;
 let toastTimer;
 let aiAvailable = false;
 let aiBusy = false;
+let runBusy = false;
 let currentAnalysis = null;
 let voiceAvailable = false;
 let voiceState = "idle";
@@ -788,6 +789,9 @@ async function loadAiStatus() {
   $("aiStatus").textContent = aiAvailable
     ? "Sends this draft to your chosen AI provider"
     : "Add a provider key in Settings to enable AI suggestions";
+  $("runNote").textContent = aiAvailable
+    ? "Tests this prompt on your configured AI"
+    : "Add a provider key in Settings to run prompts";
   $("ideaStatus").textContent = aiAvailable
     ? $("ideaInput").value.trim()
       ? "Ready to turn this idea into a prompt"
@@ -1113,6 +1117,62 @@ async function enhancePrompt() {
   }
 }
 
+async function runPrompt() {
+  const prompt = buildPrompt(dataFromForm());
+  if (!prompt) {
+    showToast("Add a task first.");
+    return;
+  }
+  if (!aiAvailable) {
+    showToast("Add a provider key in Settings to run prompts.");
+    return;
+  }
+  if (runBusy) return;
+  runBusy = true;
+  const button = $("runButton");
+  button.disabled = true;
+  button.classList.add("busy");
+  $("runNote").textContent = "Running your prompt…";
+  try {
+    const response = await apiFetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "The prompt could not be run.");
+    $("runCard").hidden = false;
+    $("runOutput").textContent = result.text;
+    $("runProvider").textContent = result.provider
+      ? `via ${result.provider}`
+      : "";
+    $("runCard").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  } catch (error) {
+    showToast(error.message || "The prompt could not be run.");
+  } finally {
+    runBusy = false;
+    button.classList.remove("busy");
+    $("runNote").textContent = aiAvailable
+      ? "Tests this prompt on your configured AI"
+      : "Add a provider key in Settings to run prompts";
+    updatePreview();
+  }
+}
+
+async function copyRunOutput() {
+  const text = $("runOutput").textContent;
+  if (!text) return;
+  try {
+    if (navigator.clipboard && window.isSecureContext)
+      await navigator.clipboard.writeText(text);
+    else throw new Error("Copy unavailable");
+    showToast("Response copied to clipboard.");
+  } catch {
+    showToast("Copy unavailable. Select the response to copy it.");
+  }
+}
+
 function updatePreview() {
   const data = dataFromForm();
   const prompt = buildPrompt(data);
@@ -1126,6 +1186,7 @@ function updatePreview() {
   $("copyButton").disabled = !prompt;
   $("downloadButton").disabled = !prompt;
   $("saveButton").disabled = !prompt;
+  $("runButton").disabled = !prompt || !aiAvailable || runBusy;
   $("readyBadge").style.visibility = prompt ? "visible" : "hidden";
   $("enhanceButton").disabled = !prompt || !aiAvailable || aiBusy;
   if (currentAnalysis) {
@@ -1878,6 +1939,14 @@ $("newPromptButton").addEventListener("click", () => {
   $("ideaInput").focus();
 });
 $("copyButton").addEventListener("click", copyPrompt);
+$("runButton").addEventListener("click", runPrompt);
+$("runCopyButton").addEventListener("click", copyRunOutput);
+$("runDismissButton").addEventListener("click", () => {
+  $("runCard").hidden = true;
+  $("runOutput").textContent = "";
+  $("runProvider").textContent = "";
+  updatePreview();
+});
 $("downloadButton").addEventListener("click", downloadPrompt);
 $("saveButton").addEventListener("click", () => {
   if (!elements.task.value.trim()) return;

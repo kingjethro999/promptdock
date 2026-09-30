@@ -154,3 +154,10 @@ test("pruning removes stale local buckets and deletes expired rows", async () =>
   assert.equal(seen[0][1][0], bucketTtlSeconds);
   assert.equal(localBucketCount(), 0);
 });
+
+test("test runs share the AI budget", () => {
+  assert.deepEqual(policies["/api/run"], {
+    capacity: 20,
+    periodSeconds: 3600,
+  });
+});

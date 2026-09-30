@@ -6,6 +6,7 @@ const policies = Object.freeze({
   "/api/idea-to-prompt": { capacity: 20, periodSeconds: 3600 },
   "/api/enhance": { capacity: 30, periodSeconds: 3600 },
   "/api/transcribe": { capacity: 10, periodSeconds: 3600 },
+  "/api/run": { capacity: 20, periodSeconds: 3600 },
   "/api/auth/login": { capacity: 20, periodSeconds: 900 },
   "/api/auth/register": { capacity: 10, periodSeconds: 3600 },
   "/api/auth/forgot": { capacity: 6, periodSeconds: 3600 },

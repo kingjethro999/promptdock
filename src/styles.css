@@ -374,6 +374,7 @@ p {
 .composer-card,
 .preview-card,
 .quality-card,
+.run-card,
 .platform-section {
   border: 1px solid #e7ebe2;
   border-radius: 17px;
@@ -641,6 +642,60 @@ p {
   font-size: 11px;
   color: #839286;
   margin: 0;
+}
+.run-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid #eef2ea;
+}
+.run-note {
+  font-size: 10px;
+  color: #94a395;
+}
+.run-card {
+  padding: 20px 23px;
+}
+.run-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.run-header h3 {
+  font-family: Manrope, sans-serif;
+  font-size: 15px;
+  letter-spacing: -0.4px;
+  margin: 6px 0 0;
+}
+.run-provider {
+  font-size: 10px;
+  font-weight: 700;
+  color: #718c74;
+  background: #f2f7ef;
+  border: 1px solid #e3ebde;
+  border-radius: 999px;
+  padding: 4px 9px;
+}
+.run-output {
+  margin: 16px 0 12px;
+  max-height: 320px;
+  overflow: auto;
+  background: #f8faf5;
+  border: 1px solid #e8ede5;
+  border-radius: 10px;
+  padding: 17px 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #405142;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.run-actions {
+  display: flex;
+  gap: 18px;
 }
 .platform-section {
   padding: 25px 29px 27px;
