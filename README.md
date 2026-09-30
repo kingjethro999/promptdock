@@ -65,3 +65,11 @@ Render Free Postgres has a 1 GB limit and expires after 30 days; plan an upgrade
 ## Versioning
 
 The project began at `v0.0.1`. The pre-commit hook bumps every later commit: `v0.0.9 → v0.1.0`, then `v0.1.0 → v0.1.1` and so on. Each `0.x.9` rolls to `0.(x+1).0` through `v0.598.9 → v0.599.0`; the final pre-1.0 sequence is `v0.599.0` through `v0.599.9 → v1.0.0`. From `v1.0.0` onward, commits increment the patch number. `package.json` uses numeric SemVer; `VERSION` and the frontend build use the `v` prefix. Run `npm run setup:hooks` after cloning. The hook runs `npm run lint` first, so a commit that fails lint is rejected before the version moves on; when `node_modules` is missing it warns and skips the lint step instead.
+
+## License
+
+PromptDock is licensed under the [MIT License](LICENSE).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, checks, and pull request guidance.
