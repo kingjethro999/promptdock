@@ -14,7 +14,7 @@ The UI and API deploy together as **one Vercel project**. The browser calls `/ap
 
 ## Run locally
 
-Requires Node.js 20.12+. Copy `.env.example` to `.env` and set a provider key for AI features. The manual builder works without one.
+Requires Node.js 20.19+ — that is the floor in `package.json` `engines`, and the lowest release ESLint accepts. The test suite adds one more constraint: the jsdom DOM tests need Node 22.22+ or 24.15+, and GitHub Actions runs Node 24. Copy `.env.example` to `.env` and set a provider key for AI features. The manual builder works without one.
 
 ```bash
 npm ci
