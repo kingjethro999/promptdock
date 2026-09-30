@@ -1,141 +1,1126 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f8f3">
-  <meta name="description" content="Build better prompts, save what works, and use them with your favorite AI platform.">
-  <title>PromptDock — Your AI prompt workspace</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/landing.css">
-  <script src="/config.js" defer></script>
-  <script src="/prompt-format.js" defer></script>
-  <script src="/app.js" defer></script>
-</head>
-<body>
-  <div id="bootScreen" class="boot-screen"><span class="boot-mark">✳</span><span>Opening PromptDock…</span></div>
-  <div id="landingPage" class="landing-page hidden">
-    <header class="landing-header">
-      <a class="landing-logo" href="#top" aria-label="PromptDock home"><span class="landing-logo-mark">✳</span> prompt<span>dock</span></a>
-      <nav aria-label="Landing navigation"><a href="#how-it-works">How it works</a><a href="#features">Features</a><a href="#your-keys">Your keys</a></nav>
-      <div class="landing-header-actions"><button type="button" class="landing-signin" data-auth-mode="login">Sign in</button><button type="button" class="landing-small-cta" data-auth-mode="register">Get started <span>↗</span></button></div>
-    </header>
-    <main id="top">
-      <section class="landing-hero">
-        <div class="landing-hero-copy"><div class="landing-eyebrow"><span>✳</span> THE IDEA-TO-PROMPT WORKSPACE</div><h1>Great prompts start with <em>rough ideas.</em></h1><p>Say what you mean in your own words. PromptDock reads the intent, finds the priorities, and shapes a clear prompt you can take to any AI platform.</p><div class="landing-hero-actions"><button type="button" class="landing-primary-cta" data-auth-mode="register">Create your workspace <span>↗</span></button><a class="landing-secondary-cta" href="#how-it-works">See how it works <span>↓</span></a></div><div class="landing-hero-note"><span class="landing-note-stars">✳ ✳ ✳</span><span>From first thought to useful prompt, in one place.</span></div></div>
-        <div class="landing-demo" aria-label="Interactive prompt example"><div class="landing-demo-top"><span class="demo-live-dot"></span><span>LIVE EXAMPLE</span><span class="demo-step-count">01 / 03</span></div><div class="landing-demo-input"><div class="demo-label">YOUR IDEA</div><p id="demoIdea">I want to launch a small skincare brand, but I don't know where to begin.</p><div class="demo-idea-picker" aria-label="Choose example idea"><button type="button" class="demo-choice active" data-demo="business">Start a business</button><button type="button" class="demo-choice" data-demo="app">Plan an app</button><button type="button" class="demo-choice" data-demo="study">Study better</button></div></div><div class="demo-connector"><span>✳</span><span>PromptDock shapes the direction</span></div><div class="landing-demo-output" id="demoOutput"><div class="demo-output-head"><span>✦ STRUCTURED PROMPT</span><span id="demoDepth">Deep</span></div><div class="demo-output-row"><span>GOAL</span><strong id="demoGoal">Build a practical launch plan for a handmade skincare business.</strong></div><div class="demo-output-row"><span>FOCUS</span><strong id="demoFocus">First steps → product validation → realistic launch costs.</strong></div><div class="demo-output-row"><span>FORMAT</span><strong id="demoFormat">Step-by-step plan with open questions.</strong></div></div><button class="demo-action" id="demoAction" type="button">Shape another idea <span>↗</span></button></div>
-      </section>
-      <section class="landing-proof" aria-label="Supported platforms"><span>ONE WORKSPACE, EVERY AI TOOL</span><div><strong>✺ ChatGPT</strong><strong>✳ Claude</strong><strong>✦ Gemini</strong><strong>+ wherever you prompt</strong></div></section>
-      <section class="landing-how" id="how-it-works"><div class="landing-section-intro"><span class="landing-kicker">HOW IT WORKS</span><h2>From “I have an idea”<br>to “I know what to ask.”</h2><p>You bring the thought. PromptDock helps turn it into clear instructions without asking you to become a prompt engineer.</p></div><div class="landing-step-grid"><article><span class="landing-step-number">01</span><div class="landing-step-icon">✎</div><h3>Say it naturally</h3><p>Type a messy thought or dictate it. A sentence is enough to start.</p></article><article><span class="landing-step-number">02</span><div class="landing-step-icon">✳</div><h3>See what matters</h3><p>AI understands the goal, ranks the focus areas, and flags missing details.</p></article><article><span class="landing-step-number">03</span><div class="landing-step-icon">↗</div><h3>Make it yours</h3><p>Edit the prompt, save it to your library, or copy it into your favorite AI tool.</p></article></div></section>
-      <section class="landing-features" id="features"><div class="landing-section-intro"><span class="landing-kicker">BUILT FOR YOUR FLOW</span><h2>Ideas move quickly.<br>Your workspace should too.</h2></div><div class="landing-feature-grid"><article class="feature-main"><span>✳ IDEA TO PROMPT</span><h3>Start before you know exactly what you want.</h3><p>PromptDock turns unstructured intent into a goal, a suggested flow, and priorities that tell the AI where to spend its effort.</p><div class="feature-visual"><span>rough idea</span><i>→</i><span>clear direction</span><i>→</i><span>ready-to-use prompt</span></div></article><article><span class="feature-symbol">◉</span><h3>Speak it out</h3><p>Record a thought, review the transcription, and send it into the same idea-to-prompt flow.</p></article><article><span class="feature-symbol">▦</span><h3>Save and share</h3><p>Keep prompts in your library. Make one public so anyone can copy it, or sign in to save a personal version.</p></article><article><span class="feature-symbol">⌘</span><h3>Keep control</h3><p>Fine-tune every field, copy the final prompt, or export it as Markdown.</p></article></div></section>
-      <section class="landing-keys" id="your-keys"><div class="landing-keys-orbit">✳<span>YOUR MODEL</span><small>YOUR KEY</small></div><div><span class="landing-kicker">YOUR AI, YOUR WAY</span><h2>Bring your own key.<br>Choose your model.</h2><p>Connect your Groq or Gemini key in settings, pick the model you prefer, and keep shaping prompts in the same workspace. Your key is encrypted on the server and never shown again after saving.</p><button type="button" class="landing-outline-cta" data-auth-mode="register">Set up your workspace <span>↗</span></button></div></section>
-      <section class="landing-final"><span class="landing-kicker">THE NEXT GOOD PROMPT STARTS HERE</span><h2>What have you been thinking about?</h2><p>Bring the half-formed idea. Leave with a prompt that knows where to focus.</p><button type="button" class="landing-primary-cta" data-auth-mode="register">Start with an idea <span>↗</span></button></section>
-    </main><footer class="landing-footer"><span>✳ promptdock</span><span>Ideas deserve a clearer path.</span><button type="button" data-auth-mode="login">Sign in ↗</button></footer>
-  </div>
-  <div class="app-shell hidden" id="appShell">
-    <button id="sidebarOverlay" class="sidebar-overlay" type="button" aria-label="Close navigation"></button>
-    <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#workspace" aria-label="PromptDock home">
-        <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7h17a6 6 0 0 1 0 12h-8v7L5 19V7Z" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="#182824"/><circle cx="21" cy="13" r="1.6" fill="#182824"/></svg></span>
-        <span>prompt<span class="brand-accent">dock</span><small>YOUR AI WORKSPACE</small></span>
-      </a>
-
-      <div class="sidebar-label">WORKSPACE</div>
-      <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-item active" data-view="builder"><span class="nav-icon">✦</span><span>Idea to prompt</span></button>
-        <button class="nav-item" data-view="library"><span class="nav-icon">▦</span><span>My library</span><span class="nav-count" id="libraryCount">0</span></button>
-        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
-      </nav>
-
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-label sidebar-label-row"><span>QUICK STARTS</span><span class="tiny-sparkle">✳</span></div>
-      <div class="template-nav" id="templateNav"></div>
-
-      <div class="sidebar-bottom">
-        <button type="button" class="sidebar-signout" id="sidebarSignOut"><span>↗</span> Sign out</button>
-        <div class="tip-card"><span class="tip-icon">✦</span><strong>Better input. Better output.</strong><p>Give your AI a clear job, context, and a format to follow.</p></div>
-        <div class="privacy-note"><span class="status-dot"></span> <span id="privacyNote">Saved prompts stay in this browser</span></div>
-        <div class="sidebar-version">PromptDock <span id="appVersion">Loading…</span></div>
-      </div>
-    </aside>
-
-    <main class="main-content" id="workspace">
-      <header class="topbar">
-        <button class="mobile-menu icon-button" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
-        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-chevron">›</span><strong id="breadcrumbCurrent">Idea to prompt</strong></div>
-        <div class="top-actions"><button class="account-trigger" id="accountButton" type="button">Sign in to sync</button><button class="help-button" id="helpButton" aria-label="How PromptDock works">?</button></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8f3" />
+    <meta
+      name="description"
+      content="Build better prompts, save what works, and use them with your favorite AI platform."
+    />
+    <title>PromptDock — Your AI prompt workspace</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <script src="/config.js" defer></script>
+    <script src="/prompt-format.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="bootScreen" class="boot-screen">
+      <span class="boot-mark">✳</span><span>Opening PromptDock…</span>
+    </div>
+    <div id="landingPage" class="landing-page hidden">
+      <header class="landing-header">
+        <a class="landing-logo" href="#top" aria-label="PromptDock home"
+          ><span class="landing-logo-mark">✳</span> prompt<span>dock</span></a
+        >
+        <nav aria-label="Landing navigation">
+          <a href="#how-it-works">How it works</a
+          ><a href="#features">Features</a><a href="#your-keys">Your keys</a>
+        </nav>
+        <div class="landing-header-actions">
+          <button type="button" class="landing-signin" data-auth-mode="login">
+            Sign in</button
+          ><button
+            type="button"
+            class="landing-small-cta"
+            data-auth-mode="register"
+          >
+            Get started <span>↗</span>
+          </button>
+        </div>
       </header>
-
-      <section class="builder-view" id="builderView">
-        <div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-star">✳</span> THE PROMPT WORKSPACE</div><h1>Start with an idea. <em>Go further.</em></h1><p>Tell us what is on your mind. We will shape it into a prompt you can use anywhere.</p></div><div class="intro-decoration" aria-hidden="true"><span>✳</span></div></div>
-
-        <div class="workflow-steps" aria-label="Workflow"><span class="step active"><b>01</b> Describe it</span><span class="step-line"></span><span class="step"><b>02</b> Shape it</span><span class="step-line"></span><span class="step"><b>03</b> Take it anywhere</span></div>
-
-        <div class="work-grid">
-          <div class="creation-column">
-          <section class="idea-card" aria-labelledby="ideaHeading">
-            <div class="idea-card-top"><span class="idea-symbol">✳</span><span class="section-kicker">IDEA → PROMPT</span><span class="idea-step">START HERE</span></div>
-            <h2 id="ideaHeading">What is your idea?</h2>
-            <p>Write it naturally. A sentence, a messy thought, or a full brief all work.</p>
-            <label class="sr-only" for="ideaInput">Describe your idea</label>
-            <div class="idea-input-wrap">
-              <textarea id="ideaInput" maxlength="6000" rows="5" placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."></textarea>
-              <div class="voice-controls"><button id="micButton" class="mic-button" type="button" aria-label="Record idea" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 17v5m-4 0h8"></path></svg><span id="micButtonLabel">Record idea</span></button><button id="voiceCancelButton" class="voice-cancel hidden" type="button">Cancel</button></div>
+      <main id="top">
+        <section class="landing-hero">
+          <div class="landing-hero-copy">
+            <div class="landing-eyebrow">
+              <span>✳</span> THE IDEA-TO-PROMPT WORKSPACE
             </div>
-            <div class="voice-status" id="voiceStatus" role="status">Speak your idea. Audio is sent for transcription only when you choose Stop &amp; send.</div>
-            <div class="idea-examples"><span>TRY AN EXAMPLE</span><button type="button" class="idea-example" data-example="I want to start a small online business selling handmade skincare, but I do not know where to begin.">Start a business</button><button type="button" class="idea-example" data-example="I have an idea for an app that helps people plan meals from ingredients they already have. Help me think it through.">Plan an app</button></div>
-            <div class="idea-footer"><button id="ideaGenerateButton" type="button" class="primary-button idea-generate" disabled><span>✦</span> Turn idea into prompt <span class="button-arrow">↗</span></button><span id="ideaStatus" role="status">Add your idea to begin</span></div>
-          </section>
-
-          <section class="interpretation-card hidden" id="interpretationCard" aria-labelledby="interpretationHeading">
-            <div class="interpretation-heading"><div><div class="section-kicker">HOW AI READ YOUR IDEA</div><h2 id="interpretationHeading">The direction behind your prompt</h2></div><span id="ideaDepthBadge" class="depth-badge">Balanced</span></div>
-            <div class="interpretation-goal"><span>YOUR GOAL</span><strong id="ideaGoal"></strong><p id="ideaDepthReason"></p></div>
-            <div class="interpretation-list hidden" id="ideaApproachSection"><span>THE PATH</span><ol id="ideaApproach"></ol></div>
-            <div class="interpretation-list"><span>WHERE AI WILL FOCUS</span><ol id="ideaFocusAreas"></ol></div>
-            <div class="missing-details hidden" id="missingDetails"><span>DETAILS STILL OPEN</span><ul id="ideaMissingDetails"></ul></div>
-            <p class="interpretation-footnote">This is an interpretation. Review and fine-tune the prompt below before using it.</p>
-          </section>
-
-          <section class="composer-card" aria-labelledby="composerHeading">
-            <div class="card-heading"><div><div class="section-kicker">✦ &nbsp; PROMPT CONTROLS</div><h2 id="composerHeading">Fine-tune your prompt</h2><p>Edit what AI inferred or build one yourself.</p></div><button class="text-button" id="toggleComposer" type="button" aria-expanded="false" aria-controls="promptForm">Edit details ⌄</button></div>
-            <form id="promptForm" class="collapsed">
-              <div class="form-tools"><button class="text-button" id="clearButton" type="button">↺ &nbsp; Clear prompt</button></div>
-              <div class="field"><label for="task">Your task <span class="required">*</span></label><p class="field-hint">The one thing you want AI to do</p><textarea id="task" rows="3" placeholder="e.g. Write a launch email for my new productivity app" required></textarea></div>
-              <div class="ai-toolbar"><button class="ai-button" id="enhanceButton" type="button" disabled><span>✳</span> Enhance with AI</button><span id="aiStatus" role="status">Add a task to get AI suggestions</span></div>
-              <div class="field-row"><div class="field"><label for="role">Act as <span class="optional">optional</span></label><input id="role" type="text" placeholder="e.g. A senior copywriter" autocomplete="off"></div><div class="field"><label for="audience">For whom <span class="optional">optional</span></label><input id="audience" type="text" placeholder="e.g. Busy founders" autocomplete="off"></div></div>
-              <div class="field"><label for="context">Helpful context <span class="optional">optional</span></label><textarea id="context" rows="3" placeholder="Background, relevant facts, examples, or anything AI should know..."></textarea></div>
-              <div class="field-row">
-                <div class="field"><label for="formatTrigger">Output format</label><div class="custom-select" data-select="format"><input id="format" type="hidden"><button id="formatTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="formatOptions"><span>Choose a format</span><span class="select-chevron">⌄</span></button><div id="formatOptions" class="select-menu" role="listbox" aria-label="Output format"></div></div></div>
-                <div class="field"><label for="toneTrigger">Tone</label><div class="custom-select" data-select="tone"><input id="tone" type="hidden"><button id="toneTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="toneOptions"><span>Choose a tone</span><span class="select-chevron">⌄</span></button><div id="toneOptions" class="select-menu" role="listbox" aria-label="Tone"></div></div></div>
+            <h1>Great prompts start with <em>rough ideas.</em></h1>
+            <p>
+              Say what you mean in your own words. PromptDock reads the intent,
+              finds the priorities, and shapes a clear prompt you can take to
+              any AI platform.
+            </p>
+            <div class="landing-hero-actions">
+              <button
+                type="button"
+                class="landing-primary-cta"
+                data-auth-mode="register"
+              >
+                Create your workspace <span>↗</span></button
+              ><a class="landing-secondary-cta" href="#how-it-works"
+                >See how it works <span>↓</span></a
+              >
+            </div>
+            <div class="landing-hero-note">
+              <span class="landing-note-stars">✳ ✳ ✳</span
+              ><span>From first thought to useful prompt, in one place.</span>
+            </div>
+          </div>
+          <div class="landing-demo" aria-label="Interactive prompt example">
+            <div class="landing-demo-top">
+              <span class="demo-live-dot"></span><span>LIVE EXAMPLE</span
+              ><span class="demo-step-count">01 / 03</span>
+            </div>
+            <div class="landing-demo-input">
+              <div class="demo-label">YOUR IDEA</div>
+              <p id="demoIdea">
+                I want to launch a small skincare brand, but I don't know where
+                to begin.
+              </p>
+              <div class="demo-idea-picker" aria-label="Choose example idea">
+                <button
+                  type="button"
+                  class="demo-choice active"
+                  data-demo="business"
+                >
+                  Start a business</button
+                ><button type="button" class="demo-choice" data-demo="app">
+                  Plan an app</button
+                ><button type="button" class="demo-choice" data-demo="study">
+                  Study better
+                </button>
               </div>
-              <div class="field"><label for="approach">Suggested flow <span class="optional">for multi-step work</span></label><textarea id="approach" rows="3" placeholder="e.g. Define the goal, compare options, then recommend next steps"></textarea></div>
-              <div class="field"><label for="focus">What should AI emphasize? <span class="optional">highest priority first</span></label><textarea id="focus" rows="3" placeholder="e.g. Practical first steps, likely obstacles, and how to measure progress"></textarea></div>
-              <div class="field"><label for="depthTrigger">Answer depth</label><div class="custom-select" data-select="depth"><input id="depth" type="hidden"><button id="depthTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="depthOptions"><span>Choose depth</span><span class="select-chevron">⌄</span></button><div id="depthOptions" class="select-menu" role="listbox" aria-label="Answer depth"></div></div></div>
-              <div class="field"><label for="constraints">Must include / avoid <span class="optional">optional</span></label><textarea id="constraints" rows="2" placeholder="e.g. Keep it under 200 words. Avoid jargon. Include a call to action."></textarea></div>
-            </form>
-          </section>
+            </div>
+            <div class="demo-connector">
+              <span>✳</span><span>PromptDock shapes the direction</span>
+            </div>
+            <div class="landing-demo-output" id="demoOutput">
+              <div class="demo-output-head">
+                <span>✦ STRUCTURED PROMPT</span><span id="demoDepth">Deep</span>
+              </div>
+              <div class="demo-output-row">
+                <span>GOAL</span
+                ><strong id="demoGoal"
+                  >Build a practical launch plan for a handmade skincare
+                  business.</strong
+                >
+              </div>
+              <div class="demo-output-row">
+                <span>FOCUS</span
+                ><strong id="demoFocus"
+                  >First steps → product validation → realistic launch
+                  costs.</strong
+                >
+              </div>
+              <div class="demo-output-row">
+                <span>FORMAT</span
+                ><strong id="demoFormat"
+                  >Step-by-step plan with open questions.</strong
+                >
+              </div>
+            </div>
+            <button class="demo-action" id="demoAction" type="button">
+              Shape another idea <span>↗</span>
+            </button>
+          </div>
+        </section>
+        <section class="landing-proof" aria-label="Supported platforms">
+          <span>ONE WORKSPACE, EVERY AI TOOL</span>
+          <div>
+            <strong>✺ ChatGPT</strong><strong>✳ Claude</strong
+            ><strong>✦ Gemini</strong><strong>+ wherever you prompt</strong>
+          </div>
+        </section>
+        <section class="landing-how" id="how-it-works">
+          <div class="landing-section-intro">
+            <span class="landing-kicker">HOW IT WORKS</span>
+            <h2>From “I have an idea”<br />to “I know what to ask.”</h2>
+            <p>
+              You bring the thought. PromptDock helps turn it into clear
+              instructions without asking you to become a prompt engineer.
+            </p>
+          </div>
+          <div class="landing-step-grid">
+            <article>
+              <span class="landing-step-number">01</span>
+              <div class="landing-step-icon">✎</div>
+              <h3>Say it naturally</h3>
+              <p>
+                Type a messy thought or dictate it. A sentence is enough to
+                start.
+              </p>
+            </article>
+            <article>
+              <span class="landing-step-number">02</span>
+              <div class="landing-step-icon">✳</div>
+              <h3>See what matters</h3>
+              <p>
+                AI understands the goal, ranks the focus areas, and flags
+                missing details.
+              </p>
+            </article>
+            <article>
+              <span class="landing-step-number">03</span>
+              <div class="landing-step-icon">↗</div>
+              <h3>Make it yours</h3>
+              <p>
+                Edit the prompt, save it to your library, or copy it into your
+                favorite AI tool.
+              </p>
+            </article>
+          </div>
+        </section>
+        <section class="landing-features" id="features">
+          <div class="landing-section-intro">
+            <span class="landing-kicker">BUILT FOR YOUR FLOW</span>
+            <h2>Ideas move quickly.<br />Your workspace should too.</h2>
+          </div>
+          <div class="landing-feature-grid">
+            <article class="feature-main">
+              <span>✳ IDEA TO PROMPT</span>
+              <h3>Start before you know exactly what you want.</h3>
+              <p>
+                PromptDock turns unstructured intent into a goal, a suggested
+                flow, and priorities that tell the AI where to spend its effort.
+              </p>
+              <div class="feature-visual">
+                <span>rough idea</span><i>→</i><span>clear direction</span
+                ><i>→</i><span>ready-to-use prompt</span>
+              </div>
+            </article>
+            <article>
+              <span class="feature-symbol">◉</span>
+              <h3>Speak it out</h3>
+              <p>
+                Record a thought, review the transcription, and send it into the
+                same idea-to-prompt flow.
+              </p>
+            </article>
+            <article>
+              <span class="feature-symbol">▦</span>
+              <h3>Save and share</h3>
+              <p>
+                Keep prompts in your library. Make one public so anyone can copy
+                it, or sign in to save a personal version.
+              </p>
+            </article>
+            <article>
+              <span class="feature-symbol">⌘</span>
+              <h3>Keep control</h3>
+              <p>
+                Fine-tune every field, copy the final prompt, or export it as
+                Markdown.
+              </p>
+            </article>
+          </div>
+        </section>
+        <section class="landing-keys" id="your-keys">
+          <div class="landing-keys-orbit">
+            ✳<span>YOUR MODEL</span><small>YOUR KEY</small>
+          </div>
+          <div>
+            <span class="landing-kicker">YOUR AI, YOUR WAY</span>
+            <h2>Bring your own key.<br />Choose your model.</h2>
+            <p>
+              Connect your Groq or Gemini key in settings, pick the model you
+              prefer, and keep shaping prompts in the same workspace. Your key
+              is encrypted on the server and never shown again after saving.
+            </p>
+            <button
+              type="button"
+              class="landing-outline-cta"
+              data-auth-mode="register"
+            >
+              Set up your workspace <span>↗</span>
+            </button>
+          </div>
+        </section>
+        <section class="landing-final">
+          <span class="landing-kicker">THE NEXT GOOD PROMPT STARTS HERE</span>
+          <h2>What have you been thinking about?</h2>
+          <p>
+            Bring the half-formed idea. Leave with a prompt that knows where to
+            focus.
+          </p>
+          <button
+            type="button"
+            class="landing-primary-cta"
+            data-auth-mode="register"
+          >
+            Start with an idea <span>↗</span>
+          </button>
+        </section>
+      </main>
+      <footer class="landing-footer">
+        <span>✳ promptdock</span><span>Ideas deserve a clearer path.</span
+        ><button type="button" data-auth-mode="login">Sign in ↗</button>
+      </footer>
+    </div>
+    <div class="app-shell hidden" id="appShell">
+      <button
+        id="sidebarOverlay"
+        class="sidebar-overlay"
+        type="button"
+        aria-label="Close navigation"
+      ></button>
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#workspace" aria-label="PromptDock home">
+          <span class="brand-mark"
+            ><svg viewBox="0 0 32 32" aria-hidden="true">
+              <path
+                d="M5 7h17a6 6 0 0 1 0 12h-8v7L5 19V7Z"
+                fill="currentColor"
+              />
+              <circle cx="14" cy="13" r="1.6" fill="#182824" />
+              <circle cx="21" cy="13" r="1.6" fill="#182824" /></svg
+          ></span>
+          <span
+            >prompt<span class="brand-accent">dock</span
+            ><small>YOUR AI WORKSPACE</small></span
+          >
+        </a>
+
+        <div class="sidebar-label">WORKSPACE</div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-view="builder">
+            <span class="nav-icon">✦</span><span>Idea to prompt</span>
+          </button>
+          <button class="nav-item" data-view="library">
+            <span class="nav-icon">▦</span><span>My library</span
+            ><span class="nav-count" id="libraryCount">0</span>
+          </button>
+          <button class="nav-item" data-view="settings">
+            <span class="nav-icon">⚙</span><span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label sidebar-label-row">
+          <span>QUICK STARTS</span><span class="tiny-sparkle">✳</span>
+        </div>
+        <div class="template-nav" id="templateNav"></div>
+
+        <div class="sidebar-bottom">
+          <button type="button" class="sidebar-signout" id="sidebarSignOut">
+            <span>↗</span> Sign out
+          </button>
+          <div class="tip-card">
+            <span class="tip-icon">✦</span
+            ><strong>Better input. Better output.</strong>
+            <p>Give your AI a clear job, context, and a format to follow.</p>
+          </div>
+          <div class="privacy-note">
+            <span class="status-dot"></span>
+            <span id="privacyNote">Saved prompts stay in this browser</span>
+          </div>
+          <div class="sidebar-version">
+            PromptDock <span id="appVersion">Loading…</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content" id="workspace">
+        <header class="topbar">
+          <button
+            class="mobile-menu icon-button"
+            id="menuButton"
+            aria-label="Open menu"
+            aria-expanded="false"
+          >
+            ☰
+          </button>
+          <div class="breadcrumb">
+            <span>Workspace</span><span class="breadcrumb-chevron">›</span
+            ><strong id="breadcrumbCurrent">Idea to prompt</strong>
+          </div>
+          <div class="top-actions">
+            <button class="account-trigger" id="accountButton" type="button">
+              Sign in to sync</button
+            ><button
+              class="help-button"
+              id="helpButton"
+              aria-label="How PromptDock works"
+            >
+              ?
+            </button>
+          </div>
+        </header>
+
+        <section class="builder-view" id="builderView">
+          <div class="page-intro">
+            <div>
+              <div class="eyebrow">
+                <span class="eyebrow-star">✳</span> THE PROMPT WORKSPACE
+              </div>
+              <h1>Start with an idea. <em>Go further.</em></h1>
+              <p>
+                Tell us what is on your mind. We will shape it into a prompt you
+                can use anywhere.
+              </p>
+            </div>
+            <div class="intro-decoration" aria-hidden="true">
+              <span>✳</span>
+            </div>
           </div>
 
-          <aside class="preview-column">
-            <section class="preview-card" aria-labelledby="previewHeading"><div class="preview-top"><div class="section-kicker">LIVE PREVIEW</div><span class="ready-badge" id="readyBadge"><span class="status-dot"></span> Ready to copy</span></div><h2 id="previewHeading">Your finished prompt</h2><p class="preview-subtitle">Built as you type, ready for any AI platform.</p><div class="prompt-output" id="promptOutput" tabindex="0" aria-live="polite"></div><div class="preview-actions"><button class="primary-button" id="copyButton" type="button"><span>▣</span> Copy prompt <span class="button-arrow">↗</span></button><button class="secondary-button" id="saveButton" type="button">♡ &nbsp; Save</button></div><div class="export-row"><button class="quiet-button" id="downloadButton" type="button">↓ &nbsp; Download .md</button><span class="word-count" id="wordCount">0 words</span></div></section>
-            <section class="quality-card"><div class="quality-header"><div><div class="section-kicker">PROMPT CHECK</div><h3 id="qualityTitle">A good start</h3></div><div class="quality-score"><strong id="qualityScore">0</strong><span>/ 5</span></div></div><div class="score-bars" id="scoreBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><p id="qualityTip">Add your task to get started.</p></section>
-          </aside>
+          <div class="workflow-steps" aria-label="Workflow">
+            <span class="step active"><b>01</b> Describe it</span
+            ><span class="step-line"></span
+            ><span class="step"><b>02</b> Shape it</span
+            ><span class="step-line"></span
+            ><span class="step"><b>03</b> Take it anywhere</span>
+          </div>
+
+          <div class="work-grid">
+            <div class="creation-column">
+              <section class="idea-card" aria-labelledby="ideaHeading">
+                <div class="idea-card-top">
+                  <span class="idea-symbol">✳</span
+                  ><span class="section-kicker">IDEA → PROMPT</span
+                  ><span class="idea-step">START HERE</span>
+                </div>
+                <h2 id="ideaHeading">What is your idea?</h2>
+                <p>
+                  Write it naturally. A sentence, a messy thought, or a full
+                  brief all work.
+                </p>
+                <label class="sr-only" for="ideaInput"
+                  >Describe your idea</label
+                >
+                <div class="idea-input-wrap">
+                  <textarea
+                    id="ideaInput"
+                    maxlength="6000"
+                    rows="5"
+                    placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."
+                  ></textarea>
+                  <div class="voice-controls">
+                    <button
+                      id="micButton"
+                      class="mic-button"
+                      type="button"
+                      aria-label="Record idea"
+                      disabled
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+                        <path
+                          d="M5 10a7 7 0 0 0 14 0M12 17v5m-4 0h8"
+                        ></path></svg
+                      ><span id="micButtonLabel">Record idea</span></button
+                    ><button
+                      id="voiceCancelButton"
+                      class="voice-cancel hidden"
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <div class="voice-status" id="voiceStatus" role="status">
+                  Speak your idea. Audio is sent for transcription only when you
+                  choose Stop &amp; send.
+                </div>
+                <div class="idea-examples">
+                  <span>TRY AN EXAMPLE</span
+                  ><button
+                    type="button"
+                    class="idea-example"
+                    data-example="I want to start a small online business selling handmade skincare, but I do not know where to begin."
+                  >
+                    Start a business</button
+                  ><button
+                    type="button"
+                    class="idea-example"
+                    data-example="I have an idea for an app that helps people plan meals from ingredients they already have. Help me think it through."
+                  >
+                    Plan an app
+                  </button>
+                </div>
+                <div class="idea-footer">
+                  <button
+                    id="ideaGenerateButton"
+                    type="button"
+                    class="primary-button idea-generate"
+                    disabled
+                  >
+                    <span>✦</span> Turn idea into prompt
+                    <span class="button-arrow">↗</span></button
+                  ><span id="ideaStatus" role="status"
+                    >Add your idea to begin</span
+                  >
+                </div>
+              </section>
+
+              <section
+                class="interpretation-card hidden"
+                id="interpretationCard"
+                aria-labelledby="interpretationHeading"
+              >
+                <div class="interpretation-heading">
+                  <div>
+                    <div class="section-kicker">HOW AI READ YOUR IDEA</div>
+                    <h2 id="interpretationHeading">
+                      The direction behind your prompt
+                    </h2>
+                  </div>
+                  <span id="ideaDepthBadge" class="depth-badge">Balanced</span>
+                </div>
+                <div class="interpretation-goal">
+                  <span>YOUR GOAL</span><strong id="ideaGoal"></strong>
+                  <p id="ideaDepthReason"></p>
+                </div>
+                <div
+                  class="interpretation-list hidden"
+                  id="ideaApproachSection"
+                >
+                  <span>THE PATH</span>
+                  <ol id="ideaApproach"></ol>
+                </div>
+                <div class="interpretation-list">
+                  <span>WHERE AI WILL FOCUS</span>
+                  <ol id="ideaFocusAreas"></ol>
+                </div>
+                <div class="missing-details hidden" id="missingDetails">
+                  <span>DETAILS STILL OPEN</span>
+                  <ul id="ideaMissingDetails"></ul>
+                </div>
+                <p class="interpretation-footnote">
+                  This is an interpretation. Review and fine-tune the prompt
+                  below before using it.
+                </p>
+              </section>
+
+              <section class="composer-card" aria-labelledby="composerHeading">
+                <div class="card-heading">
+                  <div>
+                    <div class="section-kicker">✦ &nbsp; PROMPT CONTROLS</div>
+                    <h2 id="composerHeading">Fine-tune your prompt</h2>
+                    <p>Edit what AI inferred or build one yourself.</p>
+                  </div>
+                  <button
+                    class="text-button"
+                    id="toggleComposer"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="promptForm"
+                  >
+                    Edit details ⌄
+                  </button>
+                </div>
+                <form id="promptForm" class="collapsed">
+                  <div class="form-tools">
+                    <button class="text-button" id="clearButton" type="button">
+                      ↺ &nbsp; Clear prompt
+                    </button>
+                  </div>
+                  <div class="field">
+                    <label for="task"
+                      >Your task <span class="required">*</span></label
+                    >
+                    <p class="field-hint">The one thing you want AI to do</p>
+                    <textarea
+                      id="task"
+                      rows="3"
+                      placeholder="e.g. Write a launch email for my new productivity app"
+                      required
+                    ></textarea>
+                  </div>
+                  <div class="ai-toolbar">
+                    <button
+                      class="ai-button"
+                      id="enhanceButton"
+                      type="button"
+                      disabled
+                    >
+                      <span>✳</span> Enhance with AI</button
+                    ><span id="aiStatus" role="status"
+                      >Add a task to get AI suggestions</span
+                    >
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="role"
+                        >Act as <span class="optional">optional</span></label
+                      ><input
+                        id="role"
+                        type="text"
+                        placeholder="e.g. A senior copywriter"
+                        autocomplete="off"
+                      />
+                    </div>
+                    <div class="field">
+                      <label for="audience"
+                        >For whom <span class="optional">optional</span></label
+                      ><input
+                        id="audience"
+                        type="text"
+                        placeholder="e.g. Busy founders"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="context"
+                      >Helpful context
+                      <span class="optional">optional</span></label
+                    ><textarea
+                      id="context"
+                      rows="3"
+                      placeholder="Background, relevant facts, examples, or anything AI should know..."
+                    ></textarea>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="formatTrigger">Output format</label>
+                      <div class="custom-select" data-select="format">
+                        <input id="format" type="hidden" /><button
+                          id="formatTrigger"
+                          class="select-trigger"
+                          type="button"
+                          aria-haspopup="listbox"
+                          aria-expanded="false"
+                          aria-controls="formatOptions"
+                        >
+                          <span>Choose a format</span
+                          ><span class="select-chevron">⌄</span>
+                        </button>
+                        <div
+                          id="formatOptions"
+                          class="select-menu"
+                          role="listbox"
+                          aria-label="Output format"
+                        ></div>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label for="toneTrigger">Tone</label>
+                      <div class="custom-select" data-select="tone">
+                        <input id="tone" type="hidden" /><button
+                          id="toneTrigger"
+                          class="select-trigger"
+                          type="button"
+                          aria-haspopup="listbox"
+                          aria-expanded="false"
+                          aria-controls="toneOptions"
+                        >
+                          <span>Choose a tone</span
+                          ><span class="select-chevron">⌄</span>
+                        </button>
+                        <div
+                          id="toneOptions"
+                          class="select-menu"
+                          role="listbox"
+                          aria-label="Tone"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="approach"
+                      >Suggested flow
+                      <span class="optional">for multi-step work</span></label
+                    ><textarea
+                      id="approach"
+                      rows="3"
+                      placeholder="e.g. Define the goal, compare options, then recommend next steps"
+                    ></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="focus"
+                      >What should AI emphasize?
+                      <span class="optional"
+                        >highest priority first</span
+                      ></label
+                    ><textarea
+                      id="focus"
+                      rows="3"
+                      placeholder="e.g. Practical first steps, likely obstacles, and how to measure progress"
+                    ></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="depthTrigger">Answer depth</label>
+                    <div class="custom-select" data-select="depth">
+                      <input id="depth" type="hidden" /><button
+                        id="depthTrigger"
+                        class="select-trigger"
+                        type="button"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-controls="depthOptions"
+                      >
+                        <span>Choose depth</span
+                        ><span class="select-chevron">⌄</span>
+                      </button>
+                      <div
+                        id="depthOptions"
+                        class="select-menu"
+                        role="listbox"
+                        aria-label="Answer depth"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="constraints"
+                      >Must include / avoid
+                      <span class="optional">optional</span></label
+                    ><textarea
+                      id="constraints"
+                      rows="2"
+                      placeholder="e.g. Keep it under 200 words. Avoid jargon. Include a call to action."
+                    ></textarea>
+                  </div>
+                </form>
+              </section>
+            </div>
+
+            <aside class="preview-column">
+              <section class="preview-card" aria-labelledby="previewHeading">
+                <div class="preview-top">
+                  <div class="section-kicker">LIVE PREVIEW</div>
+                  <span class="ready-badge" id="readyBadge"
+                    ><span class="status-dot"></span> Ready to copy</span
+                  >
+                </div>
+                <h2 id="previewHeading">Your finished prompt</h2>
+                <p class="preview-subtitle">
+                  Built as you type, ready for any AI platform.
+                </p>
+                <div
+                  class="prompt-output"
+                  id="promptOutput"
+                  tabindex="0"
+                  aria-live="polite"
+                ></div>
+                <div class="preview-actions">
+                  <button class="primary-button" id="copyButton" type="button">
+                    <span>▣</span> Copy prompt
+                    <span class="button-arrow">↗</span></button
+                  ><button
+                    class="secondary-button"
+                    id="saveButton"
+                    type="button"
+                  >
+                    ♡ &nbsp; Save
+                  </button>
+                </div>
+                <div class="export-row">
+                  <button
+                    class="quiet-button"
+                    id="downloadButton"
+                    type="button"
+                  >
+                    ↓ &nbsp; Download .md</button
+                  ><span class="word-count" id="wordCount">0 words</span>
+                </div>
+              </section>
+              <section class="quality-card">
+                <div class="quality-header">
+                  <div>
+                    <div class="section-kicker">PROMPT CHECK</div>
+                    <h3 id="qualityTitle">A good start</h3>
+                  </div>
+                  <div class="quality-score">
+                    <strong id="qualityScore">0</strong><span>/ 5</span>
+                  </div>
+                </div>
+                <div class="score-bars" id="scoreBars" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <p id="qualityTip">Add your task to get started.</p>
+              </section>
+            </aside>
+          </div>
+
+          <section class="platform-section">
+            <div class="platform-heading">
+              <div>
+                <div class="section-kicker">WORKS WITH YOUR FAVORITES</div>
+                <h2>One prompt. Any platform.</h2>
+                <p>Copy your prompt, then open the AI tool you use.</p>
+              </div>
+              <span class="platform-note"
+                >No account connection needed <span>↗</span></span
+              >
+            </div>
+            <div class="platform-list">
+              <button class="platform-card" data-platform="chatgpt">
+                <span class="platform-logo chatgpt-logo">✺</span
+                ><span><strong>ChatGPT</strong><small>OpenAI</small></span
+                ><span class="platform-arrow">↗</span></button
+              ><button class="platform-card" data-platform="claude">
+                <span class="platform-logo claude-logo">✳</span
+                ><span><strong>Claude</strong><small>Anthropic</small></span
+                ><span class="platform-arrow">↗</span></button
+              ><button class="platform-card" data-platform="gemini">
+                <span class="platform-logo gemini-logo">✦</span
+                ><span><strong>Gemini</strong><small>Google</small></span
+                ><span class="platform-arrow">↗</span>
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <section
+          class="library-view hidden"
+          id="libraryView"
+          aria-labelledby="libraryHeading"
+        >
+          <div class="page-intro library-intro">
+            <div>
+              <div class="eyebrow">
+                <span class="eyebrow-star">✳</span> YOUR COLLECTION
+              </div>
+              <h1 id="libraryHeading">Prompts worth <em>keeping.</em></h1>
+              <p>Find the prompts you saved and make them your own.</p>
+            </div>
+            <button
+              class="primary-button new-prompt-button"
+              id="newPromptButton"
+            >
+              ＋ &nbsp; New prompt
+            </button>
+          </div>
+          <div class="library-toolbar">
+            <label class="search-box"
+              ><span>⌕</span
+              ><input
+                id="librarySearch"
+                type="search"
+                placeholder="Search names, ideas, tasks, tags..."
+                aria-label="Search saved prompts" /></label
+            ><span id="librarySummary">0 saved prompts</span>
+          </div>
+          <div class="library-backup">
+            <button class="text-button" type="button" id="backupExport">
+              Export JSON ↓</button
+            ><button class="text-button" type="button" id="backupImport">
+              Import JSON ↑</button
+            ><input
+              class="hidden"
+              id="backupFile"
+              type="file"
+              accept="application/json,.json"
+              aria-label="Choose PromptDock backup JSON"
+            />
+          </div>
+          <div class="library-grid" id="libraryGrid"></div>
+          <button
+            class="secondary-button library-load-more hidden"
+            type="button"
+            id="libraryLoadMore"
+          >
+            Load more prompts
+          </button>
+        </section>
+        <section
+          class="settings-view hidden"
+          id="settingsView"
+          aria-labelledby="settingsHeading"
+        >
+          <div class="page-intro">
+            <div>
+              <div class="eyebrow">
+                <span class="eyebrow-star">✳</span> YOUR WORKSPACE
+              </div>
+              <h1 id="settingsHeading">Make it <em>yours.</em></h1>
+              <p>
+                Choose the AI behind your prompts and keep your account secure.
+              </p>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <section class="settings-card">
+              <span class="section-kicker">AI PROVIDER</span>
+              <h2>Bring your own key</h2>
+              <p>
+                Use your own Groq, Gemini, or APMIX key and model. The key is
+                encrypted on the server and is never returned to your browser.
+              </p>
+              <p class="settings-state" id="byokState">
+                Checking your settings…
+              </p>
+              <form id="byokForm">
+                <label class="settings-label">Provider</label>
+                <div
+                  class="provider-choice"
+                  role="group"
+                  aria-label="AI provider"
+                >
+                  <button
+                    type="button"
+                    class="provider-option active"
+                    data-provider="groq"
+                    aria-pressed="true"
+                  >
+                    ✳ Groq</button
+                  ><button
+                    type="button"
+                    class="provider-option"
+                    data-provider="gemini"
+                    aria-pressed="false"
+                  >
+                    ✦ Gemini</button
+                  ><button
+                    type="button"
+                    class="provider-option"
+                    data-provider="apmix"
+                    aria-pressed="false"
+                  >
+                    ◈ APMIX
+                  </button>
+                </div>
+                <label class="settings-label" for="byokModel">Model ID</label
+                ><input
+                  id="byokModel"
+                  name="model"
+                  type="text"
+                  maxlength="120"
+                  placeholder="e.g. openai/gpt-oss-120b"
+                  required
+                /><label class="settings-label" for="byokKey">API key</label
+                ><input
+                  id="byokKey"
+                  name="apiKey"
+                  type="password"
+                  maxlength="500"
+                  autocomplete="new-password"
+                  placeholder="Paste your provider key"
+                /><small
+                  >Leave this empty to keep your saved key when changing the
+                  model.</small
+                >
+                <div class="settings-actions">
+                  <button type="submit" class="primary-button">
+                    Save provider</button
+                  ><button
+                    type="button"
+                    class="secondary-button"
+                    id="removeByok"
+                  >
+                    Use PromptDock default
+                  </button>
+                </div>
+              </form>
+              <p class="settings-feedback" id="byokFeedback" role="status"></p>
+            </section>
+            <section class="settings-card">
+              <span class="section-kicker">ACCOUNT</span>
+              <h2>Sign-in &amp; security</h2>
+              <p>Signed in as <strong id="settingsEmail"></strong></p>
+              <form id="passwordForm">
+                <label class="settings-label" for="currentPassword"
+                  >Current password</label
+                ><input
+                  id="currentPassword"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                /><label class="settings-label" for="newPassword"
+                  >New password</label
+                ><input
+                  id="newPassword"
+                  type="password"
+                  minlength="12"
+                  maxlength="200"
+                  autocomplete="new-password"
+                  required
+                /><button
+                  type="submit"
+                  class="secondary-button settings-submit"
+                >
+                  Change password
+                </button>
+              </form>
+              <p
+                class="settings-feedback"
+                id="passwordFeedback"
+                role="status"
+              ></p>
+              <div class="settings-session">
+                <strong>Sessions</strong>
+                <p>
+                  Sign out on this device, or end every session if you lost
+                  access to another device.
+                </p>
+                <button type="button" class="text-button" id="logoutAllButton">
+                  Sign out on all devices ↗
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="authDialog" class="app-dialog auth-dialog">
+      <form id="authForm">
+        <button
+          class="dialog-close"
+          type="button"
+          id="closeAuth"
+          aria-label="Close"
+        >
+          ×</button
+        ><span class="dialog-icon">✦</span>
+        <h2 id="authTitle">Sign in</h2>
+        <p id="authDescription">
+          Sign in to keep your library in sync across devices.
+        </p>
+        <div id="authEmailWrap">
+          <label for="authEmail">Email</label
+          ><input
+            id="authEmail"
+            type="email"
+            maxlength="254"
+            autocomplete="email"
+            required
+          />
         </div>
-
-        <section class="platform-section"><div class="platform-heading"><div><div class="section-kicker">WORKS WITH YOUR FAVORITES</div><h2>One prompt. Any platform.</h2><p>Copy your prompt, then open the AI tool you use.</p></div><span class="platform-note">No account connection needed <span>↗</span></span></div><div class="platform-list"><button class="platform-card" data-platform="chatgpt"><span class="platform-logo chatgpt-logo">✺</span><span><strong>ChatGPT</strong><small>OpenAI</small></span><span class="platform-arrow">↗</span></button><button class="platform-card" data-platform="claude"><span class="platform-logo claude-logo">✳</span><span><strong>Claude</strong><small>Anthropic</small></span><span class="platform-arrow">↗</span></button><button class="platform-card" data-platform="gemini"><span class="platform-logo gemini-logo">✦</span><span><strong>Gemini</strong><small>Google</small></span><span class="platform-arrow">↗</span></button></div></section>
-      </section>
-
-      <section class="library-view hidden" id="libraryView" aria-labelledby="libraryHeading"><div class="page-intro library-intro"><div><div class="eyebrow"><span class="eyebrow-star">✳</span> YOUR COLLECTION</div><h1 id="libraryHeading">Prompts worth <em>keeping.</em></h1><p>Find the prompts you saved and make them your own.</p></div><button class="primary-button new-prompt-button" id="newPromptButton">＋ &nbsp; New prompt</button></div><div class="library-toolbar"><label class="search-box"><span>⌕</span><input id="librarySearch" type="search" placeholder="Search names, ideas, tasks, tags..." aria-label="Search saved prompts"></label><span id="librarySummary">0 saved prompts</span></div><div class="library-backup"><button class="text-button" type="button" id="backupExport">Export JSON ↓</button><button class="text-button" type="button" id="backupImport">Import JSON ↑</button><input class="hidden" id="backupFile" type="file" accept="application/json,.json" aria-label="Choose PromptDock backup JSON"></div><div class="library-grid" id="libraryGrid"></div><button class="secondary-button library-load-more hidden" type="button" id="libraryLoadMore">Load more prompts</button></section>
-      <section class="settings-view hidden" id="settingsView" aria-labelledby="settingsHeading"><div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-star">✳</span> YOUR WORKSPACE</div><h1 id="settingsHeading">Make it <em>yours.</em></h1><p>Choose the AI behind your prompts and keep your account secure.</p></div></div><div class="settings-grid"><section class="settings-card"><span class="section-kicker">AI PROVIDER</span><h2>Bring your own key</h2><p>Use your own Groq, Gemini, or APMIX key and model. The key is encrypted on the server and is never returned to your browser.</p><p class="settings-state" id="byokState">Checking your settings…</p><form id="byokForm"><label class="settings-label">Provider</label><div class="provider-choice" role="group" aria-label="AI provider"><button type="button" class="provider-option active" data-provider="groq" aria-pressed="true">✳ Groq</button><button type="button" class="provider-option" data-provider="gemini" aria-pressed="false">✦ Gemini</button><button type="button" class="provider-option" data-provider="apmix" aria-pressed="false">◈ APMIX</button></div><label class="settings-label" for="byokModel">Model ID</label><input id="byokModel" name="model" type="text" maxlength="120" placeholder="e.g. openai/gpt-oss-120b" required><label class="settings-label" for="byokKey">API key</label><input id="byokKey" name="apiKey" type="password" maxlength="500" autocomplete="new-password" placeholder="Paste your provider key"><small>Leave this empty to keep your saved key when changing the model.</small><div class="settings-actions"><button type="submit" class="primary-button">Save provider</button><button type="button" class="secondary-button" id="removeByok">Use PromptDock default</button></div></form><p class="settings-feedback" id="byokFeedback" role="status"></p></section><section class="settings-card"><span class="section-kicker">ACCOUNT</span><h2>Sign-in &amp; security</h2><p>Signed in as <strong id="settingsEmail"></strong></p><form id="passwordForm"><label class="settings-label" for="currentPassword">Current password</label><input id="currentPassword" type="password" autocomplete="current-password" required><label class="settings-label" for="newPassword">New password</label><input id="newPassword" type="password" minlength="12" maxlength="200" autocomplete="new-password" required><button type="submit" class="secondary-button settings-submit">Change password</button></form><p class="settings-feedback" id="passwordFeedback" role="status"></p><div class="settings-session"><strong>Sessions</strong><p>Sign out on this device, or end every session if you lost access to another device.</p><button type="button" class="text-button" id="logoutAllButton">Sign out on all devices ↗</button></div></section></div></section>
-    </main>
-  </div>
-
-  <dialog id="authDialog" class="app-dialog auth-dialog"><form id="authForm"><button class="dialog-close" type="button" id="closeAuth" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2 id="authTitle">Sign in</h2><p id="authDescription">Sign in to keep your library in sync across devices.</p><div id="authEmailWrap"><label for="authEmail">Email</label><input id="authEmail" type="email" maxlength="254" autocomplete="email" required></div><div id="authPasswordWrap"><label for="authPassword">Password</label><input id="authPassword" type="password" minlength="12" maxlength="200" autocomplete="current-password" required></div><div id="authConfirmWrap" class="hidden"><label for="authConfirm">Confirm password</label><input id="authConfirm" type="password" minlength="12" maxlength="200" autocomplete="new-password"></div><button type="button" class="auth-forgot" id="authForgot">Forgot password?</button><p class="auth-error" id="authError" role="alert"></p><p class="auth-success" id="authSuccess" role="status"></p><div class="dialog-actions"><button class="secondary-button" type="button" id="authToggle">Create account</button><button class="primary-button" type="submit" id="authSubmit">Sign in</button></div></form></dialog>
-  <dialog id="saveDialog" class="app-dialog"><form method="dialog" id="saveForm"><button class="dialog-close" value="cancel" aria-label="Close">×</button><span class="dialog-icon">♡</span><h2>Save this prompt</h2><p>Give it a name so it is easy to find later.</p><label for="promptName">Prompt name</label><input id="promptName" type="text" maxlength="80" required placeholder="e.g. Weekly content ideas"><label for="promptTags">Tags</label><input id="promptTags" type="text" maxlength="240" placeholder="e.g. game, marketing"><small>Separate tags with commas. Up to 8 tags.</small><div class="dialog-actions"><button class="secondary-button" value="cancel" type="button" id="cancelSave">Cancel</button><button class="primary-button" value="save" type="submit">Save prompt</button></div></form></dialog>
-  <dialog id="shareDialog" class="app-dialog share-dialog"><button class="dialog-close" type="button" id="closeShare" aria-label="Close">×</button><span class="dialog-icon">↗</span><h2>Share this prompt</h2><p>Anyone with this link can view and copy the finished prompt. Your email and private idea notes stay hidden.</p><label for="shareLink">Public link</label><input id="shareLink" type="text" readonly aria-label="Public prompt link"><div class="dialog-actions"><button class="secondary-button" type="button" id="unpublishPrompt">Make private</button><button class="primary-button" type="button" id="copyShareLink">Copy link</button></div><p class="settings-feedback" id="shareFeedback" role="status"></p></dialog>
-  <dialog id="historyDialog" class="app-dialog history-dialog"><button class="dialog-close" type="button" id="closeHistory" aria-label="Close">×</button><span class="dialog-icon">↶</span><h2>Earlier versions</h2><p>Restore one of the last 10 saved edits. Your current version will remain in history.</p><div id="historyList" class="history-list"></div></dialog>
-  <dialog id="helpDialog" class="app-dialog help-dialog"><button class="dialog-close" id="closeHelp" aria-label="Close">×</button><span class="dialog-icon">✦</span><h2>How PromptDock works</h2><p>Start with a rough idea. AI will draft a prompt, show its priorities, and flag details you may want to add. You can edit every part before using it.</p><ul><li>Use the mic to record. Stop &amp; send transcribes your speech with Groq, then turns the transcript into a prompt.</li><li>Sign in to save and sync your library across devices. Voice audio is sent to Groq only after Stop &amp; send.</li><li>Publish a saved prompt to get a public link. Guests can view and copy it; signed-in users can save their own version.</li><li>Platform buttons copy your prompt and open the selected site.</li></ul><button class="primary-button" id="gotItButton">Got it</button></dialog>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-</body>
+        <div id="authPasswordWrap">
+          <label for="authPassword">Password</label
+          ><input
+            id="authPassword"
+            type="password"
+            minlength="12"
+            maxlength="200"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div id="authConfirmWrap" class="hidden">
+          <label for="authConfirm">Confirm password</label
+          ><input
+            id="authConfirm"
+            type="password"
+            minlength="12"
+            maxlength="200"
+            autocomplete="new-password"
+          />
+        </div>
+        <button type="button" class="auth-forgot" id="authForgot">
+          Forgot password?
+        </button>
+        <p class="auth-error" id="authError" role="alert"></p>
+        <p class="auth-success" id="authSuccess" role="status"></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" id="authToggle">
+            Create account</button
+          ><button class="primary-button" type="submit" id="authSubmit">
+            Sign in
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="saveDialog" class="app-dialog">
+      <form method="dialog" id="saveForm">
+        <button class="dialog-close" value="cancel" aria-label="Close">×</button
+        ><span class="dialog-icon">♡</span>
+        <h2>Save this prompt</h2>
+        <p>Give it a name so it is easy to find later.</p>
+        <label for="promptName">Prompt name</label
+        ><input
+          id="promptName"
+          type="text"
+          maxlength="80"
+          required
+          placeholder="e.g. Weekly content ideas"
+        /><label for="promptTags">Tags</label
+        ><input
+          id="promptTags"
+          type="text"
+          maxlength="240"
+          placeholder="e.g. game, marketing"
+        /><small>Separate tags with commas. Up to 8 tags.</small>
+        <div class="dialog-actions">
+          <button
+            class="secondary-button"
+            value="cancel"
+            type="button"
+            id="cancelSave"
+          >
+            Cancel</button
+          ><button class="primary-button" value="save" type="submit">
+            Save prompt
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="shareDialog" class="app-dialog share-dialog">
+      <button
+        class="dialog-close"
+        type="button"
+        id="closeShare"
+        aria-label="Close"
+      >
+        ×</button
+      ><span class="dialog-icon">↗</span>
+      <h2>Share this prompt</h2>
+      <p>
+        Anyone with this link can view and copy the finished prompt. Your email
+        and private idea notes stay hidden.
+      </p>
+      <label for="shareLink">Public link</label
+      ><input
+        id="shareLink"
+        type="text"
+        readonly
+        aria-label="Public prompt link"
+      />
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" id="unpublishPrompt">
+          Make private</button
+        ><button class="primary-button" type="button" id="copyShareLink">
+          Copy link
+        </button>
+      </div>
+      <p class="settings-feedback" id="shareFeedback" role="status"></p>
+    </dialog>
+    <dialog id="historyDialog" class="app-dialog history-dialog">
+      <button
+        class="dialog-close"
+        type="button"
+        id="closeHistory"
+        aria-label="Close"
+      >
+        ×</button
+      ><span class="dialog-icon">↶</span>
+      <h2>Earlier versions</h2>
+      <p>
+        Restore one of the last 10 saved edits. Your current version will remain
+        in history.
+      </p>
+      <div id="historyList" class="history-list"></div>
+    </dialog>
+    <dialog id="helpDialog" class="app-dialog help-dialog">
+      <button class="dialog-close" id="closeHelp" aria-label="Close">×</button
+      ><span class="dialog-icon">✦</span>
+      <h2>How PromptDock works</h2>
+      <p>
+        Start with a rough idea. AI will draft a prompt, show its priorities,
+        and flag details you may want to add. You can edit every part before
+        using it.
+      </p>
+      <ul>
+        <li>
+          Use the mic to record. Stop &amp; send transcribes your speech with
+          Groq, then turns the transcript into a prompt.
+        </li>
+        <li>
+          Sign in to save and sync your library across devices. Voice audio is
+          sent to Groq only after Stop &amp; send.
+        </li>
+        <li>
+          Publish a saved prompt to get a public link. Guests can view and copy
+          it; signed-in users can save their own version.
+        </li>
+        <li>Platform buttons copy your prompt and open the selected site.</li>
+      </ul>
+      <button class="primary-button" id="gotItButton">Got it</button>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
 </html>

@@ -1,26 +1,56 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { normalizeDatabaseUrl, validatePrompt, importPrompts } = require('../src/database');
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const {
+  normalizeDatabaseUrl,
+  validatePrompt,
+  importPrompts,
+} = require("../src/database");
 
-test('Render external database URLs verify TLS without changing local URLs', () => {
-  const external = normalizeDatabaseUrl('postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock');
-  assert.equal(new URL(external).searchParams.get('sslmode'), 'verify-full');
-  const requireMode = normalizeDatabaseUrl('postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock?sslmode=require');
-  assert.equal(new URL(requireMode).searchParams.get('sslmode'), 'verify-full');
-  const explicit = 'postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock?sslmode=verify-full';
+test("Render external database URLs verify TLS without changing local URLs", () => {
+  const external = normalizeDatabaseUrl(
+    "postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock",
+  );
+  assert.equal(new URL(external).searchParams.get("sslmode"), "verify-full");
+  const requireMode = normalizeDatabaseUrl(
+    "postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock?sslmode=require",
+  );
+  assert.equal(new URL(requireMode).searchParams.get("sslmode"), "verify-full");
+  const explicit =
+    "postgresql://user:example@dpg-demo.oregon-postgres.render.com/promptdock?sslmode=verify-full";
   assert.equal(normalizeDatabaseUrl(explicit), explicit);
-  const local = 'postgresql://user:example@localhost:5434/promptdock';
+  const local = "postgresql://user:example@localhost:5434/promptdock";
   assert.equal(normalizeDatabaseUrl(local), local);
 });
 
-test('prompt tags are normalized and bounded', () => {
-  const item = { id: '123e4567-e89b-42d3-a456-426614174000', name: 'Build a game', data: { task: 'Build a game' }, tags: ['Game', ' game ', 'Story'] };
-  assert.deepEqual(validatePrompt(item).tags, ['game', 'story']);
-  assert.throws(() => validatePrompt({ ...item, tags: ['bad/tag'] }), /tags/);
-  assert.throws(() => validatePrompt({ ...item, tags: Array.from({ length: 9 }, (_, i) => `tag${i}`) }), /tags/);
+test("prompt tags are normalized and bounded", () => {
+  const item = {
+    id: "123e4567-e89b-42d3-a456-426614174000",
+    name: "Build a game",
+    data: { task: "Build a game" },
+    tags: ["Game", " game ", "Story"],
+  };
+  assert.deepEqual(validatePrompt(item).tags, ["game", "story"]);
+  assert.throws(() => validatePrompt({ ...item, tags: ["bad/tag"] }), /tags/);
+  assert.throws(
+    () =>
+      validatePrompt({
+        ...item,
+        tags: Array.from({ length: 9 }, (_, i) => `tag${i}`),
+      }),
+    /tags/,
+  );
 });
 
-test('backup import validates its envelope and every prompt before writing', async () => {
-  await assert.rejects(importPrompts('a'.repeat(64), { version: 2, prompts: [{}] }), /Import 1–50/);
-  await assert.rejects(importPrompts('a'.repeat(64), { version: 1, prompts: [{ name: 'Missing task', data: {} }] }), /task/);
+test("backup import validates its envelope and every prompt before writing", async () => {
+  await assert.rejects(
+    importPrompts("a".repeat(64), { version: 2, prompts: [{}] }),
+    /Import 1–50/,
+  );
+  await assert.rejects(
+    importPrompts("a".repeat(64), {
+      version: 1,
+      prompts: [{ name: "Missing task", data: {} }],
+    }),
+    /task/,
+  );
 });

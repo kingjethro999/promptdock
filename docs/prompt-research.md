@@ -19,10 +19,10 @@ These are starting points, not a guarantee of a good result for every model or i
 
 Review model outputs for these cases when changing the instruction or model:
 
-| Idea | Required behavior |
-| --- | --- |
-| “Build a browser game with a bird and obstacles. Give me working code.” | Ask the target AI to build playable code; prioritize working gameplay; avoid turning the request into a plan. |
-| “Help me compare two database choices and recommend one.” | Compare and recommend; identify the unnamed choices as a gap; avoid inventing requirements. |
-| “Write a short, warm invitation email for Friday's art show.” | Ask for an email with a warm tone and brief depth; use placeholders for absent event details; avoid inventing RSVP rules. |
+| Idea                                                                    | Required behavior                                                                                                         |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| “Build a browser game with a bird and obstacles. Give me working code.” | Ask the target AI to build playable code; prioritize working gameplay; avoid turning the request into a plan.             |
+| “Help me compare two database choices and recommend one.”               | Compare and recommend; identify the unnamed choices as a gap; avoid inventing requirements.                               |
+| “Write a short, warm invitation email for Friday's art show.”           | Ask for an email with a warm tone and brief depth; use placeholders for absent event details; avoid inventing RSVP rules. |
 
 Real Groq responses checked during development retained the **build** action and selected Quick for the short email and Balanced for the ordinary comparison. The model still sometimes suggests optional missing details. Review and edit the generated prompt before using or publishing it; the product keeps every field editable for this reason.

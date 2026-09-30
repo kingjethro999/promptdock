@@ -1,27 +1,94 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f8f3">
-  <meta name="description" content="Explore a shared PromptDock prompt. Copy it or save your own version.">
-  <title>Shared prompt — PromptDock</title>
-  <!--PROMPT_META-->
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/share.css">
-  <script src="/prompt-format.js" defer></script>
-  <script src="/share.js" defer></script>
-</head>
-<body class="shared-page">
-  <header class="shared-header"><a class="shared-brand" href="/" aria-label="PromptDock home"><span>✳</span> prompt<em>dock</em></a><a href="/" class="shared-home-link">Create your own prompt <span>↗</span></a></header>
-  <main class="shared-main">
-    <div class="shared-topline"><span>✳ PUBLIC PROMPT</span><span id="sharedVisibility">View and copy freely</span></div>
-    <section class="shared-hero"><div><div class="shared-eyebrow">A CLEARER WAY TO ASK</div><h1 id="sharedTitle">Opening shared prompt…</h1><p id="sharedIntro">A prompt made with PromptDock. Take it to your favorite AI tool, or save a copy to your own library.</p><div class="shared-meta"><span id="sharedDepth">Prompt</span><span id="sharedUpdated"></span></div></div><div class="shared-symbol" aria-hidden="true">✳</div></section>
-    <section id="sharedContent" class="shared-content hidden"><div class="shared-prompt-card"><div class="shared-card-head"><span>THE PROMPT</span><span>READY FOR ANY AI</span></div><pre id="sharedPrompt" tabindex="0"></pre><div class="shared-actions"><button id="copyShared" class="shared-copy" type="button">▣ &nbsp; Copy prompt <span>↗</span></button><button id="saveShared" class="shared-save" type="button">♡ &nbsp; Save to my library</button></div></div><aside class="shared-side"><div class="shared-side-icon">↗</div><h2>Make it yours.</h2><p>Copy this prompt straight into an AI platform. Sign in to keep a separate copy in your library and edit it however you like.</p><div class="shared-rule"></div><span>SHARING ON PROMPTDOCK</span><p>The owner can make this link private at any time. A copy already saved to your library stays yours.</p></aside></section>
-    <section id="sharedError" class="shared-error hidden"><span>⌁</span><h2>That prompt is unavailable.</h2><p>Its owner may have made it private, or the link may be incorrect.</p><a href="/">Explore PromptDock ↗</a></section>
-    <p id="sharedFeedback" class="shared-feedback" role="status" aria-live="polite"></p>
-  </main>
-  <footer class="shared-footer"><span>✳ promptdock</span><span>Good ideas are better when they can travel.</span><a href="/">Start with your idea ↗</a></footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8f3" />
+    <meta
+      name="description"
+      content="Explore a shared PromptDock prompt. Copy it or save your own version."
+    />
+    <title>Shared prompt — PromptDock</title>
+    <!--PROMPT_META-->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/share.css" />
+    <script src="/prompt-format.js" defer></script>
+    <script src="/share.js" defer></script>
+  </head>
+  <body class="shared-page">
+    <header class="shared-header">
+      <a class="shared-brand" href="/" aria-label="PromptDock home"
+        ><span>✳</span> prompt<em>dock</em></a
+      ><a href="/" class="shared-home-link"
+        >Create your own prompt <span>↗</span></a
+      >
+    </header>
+    <main class="shared-main">
+      <div class="shared-topline">
+        <span>✳ PUBLIC PROMPT</span
+        ><span id="sharedVisibility">View and copy freely</span>
+      </div>
+      <section class="shared-hero">
+        <div>
+          <div class="shared-eyebrow">A CLEARER WAY TO ASK</div>
+          <h1 id="sharedTitle">Opening shared prompt…</h1>
+          <p id="sharedIntro">
+            A prompt made with PromptDock. Take it to your favorite AI tool, or
+            save a copy to your own library.
+          </p>
+          <div class="shared-meta">
+            <span id="sharedDepth">Prompt</span><span id="sharedUpdated"></span>
+          </div>
+        </div>
+        <div class="shared-symbol" aria-hidden="true">✳</div>
+      </section>
+      <section id="sharedContent" class="shared-content hidden">
+        <div class="shared-prompt-card">
+          <div class="shared-card-head">
+            <span>THE PROMPT</span><span>READY FOR ANY AI</span>
+          </div>
+          <pre id="sharedPrompt" tabindex="0"></pre>
+          <div class="shared-actions">
+            <button id="copyShared" class="shared-copy" type="button">
+              ▣ &nbsp; Copy prompt <span>↗</span></button
+            ><button id="saveShared" class="shared-save" type="button">
+              ♡ &nbsp; Save to my library
+            </button>
+          </div>
+        </div>
+        <aside class="shared-side">
+          <div class="shared-side-icon">↗</div>
+          <h2>Make it yours.</h2>
+          <p>
+            Copy this prompt straight into an AI platform. Sign in to keep a
+            separate copy in your library and edit it however you like.
+          </p>
+          <div class="shared-rule"></div>
+          <span>SHARING ON PROMPTDOCK</span>
+          <p>
+            The owner can make this link private at any time. A copy already
+            saved to your library stays yours.
+          </p>
+        </aside>
+      </section>
+      <section id="sharedError" class="shared-error hidden">
+        <span>⌁</span>
+        <h2>That prompt is unavailable.</h2>
+        <p>Its owner may have made it private, or the link may be incorrect.</p>
+        <a href="/">Explore PromptDock ↗</a>
+      </section>
+      <p
+        id="sharedFeedback"
+        class="shared-feedback"
+        role="status"
+        aria-live="polite"
+      ></p>
+    </main>
+    <footer class="shared-footer">
+      <span>✳ promptdock</span
+      ><span>Good ideas are better when they can travel.</span
+      ><a href="/">Start with your idea ↗</a>
+    </footer>
+  </body>
 </html>
