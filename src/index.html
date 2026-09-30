@@ -853,12 +853,23 @@
               <h1 id="libraryHeading">Prompts worth <em>keeping.</em></h1>
               <p>Find the prompts you saved and make them your own.</p>
             </div>
-            <button
-              class="primary-button new-prompt-button"
-              id="newPromptButton"
-            >
-              ＋ &nbsp; New prompt
-            </button>
+            <div class="library-intro-actions">
+              <button
+                type="button"
+                class="secondary-button paste-prompt-button"
+                id="pastePromptButton"
+                title="Paste a prompt you already wrote"
+              >
+                <span aria-hidden="true">⎘</span>
+                <span class="paste-prompt-label">Paste prompt</span>
+              </button>
+              <button
+                class="primary-button new-prompt-button"
+                id="newPromptButton"
+              >
+                ＋ &nbsp; New prompt
+              </button>
+            </div>
           </div>
           <div class="library-toolbar">
             <label class="search-box"
@@ -1197,6 +1208,56 @@
             Cancel</button
           ><button class="primary-button" value="save" type="submit">
             Save prompt
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="pasteDialog" class="app-dialog paste-dialog">
+      <form id="pasteForm">
+        <button
+          class="dialog-close"
+          type="button"
+          id="closePaste"
+          aria-label="Close"
+        >
+          ×</button
+        ><span class="dialog-icon">⎘</span>
+        <h2>Paste a prompt</h2>
+        <p>
+          Already wrote a prompt somewhere else? Keep the full text here, then
+          name it, tag it, and share it with your audience.
+        </p>
+        <label for="pasteName">Title</label
+        ><input
+          id="pasteName"
+          type="text"
+          maxlength="120"
+          required
+          placeholder="e.g. My trading bot system prompt"
+        /><label for="pasteText">Prompt</label
+        ><textarea
+          id="pasteText"
+          rows="10"
+          required
+          placeholder="Paste the whole prompt here — as long as you need."
+        ></textarea>
+        <button type="button" class="text-button" id="pasteFromClipboard">
+          Paste from clipboard
+        </button>
+        <label for="pasteTags">Tags <span>(optional)</span></label
+        ><input
+          id="pasteTags"
+          type="text"
+          maxlength="240"
+          placeholder="e.g. trading, bots"
+        /><small>Separate tags with commas. Up to 8 tags.</small>
+        <p class="auth-error" id="pasteError" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" id="cancelPaste">
+            Cancel
+          </button>
+          <button type="submit" class="primary-button" id="savePaste">
+            Save to my library
           </button>
         </div>
       </form>

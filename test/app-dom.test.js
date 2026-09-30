@@ -195,6 +195,14 @@ async function createWorkspace(seed = SEED, options = {}) {
       return jsonResponse(200, { usage: [] });
     return jsonResponse(404, { error: "Not found." });
   };
+  const dialogProto = window.HTMLDialogElement.prototype;
+  dialogProto.showModal = function () {
+    this.setAttribute("open", "");
+  };
+  dialogProto.close = function () {
+    this.removeAttribute("open");
+    this.dispatchEvent(new window.Event("close"));
+  };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
   for (const source of sources) window.eval(source);
   await waitFor(() => calls.some((pathname) => pathname === "/api/status"));
@@ -639,4 +647,44 @@ test("long dropdowns open a searchable list that drives the select", async (t) =
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
   assert.equal(wrap.querySelectorAll(".search-select-option").length, 0);
   assert.equal(empty.classList.contains("hidden"), false);
+});
+
+test("pasting a prompt gives the library a named, tagged entry", async (t) => {
+  const { window } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  await waitFor(() => cardNames(window).length >= 0);
+
+  doc.querySelector('.nav-item[data-view="library"]').click();
+  doc.getElementById("pastePromptButton").click();
+  const dialog = doc.getElementById("pasteDialog");
+  assert.equal(dialog.open, true);
+  assert.equal(doc.activeElement, doc.getElementById("pasteText"));
+
+  doc
+    .getElementById("pasteForm")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+  assert.equal(
+    doc.getElementById("pasteError").textContent,
+    "Give your prompt a title.",
+  );
+
+  doc.getElementById("pasteName").value = "Trading bot prompt";
+  doc.getElementById("pasteText").value = "You are a trading bot.\nBe careful.";
+  doc.getElementById("pasteTags").value = "Trading, bots, trading";
+  doc
+    .getElementById("pasteForm")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+
+  await waitFor(() => cardNames(window).includes("Trading bot prompt"));
+  assert.equal(dialog.open, false);
+  const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+  assert.equal(saved[0].name, "Trading bot prompt");
+  assert.equal(saved[0].data.task, "You are a trading bot.\nBe careful.");
+  assert.deepEqual(saved[0].tags, ["trading", "bots"]);
+  assert.equal(window.document.getElementById("libraryCount").textContent, "1");
 });

@@ -153,6 +153,7 @@ let librarySort = "updated";
 let remoteTags = [];
 let authMode = "login";
 let pendingSave = false;
+let pendingPaste = null;
 let resetToken = null;
 let byokProviders = [];
 let byokActiveId = null;
@@ -1141,6 +1142,20 @@ async function submitAuth(event) {
       $("saveDialog").showModal();
       $("promptName").focus();
     }
+    if (pendingPaste) {
+      const pasted = pendingPaste;
+      pendingPaste = null;
+      try {
+        await createPastedPrompt(pasted);
+        $("pasteDialog").close();
+        showToast("Prompt saved to your library.");
+        switchView("library");
+      } catch (pasteError) {
+        $("pasteError").textContent =
+          pasteError.message || "Could not save this prompt.";
+        $("pasteDialog").showModal();
+      }
+    }
   } catch (error) {
     $("authError").textContent = error.message || "Could not sign in.";
   } finally {
@@ -1717,6 +1732,118 @@ async function savePrompt(name, tags = []) {
     showToast(
       error.message || "Storage is unavailable. Download the prompt instead.",
     );
+  }
+}
+
+function parseTagList(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function tagsAreValid(tags) {
+  return (
+    tags.length <= 8 &&
+    tags.every(
+      (tag) => tag.length <= 24 && /^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(tag),
+    )
+  );
+}
+
+function suggestedPasteName(text) {
+  const firstLine = text
+    .split(/[\n\r]/, 1)[0]
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = firstLine.split(" ");
+  let name = "";
+  for (const word of words) {
+    if ((name ? `${name} ${word}` : word).length > 80) break;
+    name = name ? `${name} ${word}` : word;
+  }
+  return name.replace(/[,:;\s]+$/, "") || "Pasted prompt";
+}
+
+async function createPastedPrompt({ name, text, tags }) {
+  const item = {
+    id: crypto.randomUUID(),
+    name,
+    data: Object.fromEntries([
+      ...fields.map((field) => [field, ""]),
+      ["task", text],
+    ]),
+    idea: "",
+    analysis: null,
+    tags,
+    updatedAt: new Date().toISOString(),
+  };
+  if (databaseAvailable && currentUser) {
+    const response = await libraryFetch("/api/prompts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+    });
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not save to your library.");
+    Object.assign(item, result.prompt);
+    libraryTotal++;
+  }
+  if ($("librarySearch").value) {
+    $("librarySearch").value = "";
+    searchResults = [];
+    searchRequest++;
+  }
+  setSaved([item, ...getSaved()]);
+  return item;
+}
+
+function openPasteDialog() {
+  $("pasteForm").reset();
+  $("pasteError").textContent = "";
+  $("pasteDialog").showModal();
+  $("pasteText").focus();
+}
+
+async function savePastedPrompt() {
+  const error = $("pasteError");
+  error.textContent = "";
+  const name = $("pasteName").value.trim();
+  const text = $("pasteText").value.trim();
+  const tags = parseTagList($("pasteTags").value);
+  if (!name) {
+    error.textContent = "Give your prompt a title.";
+    return;
+  }
+  if (!text) {
+    error.textContent = "Paste the prompt you want to keep.";
+    return;
+  }
+  if (!tagsAreValid(tags)) {
+    error.textContent = "Use up to 8 tags, each 1–24 letters or numbers.";
+    return;
+  }
+  if (databaseAvailable && !currentUser) {
+    pendingPaste = { name, text, tags };
+    openAuth();
+    return;
+  }
+  const button = $("savePaste");
+  button.disabled = true;
+  try {
+    await createPastedPrompt({ name, text, tags });
+    $("pasteDialog").close();
+    showToast("Prompt saved to your library.");
+    switchView("library");
+  } catch (saveError) {
+    error.textContent = saveError.message || "Could not save this prompt.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -2612,6 +2739,29 @@ $("saveButton").addEventListener("click", () => {
   $("promptName").focus();
 });
 $("cancelSave").addEventListener("click", () => $("saveDialog").close());
+$("pastePromptButton").addEventListener("click", openPasteDialog);
+$("closePaste").addEventListener("click", () => $("pasteDialog").close());
+$("cancelPaste").addEventListener("click", () => $("pasteDialog").close());
+$("pasteDialog").addEventListener("close", () => {
+  pendingPaste = null;
+});
+$("pasteFromClipboard").addEventListener("click", async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text?.trim()) throw new Error("empty");
+    $("pasteText").value = text.trim();
+    if (!$("pasteName").value.trim())
+      $("pasteName").value = suggestedPasteName(text.trim());
+    $("pasteError").textContent = "";
+  } catch {
+    $("pasteError").textContent =
+      "Clipboard access was blocked. Click the box and press Ctrl/Cmd + V.";
+  }
+});
+$("pasteForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await savePastedPrompt();
+});
 $("closeShare").addEventListener("click", () => $("shareDialog").close());
 $("closeHistory").addEventListener("click", () => $("historyDialog").close());
 $("copyShareLink").addEventListener("click", async () => {
@@ -2645,20 +2795,8 @@ $("saveForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = $("promptName").value.trim();
   if (!name) return;
-  const tags = [
-    ...new Set(
-      $("promptTags")
-        .value.split(",")
-        .map((tag) => tag.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  ];
-  if (
-    tags.length > 8 ||
-    tags.some(
-      (tag) => tag.length > 24 || !/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(tag),
-    )
-  ) {
+  const tags = parseTagList($("promptTags").value);
+  if (!tagsAreValid(tags)) {
     showToast("Use up to 8 tags, each 1–24 letters or numbers.");
     return;
   }

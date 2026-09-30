@@ -494,6 +494,38 @@ p {
   box-shadow: 0 0 0 3px #d9f2bb;
   outline: none;
 }
+.app-dialog textarea {
+  width: 100%;
+  min-height: 190px;
+  resize: vertical;
+  background: #fbfcf9;
+  border: 1px solid #e1e7de;
+  border-radius: 8px;
+  color: #273b2d;
+  padding: 11px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.65;
+  outline: none;
+}
+.app-dialog textarea::placeholder {
+  color: #b3beb2;
+}
+.app-dialog textarea:focus {
+  border-color: #8cbe62;
+  box-shadow: 0 0 0 3px #d9f2bb;
+  outline: none;
+}
+.paste-dialog {
+  width: min(560px, calc(100% - 28px));
+}
+.paste-dialog label span {
+  font-weight: 500;
+  color: #8b9c8d;
+}
+.paste-dialog .text-button {
+  margin-top: 9px;
+}
 .field input::placeholder,
 .field textarea::placeholder {
   color: #b3beb2;
@@ -795,6 +827,17 @@ p {
 }
 .new-prompt-button {
   padding: 0 18px;
+}
+.library-intro-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.paste-prompt-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 .library-toolbar {
   display: flex;
@@ -1199,6 +1242,13 @@ p {
   .new-prompt-button {
     height: 36px;
     font-size: 11px;
+  }
+  .paste-prompt-label {
+    display: none;
+  }
+  .paste-prompt-button {
+    height: 36px;
+    padding: 0 13px;
   }
   .library-intro {
     gap: 12px;
