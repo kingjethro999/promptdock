@@ -43,7 +43,7 @@ Run `npm run lint` to check the browser and Node code with ESLint. GitHub Action
 
 AI routes use a shared PostgreSQL token bucket to control provider spend across Vercel function instances: 20 idea generations, 30 enhancements, and 10 voice transcriptions per hour, replenished gradually. Buckets are keyed per signed-in account, so a shared office or mobile IP never spends another user's allowance; guests and sign-in attempts fall back to the client IP. Sign-in, sign-up, and email routes are throttled too: 20 logins and 10 password resets per 15 minutes, 10 sign-ups per hour, and 6 verification or reset emails per hour. Exceeding a limit returns HTTP 429 with `Retry-After`. Local development without PostgreSQL uses a process-local bucket. Bucket rows and stale local entries are pruned automatically once they outlive the longest limit window.
 
-The API and static deployment send a content security policy, frame protection, referrer policy, permissions policy, and MIME sniffing protection. The policy allows PromptDock's own scripts and Google Fonts while keeping API requests on the same origin.
+The API and static deployment send a content security policy, frame protection, referrer policy, permissions policy, MIME sniffing protection, and HSTS for one year with subdomains. The policy allows PromptDock's own scripts and Google Fonts while keeping API requests on the same origin. `src/security.js` is the single source of truth: `npm run headers:sync` regenerates the matching `vercel.json` block and `npm run headers:check` (run in CI) fails if the two drift apart.
 
 ## Deploy
 

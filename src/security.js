@@ -5,6 +5,7 @@ const securityHeaders = Object.freeze({
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Permissions-Policy": "camera=(), microphone=(self), geolocation=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 });
 
 module.exports = securityHeaders;

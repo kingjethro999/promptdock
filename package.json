@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "scripts": {
@@ -10,6 +10,8 @@
     "test": "node --test",
     "version:bump": "node scripts/bump-version.js",
     "setup:hooks": "git config core.hooksPath .githooks",
+    "headers:sync": "node scripts/sync-vercel-headers.js",
+    "headers:check": "node scripts/sync-vercel-headers.js --check",
     "lint": "eslint src api scripts test eslint.config.cjs"
   },
   "engines": {

@@ -10,6 +10,10 @@ test("Vercel static and local API responses use the same security headers", asyn
     vercel.headers[0].headers.map(({ key, value }) => [key, value]),
   );
   assert.deepEqual(configured, securityHeaders);
+  assert.equal(
+    securityHeaders["Strict-Transport-Security"],
+    "max-age=31536000; includeSubDomains",
+  );
   const server = http.createServer(handleRequest);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
