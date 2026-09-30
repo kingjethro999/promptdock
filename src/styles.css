@@ -1114,6 +1114,51 @@ p {
 .dialog-actions button {
   padding: 0 17px;
 }
+.confirm-dialog {
+  position: relative;
+}
+.confirm-dialog .dialog-close {
+  top: 20px;
+  right: 20px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.confirm-kicker {
+  display: block;
+  margin-top: 17px;
+  color: #6a9652;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+.confirm-dialog h2 {
+  margin-top: 6px;
+}
+.confirm-dialog p {
+  margin: 11px 0 0;
+  color: #526b57;
+  font-size: 13px;
+}
+.confirm-dialog .dialog-actions {
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+.confirm-dialog .dialog-actions button {
+  flex: 1 1 125px;
+}
+.confirm-dialog.is-danger .dialog-icon {
+  background: #fbe7e1;
+  color: #aa493b;
+}
+.confirm-dialog.is-danger #confirmAccept {
+  background: #aa493b;
+  color: #fff;
+}
+.confirm-dialog.is-danger #confirmAccept:hover {
+  background: #8e372e;
+}
 .help-dialog {
   position: relative;
 }

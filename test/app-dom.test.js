@@ -183,6 +183,15 @@ async function createWorkspace(seed = SEED, options = {}) {
         activate(state.settings, null);
       return jsonResponse(200, state.settings);
     }
+    if (/^\/api\/prompts\/[^/]+\/public$/.test(pathname) && method === "PATCH")
+      return jsonResponse(200, {
+        prompt: {
+          id: pathname.split("/")[3],
+          name: "Shared prompt",
+          data: { task: "Write a useful answer" },
+          publicId: body.published ? randomUUID() : null,
+        },
+      });
     if (pathname.startsWith("/api/prompts/tags"))
       return jsonResponse(200, { tags: [] });
     if (pathname.startsWith("/api/prompts/export"))
@@ -219,6 +228,76 @@ function cardNames(window) {
 function summary(window) {
   return window.document.getElementById("librarySummary").textContent;
 }
+
+test("publishing uses a branded confirmation before creating a link", async (t) => {
+  const { window, requests } = await createWorkspace([], {
+    user: { id: "u1", email: "hello@example.com", username: "KingJethro" },
+  });
+  t.after(() => window.close());
+  let nativeConfirmCalls = 0;
+  window.confirm = () => {
+    nativeConfirmCalls++;
+    return true;
+  };
+  const doc = window.document;
+  const item = {
+    id: "99999999-9999-4999-8999-999999999999",
+    name: "Trading bot",
+    data: { task: "Build a trading bot" },
+    publicId: null,
+  };
+
+  const cancelled = window.eval(`openShare(${JSON.stringify(item)})`);
+  await waitFor(() => doc.getElementById("confirmDialog").open);
+  assert.equal(
+    doc.getElementById("confirmTitle").textContent,
+    "Make this prompt public?",
+  );
+  doc.getElementById("confirmCancel").click();
+  await cancelled;
+  assert.equal(
+    requests.some((request) => request.pathname.endsWith("/public")),
+    false,
+  );
+
+  const accepted = window.eval(`openShare(${JSON.stringify(item)})`);
+  await waitFor(() => doc.getElementById("confirmDialog").open);
+  doc.getElementById("confirmAccept").click();
+  await accepted;
+  assert.equal(doc.getElementById("shareDialog").open, true);
+  assert.equal(
+    requests.filter((request) => request.pathname.endsWith("/public")).length,
+    1,
+  );
+  assert.equal(nativeConfirmCalls, 0);
+});
+
+test("deleting a library prompt requires a branded destructive confirmation", async (t) => {
+  const { window } = await createWorkspace(SEED);
+  t.after(() => window.close());
+  const doc = window.document;
+  let nativeConfirmCalls = 0;
+  window.confirm = () => {
+    nativeConfirmCalls++;
+    return true;
+  };
+  doc.querySelector('.nav-item[data-view="library"]').click();
+  const firstDelete = doc.querySelector(".library-card .card-menu");
+  firstDelete.click();
+  await waitFor(() => doc.getElementById("confirmDialog").open);
+  assert.equal(
+    doc.getElementById("confirmDialog").classList.contains("is-danger"),
+    true,
+  );
+  doc.getElementById("confirmCancel").click();
+  assert.equal(cardNames(window).length, 3);
+
+  firstDelete.click();
+  await waitFor(() => doc.getElementById("confirmDialog").open);
+  doc.getElementById("confirmAccept").click();
+  await waitFor(() => cardNames(window).length === 2);
+  assert.equal(nativeConfirmCalls, 0);
+});
 
 async function importBackup(window, backup) {
   const text = JSON.stringify(backup);

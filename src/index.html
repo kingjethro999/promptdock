@@ -1291,6 +1291,31 @@
         </div>
       </form>
     </dialog>
+    <dialog
+      id="confirmDialog"
+      class="app-dialog confirm-dialog"
+      aria-labelledby="confirmTitle"
+      aria-describedby="confirmMessage"
+    >
+      <button
+        class="dialog-close"
+        type="button"
+        id="confirmClose"
+        aria-label="Close confirmation"
+      >
+        ×</button
+      ><span class="dialog-icon" id="confirmIcon" aria-hidden="true">✳</span>
+      <span class="confirm-kicker">PLEASE CONFIRM</span>
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" id="confirmCancel">
+          Cancel</button
+        ><button class="primary-button" type="button" id="confirmAccept">
+          Continue
+        </button>
+      </div>
+    </dialog>
     <dialog id="shareDialog" class="app-dialog share-dialog">
       <button
         class="dialog-close"

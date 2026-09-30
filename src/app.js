@@ -555,6 +555,32 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
+function confirmAction({ title, message, acceptLabel, danger = false }) {
+  const dialog = $("confirmDialog");
+  if (dialog.open) return Promise.resolve(false);
+  $("confirmTitle").textContent = title;
+  $("confirmMessage").textContent = message;
+  $("confirmAccept").textContent = acceptLabel;
+  $("confirmIcon").textContent = danger ? "×" : "✳";
+  dialog.classList.toggle("is-danger", danger);
+  dialog.returnValue = "";
+  return new Promise((resolve) => {
+    dialog.addEventListener(
+      "close",
+      () => resolve(dialog.returnValue === "confirm"),
+      { once: true },
+    );
+    dialog.showModal();
+    $("confirmCancel").focus();
+  });
+}
+
+function closeConfirmation(accepted) {
+  const dialog = $("confirmDialog");
+  dialog.returnValue = accepted ? "confirm" : "cancel";
+  dialog.close();
+}
+
 function syncSelect(name) {
   const wrapper = document.querySelector(`[data-select="${name}"]`);
   const value = elements[name].value;
@@ -2004,9 +2030,12 @@ async function openShare(item) {
   }
   if (
     !item.publicId &&
-    !confirm(
-      "Make this prompt public? Anyone with the link can view and copy its finished prompt.",
-    )
+    !(await confirmAction({
+      title: "Make this prompt public?",
+      message:
+        "Anyone with the link can view and copy its finished prompt. Your private notes stay hidden.",
+      acceptLabel: "Publish prompt",
+    }))
   )
     return;
   try {
@@ -2135,7 +2164,13 @@ async function openHistory(item) {
       restore.className = "secondary-button";
       restore.textContent = "Restore";
       restore.addEventListener("click", async () => {
-        if (!confirm(`Restore “${revision.name}” from ${date.textContent}?`))
+        if (
+          !(await confirmAction({
+            title: "Restore this version?",
+            message: `Restore “${revision.name}” from ${date.textContent}. Your current version will remain in history.`,
+            acceptLabel: "Restore version",
+          }))
+        )
           return;
         restore.disabled = true;
         try {
@@ -2339,7 +2374,15 @@ function renderLibrary() {
     deleteButton.title = "Delete prompt";
     deleteButton.textContent = "×";
     deleteButton.addEventListener("click", async () => {
-      if (!confirm(`Delete “${item.name}”?`)) return;
+      if (
+        !(await confirmAction({
+          title: "Delete this prompt?",
+          message: `“${item.name}” will be removed from your library. Any public link to it will stop working.`,
+          acceptLabel: "Delete prompt",
+          danger: true,
+        }))
+      )
+        return;
       if (databaseAvailable && currentUser) {
         try {
           const response = await libraryFetch(`/api/prompts/${item.id}`, {
@@ -2953,6 +2996,9 @@ $("authDialog").addEventListener("close", () => {
   if (!currentUser) pendingSave = false;
 });
 $("sidebarSignOut").addEventListener("click", () => signOut());
+$("confirmClose").addEventListener("click", () => closeConfirmation(false));
+$("confirmCancel").addEventListener("click", () => closeConfirmation(false));
+$("confirmAccept").addEventListener("click", () => closeConfirmation(true));
 $("logoutAllButton").addEventListener("click", () => signOut(true));
 $("deleteAccountForm").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -2961,9 +3007,13 @@ $("deleteAccountForm").addEventListener("submit", async (event) => {
   feedback.textContent = "";
   feedback.classList.remove("error");
   if (
-    !confirm(
-      "Delete your PromptDock account, every saved prompt, and all sessions? This cannot be undone.",
-    )
+    !(await confirmAction({
+      title: "Delete your account?",
+      message:
+        "This permanently removes your prompts, revisions, saved provider keys, and every session. This cannot be undone.",
+      acceptLabel: "Delete my account",
+      danger: true,
+    }))
   )
     return;
   button.disabled = true;
@@ -3052,7 +3102,15 @@ $("byokForm").addEventListener("submit", async (event) => {
 });
 $("byokDelete").addEventListener("click", async () => {
   if (!editingProviderId) return;
-  if (!confirm("Delete this saved provider?")) return;
+  if (
+    !(await confirmAction({
+      title: "Delete saved provider?",
+      message: `Remove “${$("byokName").value.trim() || "this provider"}” and its saved key from your account?`,
+      acceptLabel: "Delete provider",
+      danger: true,
+    }))
+  )
+    return;
   byokFeedback("");
   try {
     const response = await apiFetch(
