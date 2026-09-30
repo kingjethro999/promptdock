@@ -724,3 +724,37 @@ test("long builder dropdowns filter as you type", async (t) => {
     "short lists keep a plain menu",
   );
 });
+
+test("passwords can be shown and hidden on every form", async (t) => {
+  const { window } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  await waitFor(() => cardNames(window).length >= 0);
+
+  const inputs = [...doc.querySelectorAll('input[type="password"]')];
+  assert.ok(inputs.length >= 6, "expected every password field to be found");
+  for (const input of inputs) {
+    const host = input.closest(".password-field");
+    assert.ok(host, `${input.id} lost its field wrapper`);
+    assert.ok(
+      host.querySelector(".password-toggle"),
+      `${input.id} has no show/hide button`,
+    );
+  }
+
+  const password = doc.getElementById("authPassword");
+  const toggle = password
+    .closest(".password-field")
+    .querySelector(".password-toggle");
+  password.value = "correct horse battery";
+  toggle.click();
+  assert.equal(password.type, "text");
+  assert.equal(toggle.textContent, "Hide");
+  assert.equal(toggle.getAttribute("aria-pressed"), "true");
+  assert.equal(password.value, "correct horse battery");
+
+  toggle.click();
+  assert.equal(password.type, "password");
+  assert.equal(toggle.textContent, "Show");
+  assert.equal(toggle.getAttribute("aria-pressed"), "false");
+});

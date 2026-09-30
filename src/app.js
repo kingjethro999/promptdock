@@ -2468,6 +2468,47 @@ function downloadPrompt() {
   showToast("Prompt downloaded.");
 }
 
+function initPasswordToggles() {
+  document.querySelectorAll('input[type="password"]').forEach((input) => {
+    if (input.dataset.passwordToggle) return;
+    input.dataset.passwordToggle = "on";
+    let host = input.parentElement;
+    if (!host.classList.contains("password-field")) {
+      const wrap = document.createElement("div");
+      wrap.className = "password-field";
+      host.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      host = wrap;
+    }
+    input.classList.add("password-input");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "password-toggle";
+    button.textContent = "Show";
+    button.setAttribute("aria-label", "Show password");
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => {
+      const hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      button.textContent = hidden ? "Hide" : "Show";
+      button.setAttribute(
+        "aria-label",
+        hidden ? "Hide password" : "Show password",
+      );
+      button.setAttribute("aria-pressed", String(hidden));
+      const end = input.value.length;
+      input.focus();
+      try {
+        input.setSelectionRange(end, end);
+      } catch {
+        /* selection is not supported on every input type */
+      }
+    });
+    host.appendChild(button);
+  });
+}
+
+initPasswordToggles();
 initCustomSelects();
 setComposerExpanded(false);
 fields.forEach((field) =>
