@@ -214,6 +214,14 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     ],
     [
       database,
+      "listTags",
+      async (key) => {
+        calls.push(["tags", key]);
+        return [{ tag: "test", count: 1 }];
+      },
+    ],
+    [
+      database,
       "putPrompt",
       async (key, body) => {
         calls.push(["put", key, body.id]);
@@ -280,6 +288,17 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     let response = await send(base, "/api/prompts?q=game&offset=100");
     assert.equal(response.status, 200);
     assert.equal((await response.json()).total, 1);
+    response = await send(
+      base,
+      "/api/prompts?tag=work&sort=name&q=game&offset=0",
+    );
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).total, 1);
+    response = await send(base, "/api/prompts/tags");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      tags: [{ tag: "test", count: 1 }],
+    });
     assert.equal((await send(base, "/api/prompts", "PUT", prompt)).status, 200);
     assert.equal(
       (
@@ -322,7 +341,17 @@ test("library routes enforce account ownership and dispatch CRUD, sharing, and r
     );
   });
   assert.deepEqual(calls, [
-    ["list", "owner-key", { q: "game", offset: "100" }],
+    [
+      "list",
+      "owner-key",
+      { q: "game", offset: "100", tag: null, sort: undefined },
+    ],
+    [
+      "list",
+      "owner-key",
+      { q: "game", offset: "0", tag: "work", sort: "name" },
+    ],
+    ["tags", "owner-key"],
     ["put", "owner-key", id],
     ["publish", "owner-key", id, true],
     ["history", "owner-key", id],

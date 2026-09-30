@@ -482,12 +482,16 @@ async function handleRequest(request, response) {
           await database.listPrompts(key, {
             q: url.searchParams.get("q"),
             offset: url.searchParams.get("offset"),
+            tag: url.searchParams.get("tag"),
+            sort: url.searchParams.get("sort") || undefined,
           }),
         );
       else if (pathname === "/api/prompts" && request.method === "PUT")
         json(response, 200, {
           prompt: await database.putPrompt(key, await readBody(request)),
         });
+      else if (pathname === "/api/prompts/tags" && request.method === "GET")
+        json(response, 200, { tags: await database.listTags(key) });
       else if (pathname === "/api/prompts/import" && request.method === "POST")
         json(response, 201, {
           imported: await database.importPrompts(

@@ -811,6 +811,68 @@ p {
   font-size: 12px;
   color: #344437;
 }
+.library-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: -6px 0 16px;
+}
+.tag-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.tag-chip {
+  border: 1px solid #e2e8df;
+  background: #fff;
+  color: #5c6d5e;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+.tag-chip:hover {
+  border-color: #b9c8ba;
+  color: #344437;
+}
+.tag-chip.is-active {
+  background: #1f3529;
+  border-color: #1f3529;
+  color: #fff;
+}
+.tag-chips-empty {
+  font-size: 11px;
+  color: #a1b1a2;
+}
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #8c9c8d;
+  white-space: nowrap;
+}
+.sort-control select {
+  border: 1px solid #e2e8df;
+  background: #fff;
+  color: #344437;
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 11px;
+  outline: 0;
+}
+.sort-control select:focus {
+  border-color: #b9c8ba;
+}
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));

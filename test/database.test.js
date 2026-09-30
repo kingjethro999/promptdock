@@ -4,6 +4,7 @@ const {
   normalizeDatabaseUrl,
   validatePrompt,
   importPrompts,
+  listPrompts,
 } = require("../src/database");
 
 test("Render external database URLs verify TLS without changing local URLs", () => {
@@ -52,5 +53,21 @@ test("backup import validates its envelope and every prompt before writing", asy
       prompts: [{ name: "Missing task", data: {} }],
     }),
     /task/,
+  );
+});
+
+test("library listing rejects unknown tag filters and sort orders", async () => {
+  const key = "a".repeat(64);
+  await assert.rejects(
+    listPrompts(key, { tag: "bad/tag" }),
+    /Invalid tag filter/,
+  );
+  await assert.rejects(
+    listPrompts(key, { tag: "x".repeat(25) }),
+    /Invalid tag filter/,
+  );
+  await assert.rejects(
+    listPrompts(key, { sort: "updated_at; DROP TABLE prompts" }),
+    /Invalid sort order/,
   );
 });

@@ -139,19 +139,32 @@ function validatePrompt(item) {
   return { id: item.id, name, data: item.data, idea, analysis, tags };
 }
 
+const promptSorts = { updated: "updated_at DESC", name: "name ASC" };
+
+function normalizeTagFilter(value) {
+  const tag = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (!tag) return "";
+  if (tag.length > 24 || !/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(tag))
+    throw new Error("Invalid tag filter.");
+  return tag;
+}
+
 async function listPrompts(key, options = {}) {
   const q = String(options.q || "").trim();
   if (q.length > 100) throw new Error("Search is too long.");
   const offset = Number(options.offset || 0);
   if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000)
     throw new Error("Invalid offset.");
+  const tag = normalizeTagFilter(options.tag);
+  const sort = options.sort || "updated";
+  if (!promptSorts[sort]) throw new Error("Invalid sort order.");
   await ensureSchema();
   const pattern = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
-  const where = `owner_key = $1 AND ($2 = '' OR name ILIKE $3 ESCAPE '\\' OR idea ILIKE $3 ESCAPE '\\' OR data->>'task' ILIKE $3 ESCAPE '\\' OR EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE $3 ESCAPE '\\'))`;
-  const params = [key, q, pattern];
+  const where = `owner_key = $1 AND ($2 = '' OR name ILIKE $3 ESCAPE '\\' OR idea ILIKE $3 ESCAPE '\\' OR data->>'task' ILIKE $3 ESCAPE '\\' OR EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE $3 ESCAPE '\\')) AND ($4 = '' OR tags @> ARRAY[$4]::text[])`;
+  const params = [key, q, pattern, tag];
   const [result, count] = await Promise.all([
     pool.query(
-      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY updated_at DESC LIMIT 100 OFFSET $4`,
+      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY ${promptSorts[sort]} LIMIT 100 OFFSET $5`,
       [...params, offset],
     ),
     pool.query(
@@ -160,6 +173,16 @@ async function listPrompts(key, options = {}) {
     ),
   ]);
   return { prompts: result.rows, total: count.rows[0].total };
+}
+
+async function listTags(key) {
+  await ensureSchema();
+  const result = await pool.query(
+    `SELECT t.tag, count(*)::int AS count FROM prompts, unnest(prompts.tags) AS t(tag)
+    WHERE prompts.owner_key = $1 GROUP BY t.tag ORDER BY count DESC, t.tag ASC`,
+    [key],
+  );
+  return result.rows;
 }
 
 async function putPrompt(key, input) {
@@ -373,6 +396,7 @@ module.exports = {
   importLegacy,
   validatePrompt,
   listPrompts,
+  listTags,
   putPrompt,
   listRevisions,
   restoreRevision,

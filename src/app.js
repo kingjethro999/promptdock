@@ -148,6 +148,9 @@ let searchResults = [];
 let searchTotal = 0;
 let searchRequest = 0;
 let searchTimer;
+let activeTag = "";
+let librarySort = "updated";
+let remoteTags = [];
 let authMode = "login";
 let pendingSave = false;
 let resetToken = null;
@@ -233,6 +236,8 @@ function findPrompt(id) {
 async function fetchLibraryPage(q = "", offset = 0) {
   const params = new URLSearchParams({ offset: String(offset) });
   if (q) params.set("q", q);
+  if (activeTag) params.set("tag", activeTag);
+  if (librarySort !== "updated") params.set("sort", librarySort);
   const response = await libraryFetch(`/api/prompts?${params}`);
   const result = await readApiJson(response);
   if (!response.ok)
@@ -242,7 +247,9 @@ async function fetchLibraryPage(q = "", offset = 0) {
 function setSaved(items) {
   if (currentUser) accountPrompts = items;
   else localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  renderLibrary();
+  if (currentUser && libraryFiltered()) reloadLibrary();
+  else renderLibrary();
+  if (currentUser) refreshTagChips();
 }
 async function loadRemoteLibrary() {
   if (!currentUser) return;
@@ -1461,26 +1468,133 @@ async function openHistory(item) {
   }
 }
 
+function libraryFiltered() {
+  return Boolean(
+    $("librarySearch").value.trim() || activeTag || librarySort !== "updated",
+  );
+}
+
+function localTagCounts() {
+  const counts = new Map();
+  for (const item of getSaved())
+    for (const tag of item.tags || [])
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+  return [...counts]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+function renderTagChips() {
+  const container = $("tagChips");
+  if (!container) return;
+  const tags = currentUser ? remoteTags : localTagCounts();
+  container.replaceChildren();
+  const entries = [...tags];
+  if (activeTag && !entries.some((entry) => entry.tag === activeTag))
+    entries.unshift({ tag: activeTag, count: 0 });
+  if (!entries.length) {
+    const hint = document.createElement("span");
+    hint.className = "tag-chips-empty";
+    hint.textContent = "Tag prompts when saving to filter them here.";
+    container.append(hint);
+    return;
+  }
+  for (const entry of entries) {
+    const active = entry.tag === activeTag;
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = `tag-chip${active ? " is-active" : ""}`;
+    chip.textContent = active
+      ? `✕ ${entry.tag}`
+      : `${entry.tag} · ${entry.count}`;
+    chip.setAttribute("aria-pressed", String(active));
+    chip.addEventListener("click", () => {
+      activeTag = active ? "" : entry.tag;
+      renderTagChips();
+      if (currentUser) reloadLibrary();
+      else renderLibrary();
+    });
+    container.append(chip);
+  }
+}
+
+async function refreshTagChips() {
+  if (!currentUser || !databaseAvailable) {
+    remoteTags = [];
+    renderTagChips();
+    return;
+  }
+  try {
+    const response = await libraryFetch("/api/prompts/tags");
+    const result = await readApiJson(response);
+    if (response.ok) {
+      remoteTags = Array.isArray(result.tags) ? result.tags : [];
+      renderTagChips();
+    }
+  } catch {
+    /* tag chips are optional */
+  }
+}
+
+async function reloadLibrary() {
+  if (!currentUser) {
+    renderLibrary();
+    return;
+  }
+  const requestId = ++searchRequest;
+  const q = $("librarySearch").value.trim();
+  const keep = Math.max(searchResults.length, 100);
+  try {
+    const results = [];
+    let total = 0;
+    while (results.length < keep) {
+      const page = await fetchLibraryPage(q, results.length);
+      if (requestId !== searchRequest) return;
+      total = page.total;
+      results.push(...page.prompts);
+      if (page.prompts.length === 0) break;
+    }
+    if (requestId !== searchRequest) return;
+    searchResults = results;
+    searchTotal = total;
+    renderLibrary();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function localLibraryItems() {
+  const query = $("librarySearch").value.toLowerCase().trim();
+  const items = getSaved().filter((item) => {
+    if (activeTag && !(item.tags || []).includes(activeTag)) return false;
+    if (!query) return true;
+    return `${item.name} ${item.idea || ""} ${Object.values(item.data).join(" ")} ${(item.tags || []).join(" ")}`
+      .toLowerCase()
+      .includes(query);
+  });
+  if (librarySort === "name")
+    items.sort((a, b) => a.name.localeCompare(b.name));
+  return items;
+}
+
 function renderLibrary() {
   const saved = getSaved();
   const query = $("librarySearch").value.toLowerCase().trim();
+  const narrowed = Boolean(query || activeTag || librarySort !== "updated");
   const filtered = currentUser
-    ? query
+    ? libraryFiltered()
       ? searchResults
       : saved
-    : saved.filter((item) =>
-        `${item.name} ${item.idea || ""} ${Object.values(item.data).join(" ")} ${(item.tags || []).join(" ")}`
-          .toLowerCase()
-          .includes(query),
-      );
+    : localLibraryItems();
   const total = currentUser
-    ? query
+    ? libraryFiltered()
       ? searchTotal
       : libraryTotal
     : filtered.length;
+  if (!currentUser) renderTagChips();
   $("libraryCount").textContent = currentUser ? libraryTotal : saved.length;
   $("librarySummary").textContent =
-    `${total} ${query ? "matching" : "saved"} prompt${total === 1 ? "" : "s"}`;
+    `${total} ${narrowed ? "matching" : "saved"} prompt${total === 1 ? "" : "s"}`;
   $("libraryLoadMore").classList.toggle(
     "hidden",
     !currentUser || filtered.length >= total,
@@ -1490,8 +1604,8 @@ function renderLibrary() {
   if (!filtered.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.innerHTML = `<div class="empty-state-icon">✳</div><h3>${query ? "No matching prompts" : "Your library starts here"}</h3><p>${query ? "Try a different search term." : "Save a prompt from the builder and it will appear here."}</p>`;
-    if (!query) {
+    empty.innerHTML = `<div class="empty-state-icon">✳</div><h3>${narrowed ? "No matching prompts" : "Your library starts here"}</h3><p>${narrowed ? "Try a different search term, or clear the tag filter." : "Save a prompt from the builder and it will appear here."}</p>`;
+    if (!narrowed) {
       const button = document.createElement("button");
       button.className = "primary-button";
       button.textContent = "Create a prompt";
@@ -1660,7 +1774,10 @@ function switchView(view) {
   $("sidebar").classList.remove("open");
   $("menuButton").setAttribute("aria-expanded", "false");
   $("sidebarOverlay").classList.remove("visible");
-  if (view === "library") renderLibrary();
+  if (view === "library") {
+    renderLibrary();
+    refreshTagChips();
+  }
   if (view === "settings") loadSettings();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1742,8 +1859,9 @@ $("librarySearch").addEventListener("input", () => {
   clearTimeout(searchTimer);
   const requestId = ++searchRequest;
   const q = $("librarySearch").value.trim();
-  if (!q) {
+  if (!q && !activeTag && librarySort === "updated") {
     searchResults = [];
+    searchTotal = 0;
     renderLibrary();
     return;
   }
@@ -1764,11 +1882,12 @@ $("libraryLoadMore").addEventListener("click", async () => {
   button.disabled = true;
   const q = $("librarySearch").value.trim();
   const requestId = searchRequest;
+  const filtered = libraryFiltered();
   try {
-    const items = q ? searchResults : accountPrompts;
+    const items = filtered ? searchResults : accountPrompts;
     const page = await fetchLibraryPage(q, items.length);
     if (requestId !== searchRequest) return;
-    if (q) {
+    if (filtered) {
       searchResults.push(...page.prompts);
       searchTotal = page.total;
     } else {
@@ -1781,6 +1900,11 @@ $("libraryLoadMore").addEventListener("click", async () => {
   } finally {
     button.disabled = false;
   }
+});
+$("librarySort").addEventListener("change", () => {
+  librarySort = $("librarySort").value;
+  if (currentUser) reloadLibrary();
+  else renderLibrary();
 });
 $("backupExport").addEventListener("click", async () => {
   const button = $("backupExport");

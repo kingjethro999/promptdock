@@ -828,6 +828,20 @@
                 aria-label="Search saved prompts" /></label
             ><span id="librarySummary">0 saved prompts</span>
           </div>
+          <div class="library-filters">
+            <div
+              class="tag-chips"
+              id="tagChips"
+              aria-label="Filter by tag"
+            ></div>
+            <label class="sort-control"
+              ><span>Sort</span
+              ><select id="librarySort" aria-label="Sort saved prompts">
+                <option value="updated">Recently updated</option>
+                <option value="name">Name A–Z</option>
+              </select></label
+            >
+          </div>
           <div class="library-backup">
             <button class="text-button" type="button" id="backupExport">
               Export JSON ↓</button
