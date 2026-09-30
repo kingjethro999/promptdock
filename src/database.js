@@ -108,16 +108,16 @@ function validatePrompt(item) {
     !item.data.task.trim()
   )
     throw new Error("A prompt task is required.");
-  if (JSON.stringify(item.data).length > 20000)
+  if (JSON.stringify(item.data).length > 400000)
     throw new Error("Prompt is too long.");
-  const idea = typeof item.idea === "string" ? item.idea.slice(0, 6000) : "";
+  const idea = typeof item.idea === "string" ? item.idea.slice(0, 100000) : "";
   const analysis =
     item.analysis &&
     typeof item.analysis === "object" &&
     !Array.isArray(item.analysis)
       ? item.analysis
       : null;
-  if (analysis && JSON.stringify(analysis).length > 12000)
+  if (analysis && JSON.stringify(analysis).length > 100000)
     throw new Error("Analysis is too long.");
   if (item.tags != null && !Array.isArray(item.tags))
     throw new Error("Tags must be a list.");

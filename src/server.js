@@ -47,7 +47,7 @@ function json(response, status, body, headers = {}) {
   response.end(JSON.stringify(body));
 }
 
-async function readBody(request, maxBytes = 72000) {
+async function readBody(request, maxBytes = 1000000) {
   const chunks = [];
   let bytes = 0;
   for await (const chunk of request) {
@@ -793,6 +793,7 @@ async function handleRequest(request, response) {
         "Draft is too long.",
         "Idea is too long.",
         "Prompt is too long to run.",
+        "Request is too large.",
       ].includes(message)
         ? 413
         : [

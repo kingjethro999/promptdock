@@ -812,7 +812,7 @@ async function finishVoiceRecording(mimeType) {
       throw new Error("No speech was detected. Try speaking again.");
     const existing = $("ideaInput").value.trim();
     const combined = existing ? `${existing}\n${transcript}` : transcript;
-    if (combined.length > 6000)
+    if (combined.length > 100000)
       throw new Error(
         "The combined idea is too long. Shorten it and try again.",
       );

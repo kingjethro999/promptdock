@@ -69,7 +69,7 @@ async function transcribeAudio(
   }
   const text = typeof result.text === "string" ? result.text.trim() : "";
   if (!text) throw new Error("No speech was detected. Try speaking again.");
-  if (text.length > 6000)
+  if (text.length > 100000)
     throw new Error("Transcript is too long. Try a shorter recording.");
   return text;
 }

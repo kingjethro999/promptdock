@@ -304,7 +304,7 @@ test("run input needs a useful prompt and stays within limits", () => {
   assert.throws(() => normalizeRunInput({ prompt: "go" }), /Add a task/);
   assert.throws(() => normalizeRunInput({}), /Add a task/);
   assert.throws(
-    () => normalizeRunInput({ prompt: "x".repeat(24001) }),
+    () => normalizeRunInput({ prompt: "x".repeat(400001) }),
     /too long/,
   );
   assert.equal(
@@ -505,4 +505,17 @@ test("local endpoints may use HTTP while remote endpoints must use HTTPS", async
     ),
     /could not be run/i,
   );
+});
+
+test("people can write as much as they need to", () => {
+  const idea =
+    `Please look at this in detail. ${"detail ".repeat(12000)}`.trim();
+  assert.equal(normalizeIdea({ idea }), idea);
+  const prompt = `Summarise everything below. ${"body ".repeat(40000)}`.trim();
+  assert.equal(normalizeRunInput({ prompt }), prompt);
+  const draft = normalizeDraft({
+    task: `Write ${"about the topic. ".repeat(5000)}`.trim(),
+  });
+  assert.ok(draft.task.length > 80000);
+  assert.doesNotThrow(() => normalizeDraft(draft));
 });

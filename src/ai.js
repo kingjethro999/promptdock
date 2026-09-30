@@ -60,9 +60,9 @@ function normalizeDraft(input) {
   for (const field of fieldNames)
     data[field] =
       typeof input?.[field] === "string"
-        ? input[field].trim().slice(0, 6000)
+        ? input[field].trim().slice(0, 100000)
         : "";
-  if (JSON.stringify(data).length > 18000)
+  if (JSON.stringify(data).length > 400000)
     throw new Error("Draft is too long.");
   if (!data.task) throw new Error("Add a task before enhancing.");
   return data;
@@ -78,7 +78,7 @@ function parseSuggestion(content, original) {
   for (const field of fieldNames)
     result[field] =
       typeof parsed[field] === "string"
-        ? parsed[field].trim().slice(0, 6000)
+        ? parsed[field].trim().slice(0, 100000)
         : original[field];
   if (!result.task) result.task = original.task;
   if (!formats.includes(result.format)) result.format = original.format;
@@ -90,7 +90,7 @@ function parseSuggestion(content, original) {
 function normalizeIdea(input) {
   const idea = typeof input?.idea === "string" ? input.idea.trim() : "";
   if (idea.length < 4) throw new Error("Describe your idea in a few words.");
-  if (idea.length > 6000) throw new Error("Idea is too long.");
+  if (idea.length > 100000) throw new Error("Idea is too long.");
   return idea;
 }
 
@@ -106,7 +106,7 @@ function parseIdeaSuggestion(content, idea) {
   for (const field of fieldNames)
     data[field] =
       typeof source[field] === "string"
-        ? source[field].trim().slice(0, 6000)
+        ? source[field].trim().slice(0, 100000)
         : "";
   if (!data.task || !data.focus) throw new Error("Incomplete AI response");
   if (!formats.includes(data.format)) data.format = "";
@@ -355,7 +355,7 @@ Examples of intent preservation:
 function normalizeRunInput(input) {
   const text = typeof input?.prompt === "string" ? input.prompt.trim() : "";
   if (text.length < 4) throw new Error("Add a task before running the prompt.");
-  if (text.length > 24000) throw new Error("Prompt is too long to run.");
+  if (text.length > 400000) throw new Error("Prompt is too long to run.");
   return text;
 }
 
