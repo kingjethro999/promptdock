@@ -11,6 +11,7 @@ for (const file of [
   "app.js",
   "share.js",
   "prompt-format.js",
+  "diff.js",
   "styles.css",
   "landing.css",
   "share.css",

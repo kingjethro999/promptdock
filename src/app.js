@@ -1396,6 +1396,68 @@ async function openShare(item) {
   }
 }
 
+function diffLine(type, text) {
+  const line = document.createElement("div");
+  line.className = `history-diff-line is-${type}`;
+  line.textContent = text;
+  return line;
+}
+
+function buildHistoryDiff(panel, current, revision) {
+  const changes = window.PromptDockDiff.diffPrompt(current, revision);
+  panel.replaceChildren();
+  if (!changes.length) {
+    const note = document.createElement("p");
+    note.className = "history-diff-empty";
+    note.textContent = "Identical to your current version.";
+    panel.append(note);
+    return;
+  }
+  const legend = document.createElement("p");
+  legend.className = "history-diff-legend";
+  const lost = document.createElement("span");
+  lost.className = "is-del";
+  lost.textContent = "− lost";
+  const restored = document.createElement("span");
+  restored.className = "is-add";
+  restored.textContent = "+ restored";
+  legend.append(
+    "Restoring this version changes these parts: ",
+    lost,
+    " goes away, ",
+    restored,
+    " comes back.",
+  );
+  panel.append(legend);
+  for (const change of changes) {
+    const field = document.createElement("div");
+    field.className = "history-diff-field";
+    const label = document.createElement("div");
+    label.className = "history-diff-label";
+    label.textContent = change.label;
+    field.append(label);
+    if (change.type === "tags") {
+      for (const tag of change.added) field.append(diffLine("add", `+ ${tag}`));
+      for (const tag of change.removed)
+        field.append(diffLine("del", `− ${tag}`));
+    } else {
+      const result = window.PromptDockDiff.compact(change.ops);
+      for (const op of result.ops) {
+        const marker =
+          op.type === "del" ? "− " : op.type === "add" ? "+ " : "  ";
+        field.append(diffLine(op.type, `${marker}${op.text}`));
+      }
+      if (result.truncated) {
+        const note = document.createElement("div");
+        note.className = "history-diff-truncated";
+        note.textContent = "… long difference shortened";
+        field.append(note);
+      }
+    }
+    panel.append(field);
+  }
+}
+
 async function openHistory(item) {
   currentHistoryPromptId = item.id;
   const list = $("historyList");
@@ -1413,6 +1475,8 @@ async function openHistory(item) {
       return;
     }
     for (const revision of result.revisions) {
+      const entry = document.createElement("div");
+      entry.className = "history-entry";
       const row = document.createElement("div");
       row.className = "history-row";
       const details = document.createElement("div");
@@ -1423,6 +1487,29 @@ async function openHistory(item) {
       const task = document.createElement("p");
       task.textContent = revision.data.task;
       details.append(title, date, task);
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      const panel = document.createElement("div");
+      panel.className = "history-diff hidden";
+      const compare = document.createElement("button");
+      compare.type = "button";
+      compare.className = "text-button";
+      compare.textContent = "Compare";
+      let compared = false;
+      compare.addEventListener("click", () => {
+        if (!compared) {
+          buildHistoryDiff(
+            panel,
+            findPrompt(currentHistoryPromptId) || item,
+            revision,
+          );
+          compared = true;
+        }
+        panel.classList.toggle("hidden");
+        compare.textContent = panel.classList.contains("hidden")
+          ? "Compare"
+          : "Hide diff";
+      });
       const restore = document.createElement("button");
       restore.type = "button";
       restore.className = "secondary-button";
@@ -1460,8 +1547,10 @@ async function openHistory(item) {
           restore.disabled = false;
         }
       });
-      row.append(details, restore);
-      list.append(row);
+      actions.append(compare, restore);
+      row.append(details, actions);
+      entry.append(row, panel);
+      list.append(entry);
     }
   } catch (error) {
     list.textContent = error.message || "Could not load history.";

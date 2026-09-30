@@ -1806,6 +1806,72 @@ p {
   flex: none;
   padding: 0 12px;
 }
+.history-entry {
+  display: grid;
+  gap: 9px;
+}
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.history-diff {
+  border: 1px dashed #dfe6db;
+  background: #fafcfa;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 11px;
+}
+.history-diff-legend {
+  margin: 0 0 9px;
+  color: #7d8f7f;
+}
+.history-diff-legend .is-del {
+  color: #a54b4b;
+  font-weight: 600;
+}
+.history-diff-legend .is-add {
+  color: #2f7a4f;
+  font-weight: 600;
+}
+.history-diff-empty {
+  margin: 0;
+  color: #7d8f7f;
+}
+.history-diff-field + .history-diff-field {
+  margin-top: 11px;
+}
+.history-diff-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a9c8c;
+  margin-bottom: 4px;
+}
+.history-diff-line {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #4a5b4c;
+}
+.history-diff-line.is-del {
+  background: #fbeeee;
+  color: #9a4444;
+}
+.history-diff-line.is-add {
+  background: #edf7f0;
+  color: #2f7a4f;
+}
+.history-diff-truncated {
+  padding: 2px 6px;
+  font-style: italic;
+  color: #8a9c8c;
+}
 .library-backup {
   display: flex;
   justify-content: flex-end;

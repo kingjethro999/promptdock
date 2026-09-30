@@ -14,7 +14,12 @@ module.exports = [
     rules: js.configs.recommended.rules,
   },
   {
-    files: ["src/app.js", "src/share.js", "src/prompt-format.js"],
+    files: [
+      "src/app.js",
+      "src/share.js",
+      "src/prompt-format.js",
+      "src/diff.js",
+    ],
     languageOptions: { globals: globals.browser },
   },
   {
@@ -22,6 +27,7 @@ module.exports = [
       "src/ai.js",
       "src/auth.js",
       "src/database.js",
+      "src/diff.js",
       "src/mailer.js",
       "src/rate-limit.js",
       "src/schema.js",
