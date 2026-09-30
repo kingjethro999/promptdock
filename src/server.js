@@ -102,7 +102,11 @@ function escapeHtml(value) {
 }
 
 function renderSharedHtml(template, prompt, canonical, image) {
-  const title = `${prompt.name} — PromptDock`;
+  const username =
+    typeof prompt.ownerUsername === "string" ? prompt.ownerUsername.trim() : "";
+  const title = username
+    ? `${username} wants to share a prompt with you`
+    : `${prompt.name} — PromptDock`;
   const description = String(prompt.data?.task || "A shared PromptDock prompt")
     .replace(/\s+/g, " ")
     .trim()
@@ -117,7 +121,11 @@ function renderSharedHtml(template, prompt, canonical, image) {
       'content="Explore a shared PromptDock prompt. Copy it or save your own version."',
       `content="${escapeHtml(description)}"`,
     )
-    .replace("<!--PROMPT_META-->", meta);
+    .replace("<!--PROMPT_META-->", meta)
+    .replace(
+      "<!--SHARED_INTRO-->",
+      username ? `${escapeHtml(username)} shared a prompt with you. ` : "",
+    );
 }
 
 async function serveSharedPage(request, response, publicId) {

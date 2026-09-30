@@ -36,3 +36,43 @@ test("shared prompt HTML has crawlable metadata and escapes prompt text", () => 
   );
   assert.ok(!html.includes("<script>alert(1)</script>"));
 });
+
+test("shared links say who shared them", () => {
+  const template = fs.readFileSync(
+    path.join(__dirname, "../src/share.html"),
+    "utf8",
+  );
+  const html = renderSharedHtml(
+    template,
+    {
+      name: "Weekly content ideas",
+      ownerUsername: "KingJethro",
+      data: { task: "Write five weekly content ideas" },
+    },
+    "https://thepromptdock.vercel.app/p/example",
+    "https://thepromptdock.vercel.app/social-card.png",
+  );
+  assert.match(
+    html,
+    /<title>KingJethro wants to share a prompt with you<\/title>/,
+  );
+  assert.match(
+    html,
+    /<meta property="og:title" content="KingJethro wants to share a prompt with you">/,
+  );
+  assert.ok(html.includes("KingJethro shared a prompt with you."));
+  assert.ok(!html.includes("<!--SHARED_INTRO-->"));
+
+  const escaped = renderSharedHtml(
+    template,
+    {
+      name: "Weekly content ideas",
+      ownerUsername: "<script>alert(1)</script>",
+      data: { task: "Write five weekly content ideas" },
+    },
+    "https://thepromptdock.vercel.app/p/example",
+    "https://thepromptdock.vercel.app/social-card.png",
+  );
+  assert.ok(!escaped.includes("<script>alert(1)</script>"));
+  assert.ok(escaped.includes("&lt;script&gt;alert(1)&lt;/script&gt;"));
+});

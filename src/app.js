@@ -1957,6 +1957,11 @@ function showShareDialog(item) {
   currentSharePromptId = item.id;
   $("shareLink").value = `${window.location.origin}/p/${item.publicId}`;
   $("shareFeedback").textContent = "";
+  const attribution = $("shareAttribution");
+  attribution.textContent = currentUser?.username
+    ? `${currentUser.username} shared a prompt with you.`
+    : "";
+  attribution.classList.toggle("hidden", !currentUser?.username);
   $("shareDialog").showModal();
   $("shareLink").select();
 }

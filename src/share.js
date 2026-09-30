@@ -22,7 +22,16 @@ async function loadSharedPrompt() {
       `${prompt.data.depth || "Balanced"} depth`;
     shared("sharedUpdated").textContent =
       `Updated ${new Date(prompt.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
-    document.title = `${prompt.name} — PromptDock`;
+    const username =
+      typeof prompt.ownerUsername === "string"
+        ? prompt.ownerUsername.trim()
+        : "";
+    document.title = username
+      ? `${username} wants to share a prompt with you`
+      : `${prompt.name} — PromptDock`;
+    if (username)
+      shared("sharedIntro").textContent =
+        `${username} shared a prompt with you. A prompt made with PromptDock. Take it to your favorite AI tool, or save a copy to your own library.`;
     shared("sharedContent").classList.remove("hidden");
   } catch (error) {
     shared("sharedTitle").textContent = "This prompt is unavailable";

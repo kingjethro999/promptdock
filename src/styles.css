@@ -1073,6 +1073,11 @@ p {
 .app-dialog input {
   height: 43px;
 }
+.share-attribution {
+  margin-top: 0;
+  color: #32693b;
+  font-weight: 800;
+}
 .password-field {
   position: relative;
 }
