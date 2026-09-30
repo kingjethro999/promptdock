@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "scripts": {
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.11.0",
-    "globals": "^16.5.0"
+    "globals": "^16.5.0",
+    "jsdom": "^30.1.1"
   }
 }
