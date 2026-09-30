@@ -266,3 +266,46 @@ test("usernames are unique, validated, and changeable", async () => {
     mailer.sendAuthLink = original.sendAuthLink;
   }
 });
+
+test("database username collisions return a clear conflict", async () => {
+  const original = {
+    pool: database.pool,
+    ensureSchema: database.ensureSchema,
+  };
+  database.ensureSchema = async () => {};
+  database.pool = {
+    async query(sql) {
+      if (sql.startsWith("SELECT 1 FROM users WHERE lower(username)"))
+        return { rows: [] };
+      if (
+        sql.startsWith("INSERT INTO users") ||
+        sql.startsWith("UPDATE users SET username")
+      ) {
+        const error = new Error("duplicate key");
+        error.code = "23505";
+        error.constraint = "users_username_key";
+        throw error;
+      }
+      throw new Error(`Unexpected query: ${sql}`);
+    },
+  };
+  try {
+    await assert.rejects(
+      auth.register({
+        email: "new@example.com",
+        username: "FreshName",
+        password: "original-long-password",
+      }),
+      (error) =>
+        error.status === 409 && /username is taken/.test(error.message),
+    );
+    await assert.rejects(
+      auth.updateUsername({ id: "user-1" }, { username: "FreshName" }),
+      (error) =>
+        error.status === 409 && /username is taken/.test(error.message),
+    );
+  } finally {
+    database.pool = original.pool;
+    database.ensureSchema = original.ensureSchema;
+  }
+});

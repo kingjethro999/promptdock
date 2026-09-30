@@ -185,7 +185,12 @@ async function register(body) {
     return { pending: true, email };
   } catch (error) {
     if (error.code === "23505")
-      throw new AuthError("An account with this email already exists.", 409);
+      throw new AuthError(
+        error.constraint === "users_username_key"
+          ? "That username is taken."
+          : "An account with this email already exists.",
+        409,
+      );
     throw error;
   }
 }
@@ -434,10 +439,16 @@ async function updateUsername(user, body) {
   await database.ensureSchema();
   if (await usernameTaken(username, user.id))
     throw new AuthError("That username is taken.", 409);
-  await database.pool.query("UPDATE users SET username = $1 WHERE id = $2", [
-    username,
-    user.id,
-  ]);
+  try {
+    await database.pool.query("UPDATE users SET username = $1 WHERE id = $2", [
+      username,
+      user.id,
+    ]);
+  } catch (error) {
+    if (error.code === "23505" && error.constraint === "users_username_key")
+      throw new AuthError("That username is taken.", 409);
+    throw error;
+  }
   await database.setOwnerUsername(user.id, username);
   return { username };
 }
