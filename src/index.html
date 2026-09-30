@@ -256,28 +256,29 @@
         </section>
       </main>
       <section class="landing-sponsor" aria-labelledby="sponsorHeading">
-        <div>
+        <div class="landing-sponsor-copy">
           <span class="landing-kicker">SUPPORT PROMPTDOCK</span>
           <h2 id="sponsorHeading">Help keep better prompts within reach.</h2>
           <p>
-            If PromptDock helps your work, you can support its development
-            through GitHub Sponsors.
+            If PromptDock makes your ideas easier to use, you can support the
+            person building it. Every contribution helps the project grow.
           </p>
+        </div>
+        <div class="landing-sponsor-card">
+          <span class="sponsor-card-sparkle" aria-hidden="true">✳</span>
+          <div class="sponsor-card-body">
+            <span class="sponsor-card-eyebrow">BACK THE BUILDER</span>
+            <strong>Make room for the next idea.</strong>
+            <p>Support PromptDock's ongoing development on GitHub Sponsors.</p>
+          </div>
           <a
+            class="sponsor-card-link"
             href="https://github.com/sponsors/kingjethro999"
             target="_blank"
             rel="noopener noreferrer"
-            >Sponsor PromptDock on GitHub ↗</a
+            >Sponsor on GitHub <span aria-hidden="true">↗</span></a
           >
         </div>
-        <iframe
-          src="https://github.com/sponsors/kingjethro999/card"
-          title="Sponsor kingjethro999 on GitHub"
-          width="600"
-          height="225"
-          loading="lazy"
-          referrerpolicy="strict-origin-when-cross-origin"
-        ></iframe>
       </section>
       <footer class="landing-footer">
         <span>✳ promptdock</span><span>Ideas deserve a clearer path.</span
@@ -330,20 +331,14 @@
 
         <div class="sidebar-bottom">
           <div class="sidebar-sponsor">
-            <span>Enjoying PromptDock?</span>
-            <iframe
-              src="https://github.com/sponsors/kingjethro999/button"
-              title="Sponsor kingjethro999"
-              width="114"
-              height="32"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-            ></iframe>
+            <span class="sidebar-sponsor-icon" aria-hidden="true">✳</span>
+            <strong>Enjoying PromptDock?</strong>
+            <p>Help shape what comes next.</p>
             <a
               href="https://github.com/sponsors/kingjethro999"
               target="_blank"
               rel="noopener noreferrer"
-              >Open GitHub Sponsors ↗</a
+              >Sponsor on GitHub <span aria-hidden="true">↗</span></a
             >
           </div>
           <button type="button" class="sidebar-signout" id="sidebarSignOut">
@@ -435,7 +430,7 @@
                 <div class="idea-input-wrap">
                   <textarea
                     id="ideaInput"
-                    maxlength="6000"
+                    maxlength="100000"
                     rows="5"
                     placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs or how to plan it..."
                   ></textarea>
@@ -1188,7 +1183,7 @@
         ><input
           id="promptName"
           type="text"
-          maxlength="80"
+          maxlength="120"
           required
           placeholder="e.g. Weekly content ideas"
         /><label for="promptTags">Tags</label

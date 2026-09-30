@@ -652,37 +652,100 @@
 }
 .landing-sponsor {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 600px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 510px);
   align-items: center;
-  gap: 30px;
-  padding: 64px max(34px, calc((100vw - 1232px) / 2));
+  gap: clamp(32px, 6vw, 100px);
+  padding: 76px max(34px, calc((100vw - 1232px) / 2));
   background: #edf5e5;
 }
 .landing-sponsor h2 {
   font:
-    800 clamp(24px, 3vw, 34px) Manrope,
+    800 clamp(28px, 3vw, 38px) Manrope,
     sans-serif;
-  letter-spacing: -1px;
-  margin: 12px 0;
+  letter-spacing: -1.5px;
+  line-height: 1.2;
+  margin: 14px 0;
 }
-.landing-sponsor p {
+.landing-sponsor-copy p {
   color: #617b62;
-  font-size: 13px;
-  line-height: 1.7;
-  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.75;
+  max-width: 440px;
 }
-.landing-sponsor a {
-  color: #32693b;
+.landing-sponsor-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 260px;
+  padding: 28px 30px;
+  overflow: hidden;
+  border: 1px solid #355743;
+  border-radius: 20px;
+  background: radial-gradient(circle at 95% 5%, #3d6349 0, transparent 45%),
+    #193b2a;
+  color: #f5f9ed;
+  box-shadow: 0 20px 45px -26px #24463078;
+}
+.sponsor-card-sparkle {
+  position: absolute;
+  top: 14px;
+  right: 28px;
+  color: #d7f477;
+  font-size: 88px;
+  line-height: 1;
+  opacity: 0.75;
+  transform: rotate(-16deg);
+}
+.sponsor-card-body {
+  position: relative;
+  max-width: 320px;
+}
+.sponsor-card-eyebrow {
+  display: block;
+  margin-bottom: 12px;
+  color: #c5ed81;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+.sponsor-card-body strong {
+  display: block;
+  font: 800 24px/1.25 Manrope, sans-serif;
+  letter-spacing: -0.8px;
+}
+.sponsor-card-body p {
+  max-width: 270px;
+  margin: 10px 0 23px;
+  color: #c1d5c5;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.sponsor-card-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 220px;
+  margin-top: auto;
+  padding: 12px 15px;
+  border-radius: 9px;
+  background: #d7f477;
+  color: #193b2a;
   font-size: 12px;
   font-weight: 800;
+  text-decoration: none;
+  transition: background 150ms ease, transform 150ms ease;
 }
-.landing-sponsor iframe {
-  width: 100%;
-  max-width: 600px;
-  height: 225px;
-  border: 0;
-  border-radius: 8px;
-  background: #fff;
+.sponsor-card-link:hover {
+  background: #e5ffa1;
+  transform: translateY(-2px);
+}
+.sponsor-card-link:focus-visible,
+.sidebar-sponsor a:focus-visible {
+  outline: 3px solid #89b64c;
+  outline-offset: 3px;
 }
 .landing-footer {
   background: #12291d;
@@ -705,25 +768,44 @@
 }
 .sidebar-sponsor {
   display: grid;
-  justify-items: start;
-  gap: 8px;
-  padding: 13px 14px;
+  gap: 5px;
+  padding: 16px;
   margin-bottom: 12px;
-  border: 1px solid #3b5643;
-  border-radius: 9px;
-  color: #c7d9c9;
-  font-size: 11px;
-  font-weight: 700;
+  border: 1px solid #4b6c52;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #304e37, #213d2c);
+  color: #f2f6eb;
 }
-.sidebar-sponsor iframe {
-  width: 114px;
-  height: 32px;
-  border: 0;
-  border-radius: 6px;
+.sidebar-sponsor-icon {
+  color: #d7f477;
+  font-size: 25px;
+  line-height: 1;
+}
+.sidebar-sponsor strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+.sidebar-sponsor p {
+  margin: 0 0 8px;
+  color: #bbd0bb;
+  font-size: 11px;
 }
 .sidebar-sponsor a {
-  color: #c9ef75;
-  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: #d7f477;
+  color: #193b2a;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.sidebar-sponsor a:hover {
+  background: #e5ffa1;
 }
 .sidebar-signout {
   width: 100%;
@@ -1196,6 +1278,9 @@
 @media (max-width: 600px) {
   .landing-sponsor {
     padding: 42px 17px;
+  }
+  .sponsor-card-sparkle {
+    display: none;
   }
   .landing-header {
     padding: 0 16px;
