@@ -5,6 +5,7 @@ const {
   validatePrompt,
   importPrompts,
   listPrompts,
+  normalizeImportedTimestamp,
 } = require("../src/database");
 
 test("Render external database URLs verify TLS without changing local URLs", () => {
@@ -70,4 +71,13 @@ test("library listing rejects unknown tag filters and sort orders", async () => 
     listPrompts(key, { sort: "updated_at; DROP TABLE prompts" }),
     /Invalid sort order/,
   );
+});
+
+test("imported timestamps keep real save dates and drop nonsense", () => {
+  const saved = "2024-05-04T10:20:30.000Z";
+  assert.equal(normalizeImportedTimestamp(saved), saved);
+  assert.equal(normalizeImportedTimestamp(undefined), null);
+  assert.equal(normalizeImportedTimestamp("not a date"), null);
+  assert.equal(normalizeImportedTimestamp("1970-01-01T00:00:00.000Z"), null);
+  assert.equal(normalizeImportedTimestamp("2200-01-01T00:00:00.000Z"), null);
 });

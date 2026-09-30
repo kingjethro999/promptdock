@@ -73,8 +73,8 @@ async function importLegacy(userId, token) {
   try {
     await client.query("BEGIN");
     await client.query(
-      `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, updated_at)
-      SELECT $1, id, name, data, idea, analysis, updated_at FROM prompts WHERE owner_key = $2
+      `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags, updated_at)
+      SELECT $1, id, name, data, idea, analysis, tags, updated_at FROM prompts WHERE owner_key = $2
       ON CONFLICT (owner_key, id) DO NOTHING`,
       [target, source],
     );
@@ -290,6 +290,14 @@ async function duplicatePrompt(key, id) {
   return result.rows[0] || null;
 }
 
+function normalizeImportedTimestamp(value) {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return null;
+  const floor = Date.parse("2000-01-01");
+  const ceiling = Date.now() + 86400000;
+  return time < floor || time > ceiling ? null : new Date(time).toISOString();
+}
+
 async function importPrompts(key, input) {
   if (
     !input ||
@@ -299,26 +307,62 @@ async function importPrompts(key, input) {
     input.prompts.length > 50
   )
     throw new Error("Import 1–50 prompts at a time from a PromptDock backup.");
-  const items = input.prompts.map((prompt) =>
-    validatePrompt({ ...prompt, id: randomUUID() }),
-  );
+  const sources = input.prompts.map((prompt) => {
+    const id = validUuid(prompt.id) ? prompt.id : randomUUID();
+    return {
+      id,
+      item: validatePrompt({ ...prompt, id }),
+      updatedAt: normalizeImportedTimestamp(prompt.updatedAt),
+      forkedFrom: validUuid(prompt.forkedFrom) ? prompt.forkedFrom : null,
+    };
+  });
   await ensureSchema();
+  const wantedIds = [...new Set(sources.map((source) => source.id))];
+  const taken = new Set();
+  if (wantedIds.length) {
+    const result = await pool.query(
+      "SELECT id FROM prompts WHERE owner_key = $1 AND id = ANY($2::uuid[])",
+      [key, wantedIds],
+    );
+    for (const row of result.rows) taken.add(row.id);
+  }
+  const wantedForks = [
+    ...new Set(sources.map((source) => source.forkedFrom).filter((id) => id)),
+  ];
+  const blockedForks = new Set();
+  if (wantedForks.length) {
+    const result = await pool.query(
+      "SELECT forked_from FROM prompts WHERE owner_key = $1 AND forked_from = ANY($2::uuid[])",
+      [key, wantedForks],
+    );
+    for (const row of result.rows) blockedForks.add(row.forkedFrom);
+  }
   const values = [];
-  const rows = items.map((item, index) => {
-    const start = index * 7;
+  const rows = sources.map((source, index) => {
+    const id = taken.has(source.id) ? randomUUID() : source.id;
+    taken.add(id);
+    const forkedFrom =
+      source.forkedFrom && !blockedForks.has(source.forkedFrom)
+        ? source.forkedFrom
+        : null;
+    if (forkedFrom) blockedForks.add(forkedFrom);
+    const { item } = source;
+    const start = index * 9;
     values.push(
       key,
-      item.id,
+      id,
       item.name,
       item.data,
       item.idea,
       item.analysis,
       item.tags,
+      source.updatedAt || new Date().toISOString(),
+      forkedFrom,
     );
-    return `(${Array.from({ length: 7 }, (_, n) => `$${start + n + 1}`).join(", ")})`;
+    return `(${Array.from({ length: 9 }, (_, n) => `$${start + n + 1}`).join(", ")})`;
   });
   const result = await pool.query(
-    `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
+    `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags, updated_at, forked_from)
     VALUES ${rows.join(", ")} RETURNING id`,
     values,
   );
@@ -402,6 +446,7 @@ module.exports = {
   restoreRevision,
   duplicatePrompt,
   importPrompts,
+  normalizeImportedTimestamp,
   deletePrompt,
   setPromptPublic,
   getPublicPrompt,

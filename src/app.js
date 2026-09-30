@@ -1995,6 +1995,17 @@ $("librarySort").addEventListener("change", () => {
   if (currentUser) reloadLibrary();
   else renderLibrary();
 });
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeBackupTimestamp(value) {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return null;
+  if (time < Date.parse("2000-01-01") || time > Date.now() + 86400000)
+    return null;
+  return new Date(time).toISOString();
+}
+
 $("backupExport").addEventListener("click", async () => {
   const button = $("backupExport");
   button.disabled = true;
@@ -2013,13 +2024,29 @@ $("backupExport").addEventListener("click", async () => {
       app: "PromptDock",
       version: 1,
       exportedAt: new Date().toISOString(),
-      prompts: prompts.map(({ name, data, idea, analysis, tags }) => ({
-        name,
-        data,
-        idea: idea || "",
-        analysis: analysis || null,
-        tags: tags || [],
-      })),
+      prompts: prompts.map(
+        ({
+          id,
+          name,
+          data,
+          idea,
+          analysis,
+          tags,
+          updatedAt,
+          publicId,
+          forkedFrom,
+        }) => ({
+          id,
+          name,
+          data,
+          idea: idea || "",
+          analysis: analysis || null,
+          tags: tags || [],
+          updatedAt: updatedAt || null,
+          publicId: publicId || null,
+          forkedFrom: forkedFrom || null,
+        }),
+      ),
     };
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }),
@@ -2079,6 +2106,7 @@ $("backupFile").addEventListener("change", async (event) => {
       accountPrompts = page.prompts;
       libraryTotal = page.total;
     } else {
+      const existingIds = new Set(getSaved().map((prompt) => prompt.id));
       const copies = backup.prompts.map((prompt) => {
         if (
           typeof prompt.name !== "string" ||
@@ -2088,14 +2116,20 @@ $("backupFile").addEventListener("change", async (event) => {
           !prompt.data.task.trim()
         )
           throw new Error("Backup contains an invalid prompt.");
+        const keepId =
+          UUID_PATTERN.test(prompt.id || "") && !existingIds.has(prompt.id);
+        const id = keepId ? prompt.id : crypto.randomUUID();
+        existingIds.add(id);
         return {
-          id: crypto.randomUUID(),
+          id,
           name: prompt.name.slice(0, 120),
           data: prompt.data,
           idea: prompt.idea || "",
           analysis: prompt.analysis || null,
           tags: Array.isArray(prompt.tags) ? prompt.tags : [],
-          updatedAt: new Date().toISOString(),
+          updatedAt:
+            normalizeBackupTimestamp(prompt.updatedAt) ||
+            new Date().toISOString(),
         };
       });
       imported = copies.length;
@@ -2105,6 +2139,7 @@ $("backupFile").addEventListener("change", async (event) => {
     searchResults = [];
     searchRequest++;
     renderLibrary();
+    refreshTagChips();
     showToast(`Imported ${imported} private prompts.`);
   } catch (error) {
     if (imported && currentUser) {
