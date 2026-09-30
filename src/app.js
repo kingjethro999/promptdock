@@ -201,6 +201,7 @@ function attachSearchableSelect(select, options = {}) {
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "search-select-trigger";
+  trigger.id = `${select.id}-trigger`;
   trigger.setAttribute("aria-haspopup", "listbox");
   trigger.setAttribute("aria-expanded", "false");
   const value = document.createElement("span");
@@ -217,9 +218,15 @@ function attachSearchableSelect(select, options = {}) {
   input.className = "search-select-input";
   input.placeholder = options.placeholder || "Search…";
   input.setAttribute("aria-label", options.placeholder || "Search options");
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-expanded", "false");
   const list = document.createElement("ul");
   list.className = "search-select-list";
   list.setAttribute("role", "listbox");
+  list.id = `${select.id}-options`;
+  trigger.setAttribute("aria-controls", list.id);
+  input.setAttribute("aria-controls", list.id);
   const empty = document.createElement("p");
   empty.className = "search-select-empty hidden";
   empty.textContent = options.emptyText || "No matches";
@@ -227,6 +234,9 @@ function attachSearchableSelect(select, options = {}) {
   wrap.append(trigger, panel);
   select.insertAdjacentElement("afterend", wrap);
   select.classList.add("search-select-native");
+  select.tabIndex = -1;
+  select.setAttribute("aria-hidden", "true");
+  for (const label of select.labels || []) label.htmlFor = trigger.id;
 
   let isOpen = false;
   let activeIndex = -1;
@@ -244,6 +254,7 @@ function attachSearchableSelect(select, options = {}) {
         const item = document.createElement("li");
         item.className = "search-select-option";
         item.setAttribute("role", "option");
+        item.id = `${select.id}-option-${index}`;
         item.textContent = option.textContent.trim();
         if (option.selected) item.setAttribute("aria-selected", "true");
         item.classList.toggle("is-selected", Boolean(option.selected));
@@ -254,6 +265,12 @@ function attachSearchableSelect(select, options = {}) {
       }),
     );
     empty.classList.toggle("hidden", visible.length > 0);
+    if (activeIndex >= 0 && visible[activeIndex])
+      input.setAttribute(
+        "aria-activedescendant",
+        `${select.id}-option-${activeIndex}`,
+      );
+    else input.removeAttribute("aria-activedescendant");
   }
 
   function setActive(index) {
@@ -274,6 +291,7 @@ function attachSearchableSelect(select, options = {}) {
     panel.classList.remove("hidden");
     wrap.classList.add("is-open");
     trigger.setAttribute("aria-expanded", "true");
+    input.setAttribute("aria-expanded", "true");
     input.value = "";
     activeIndex = -1;
     draw();
@@ -288,6 +306,8 @@ function attachSearchableSelect(select, options = {}) {
     panel.classList.add("hidden");
     wrap.classList.remove("is-open");
     trigger.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
     activeIndex = -1;
   }
 
@@ -320,7 +340,7 @@ function attachSearchableSelect(select, options = {}) {
       const step = event.key === "ArrowDown" ? 1 : -1;
       const next = activeIndex < 0 ? 0 : activeIndex + step;
       setActive(Math.min(visible.length - 1, Math.max(0, next)));
-      list.children[activeIndex]?.scrollIntoView({ block: "nearest" });
+      list.children[activeIndex]?.scrollIntoView?.({ block: "nearest" });
       return;
     }
     if (event.key === "Enter") {

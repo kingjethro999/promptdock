@@ -612,6 +612,12 @@ test("long dropdowns open a searchable list that drives the select", async (t) =
   const empty = wrap.querySelector(".search-select-empty");
   assert.equal(label.textContent, "Work Groq · Groq");
   assert.equal(trigger.getAttribute("aria-expanded"), "false");
+  assert.equal(select.tabIndex, -1);
+  assert.equal(select.getAttribute("aria-hidden"), "true");
+  assert.equal(
+    doc.querySelector('label[for="byokActive-trigger"]').textContent.trim(),
+    "Active provider",
+  );
 
   trigger.click();
   assert.equal(trigger.getAttribute("aria-expanded"), "true");
@@ -635,7 +641,13 @@ test("long dropdowns open a searchable list that drives the select", async (t) =
     matches.map((item) => item.textContent),
     ["Local Ollama · OpenAI-compatible"],
   );
-  matches[0].click();
+  input.dispatchEvent(
+    new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+  );
+  assert.equal(input.getAttribute("aria-activedescendant"), matches[0].id);
+  input.dispatchEvent(
+    new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+  );
 
   assert.equal(select.value, idLocal);
   assert.equal(panel.classList.contains("hidden"), true);
