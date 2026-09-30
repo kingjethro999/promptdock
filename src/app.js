@@ -154,8 +154,9 @@ let remoteTags = [];
 let authMode = "login";
 let pendingSave = false;
 let resetToken = null;
-let selectedProvider = "groq";
-let savedProvider = null;
+let byokProviders = [];
+let byokActiveId = null;
+let editingProviderId = null;
 let currentSharePromptId = null;
 let currentHistoryPromptId = null;
 const FORK_KEY = "promptdock.pending-fork.v1";
@@ -1020,20 +1021,85 @@ async function handleAuthLink() {
   }
 }
 
-function selectProvider(provider) {
-  selectedProvider = provider;
-  document.querySelectorAll(".provider-option").forEach((option) => {
-    const active = option.dataset.provider === provider;
-    option.classList.toggle("active", active);
-    option.setAttribute("aria-pressed", String(active));
+const providerLabels = {
+  groq: "Groq",
+  gemini: "Gemini",
+  apmix: "APMIX",
+  openai: "OpenAI-compatible",
+  anthropic: "Anthropic-compatible",
+};
+const providerPlaceholders = {
+  groq: "e.g. openai/gpt-oss-120b",
+  gemini: "e.g. gemini-2.5-flash",
+  apmix: "Your APMIX model ID",
+  openai: "e.g. llama-3.3-70b-versatile",
+  anthropic: "e.g. claude-sonnet-4-5",
+};
+
+function customEndpoint(provider) {
+  return provider === "openai" || provider === "anthropic";
+}
+
+function syncByokForm() {
+  const type = $("byokType").value;
+  const isCustom = customEndpoint(type);
+  $("byokBaseUrlRow").classList.toggle("hidden", !isCustom);
+  $("byokBaseUrl").required = isCustom;
+  $("byokModel").placeholder = providerPlaceholders[type] || "Model ID";
+  const editing = byokProviders.find(
+    (entry) => entry.providerId === editingProviderId,
+  );
+  $("byokKey").placeholder = editing
+    ? "Key saved — leave blank to keep it"
+    : "Paste your provider key";
+  $("byokDelete").classList.toggle("hidden", !editing);
+  $("byokSave").textContent = editing ? "Save provider" : "Add provider";
+}
+
+function renderByokSelect() {
+  const select = $("byokActive");
+  select.replaceChildren();
+  const fallback = document.createElement("option");
+  fallback.value = "__default__";
+  fallback.textContent = "PromptDock default";
+  select.append(fallback);
+  for (const entry of byokProviders) {
+    const option = document.createElement("option");
+    option.value = entry.providerId;
+    option.textContent = `${entry.name} · ${providerLabels[entry.provider] || entry.provider}`;
+    select.append(option);
+  }
+  select.value = byokActiveId || "__default__";
+}
+
+function loadByokForm(entry) {
+  editingProviderId = entry ? entry.providerId : null;
+  $("byokName").value = entry ? entry.name : "";
+  $("byokType").value = entry ? entry.provider : "groq";
+  $("byokBaseUrl").value = entry ? entry.baseUrl : "";
+  $("byokModel").value = entry ? entry.model : "";
+  $("byokKey").value = "";
+  syncByokForm();
+}
+
+async function postActiveProvider(providerId) {
+  const response = await apiFetch("/api/settings/active", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      providerId: providerId === "__default__" ? null : providerId,
+    }),
   });
-  $("byokModel").placeholder = {
-    groq: "e.g. openai/gpt-oss-120b",
-    gemini: "e.g. gemini-2.5-flash",
-    apmix: "Your APMIX model ID",
-  }[provider];
-  if (savedProvider && savedProvider !== provider)
-    $("byokKey").placeholder = "Add a key for this provider";
+  const result = await readApiJson(response);
+  if (!response.ok)
+    throw new Error(result.error || "Could not update the active provider.");
+  return result;
+}
+
+function byokFeedback(message, isError = false) {
+  const feedback = $("byokFeedback");
+  feedback.textContent = message;
+  feedback.classList.toggle("error", isError);
 }
 
 async function loadSettings() {
@@ -1042,21 +1108,25 @@ async function loadSettings() {
     const response = await apiFetch("/api/settings");
     if (!response.ok) throw new Error("Settings are unavailable.");
     const setting = await readApiJson(response);
-    savedProvider = setting.provider;
-    selectProvider(setting.provider || "groq");
-    $("byokModel").value = setting.model || "";
-    $("byokKey").value = "";
-    $("byokKey").placeholder = setting.hasKey
-      ? "Key saved — leave blank to keep it"
-      : "Paste your provider key";
-    $("byokState").textContent = !setting.available
+    byokProviders = Array.isArray(setting.providers) ? setting.providers : [];
+    byokActiveId = setting.activeProviderId || null;
+    renderByokSelect();
+    const active =
+      byokProviders.find((entry) => entry.providerId === byokActiveId) || null;
+    loadByokForm(active);
+    const usable = Boolean(setting.available);
+    $("byokState").textContent = !usable
       ? "Personal keys are unavailable right now."
-      : setting.hasKey
-        ? `Using your ${{ groq: "Groq", gemini: "Gemini", apmix: "APMIX" }[setting.provider]} key and model.`
-        : "Using PromptDock’s configured provider.";
-    $("byokForm").querySelector("button[type=submit]").disabled =
-      !setting.available;
-    $("removeByok").disabled = !setting.hasKey;
+      : active
+        ? `Using your ${active.name} key (${providerLabels[active.provider]} · ${active.model}).`
+        : byokProviders.length
+          ? "Using PromptDock’s configured provider. Saved providers are ready below."
+          : "Using PromptDock’s configured provider.";
+    $("byokForm").querySelector("button[type=submit]").disabled = !usable;
+    $("byokNew").disabled = !usable;
+    $("byokDelete").disabled = !usable;
+    $("byokActive").disabled = !usable;
+    $("removeByok").disabled = !usable || !byokActiveId;
   } catch {
     $("byokState").textContent = "Could not load your AI settings.";
   }
@@ -2480,52 +2550,95 @@ document
   .forEach((button) =>
     button.addEventListener("click", () => openAuth(button.dataset.authMode)),
   );
-document
-  .querySelectorAll(".provider-option")
-  .forEach((button) =>
-    button.addEventListener("click", () =>
-      selectProvider(button.dataset.provider),
-    ),
-  );
+$("byokType").addEventListener("change", syncByokForm);
+$("byokNew").addEventListener("click", () => {
+  byokFeedback("");
+  loadByokForm(null);
+  $("byokName").focus();
+});
+$("byokActive").addEventListener("change", async (event) => {
+  const choice = event.target.value;
+  byokFeedback("");
+  try {
+    await postActiveProvider(choice);
+    await loadSettings();
+    byokFeedback(
+      choice === "__default__"
+        ? "PromptDock’s provider is active."
+        : "Active provider switched.",
+    );
+    await loadAiStatus();
+  } catch (error) {
+    byokFeedback(error.message || "Could not switch provider.", true);
+    await loadSettings();
+  }
+});
 $("byokForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const feedback = $("byokFeedback");
-  feedback.textContent = "";
-  feedback.classList.remove("error");
+  byokFeedback("");
+  const creating = !editingProviderId;
   try {
-    const response = await apiFetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: selectedProvider,
-        model: $("byokModel").value,
-        apiKey: $("byokKey").value,
-      }),
-    });
+    const payload = {
+      name: $("byokName").value,
+      provider: $("byokType").value,
+      baseUrl: $("byokBaseUrl").value,
+      model: $("byokModel").value,
+      apiKey: $("byokKey").value,
+    };
+    const response = await apiFetch(
+      creating
+        ? "/api/settings/providers"
+        : `/api/settings/providers/${editingProviderId}`,
+      {
+        method: creating ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
     const result = await readApiJson(response);
     if (!response.ok)
       throw new Error(result.error || "Could not save provider settings.");
-    feedback.textContent =
-      "Provider saved. Your next AI request will use this key and model.";
+    byokFeedback(
+      creating
+        ? `Provider added and activated. Your next AI request will use ${payload.name}.`
+        : "Provider saved. Your next AI request will use this key and model.",
+    );
+    await loadSettings();
     await loadAiStatus();
   } catch (error) {
-    feedback.textContent = error.message || "Could not save provider settings.";
-    feedback.classList.add("error");
+    byokFeedback(error.message || "Could not save provider settings.", true);
+  }
+});
+$("byokDelete").addEventListener("click", async () => {
+  if (!editingProviderId) return;
+  if (!confirm("Delete this saved provider?")) return;
+  byokFeedback("");
+  try {
+    const response = await apiFetch(
+      `/api/settings/providers/${editingProviderId}`,
+      { method: "DELETE" },
+    );
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not delete this provider.");
+    byokFeedback("Provider deleted.");
+    await loadSettings();
+    await loadAiStatus();
+  } catch (error) {
+    byokFeedback(error.message || "Could not delete this provider.", true);
   }
 });
 $("removeByok").addEventListener("click", async () => {
-  const feedback = $("byokFeedback");
-  feedback.textContent = "";
-  feedback.classList.remove("error");
+  byokFeedback("");
   try {
-    const response = await apiFetch("/api/settings", { method: "DELETE" });
-    if (!response.ok) throw new Error("Could not remove your key.");
-    feedback.textContent =
-      "Your saved key was removed. PromptDock’s provider is active.";
+    await postActiveProvider(null);
+    await loadSettings();
+    byokFeedback(
+      "Your saved keys stay encrypted. PromptDock’s provider is active.",
+    );
     await loadAiStatus();
   } catch (error) {
-    feedback.textContent = error.message;
-    feedback.classList.add("error");
+    byokFeedback(error.message || "Could not switch provider.", true);
   }
 });
 $("passwordForm").addEventListener("submit", async (event) => {

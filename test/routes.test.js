@@ -526,3 +526,202 @@ test("usage endpoint reports the current AI budgets", async () => {
     );
   });
 });
+
+test("settings routes manage saved providers and the active choice", async () => {
+  const calls = [];
+  let signedIn = true;
+  const shape = {
+    available: true,
+    providers: [
+      {
+        providerId: "e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d",
+        name: "Work Groq",
+        provider: "groq",
+        model: "openai/gpt-oss-120b",
+        baseUrl: "",
+        active: true,
+        updatedAt: "2026-09-30T00:00:00Z",
+      },
+    ],
+    activeProviderId: "e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d",
+    provider: "groq",
+    model: "openai/gpt-oss-120b",
+    hasKey: true,
+    updatedAt: "2026-09-30T00:00:00Z",
+  };
+  const stubs = [
+    [database, "configured", true],
+    [
+      auth,
+      "currentUser",
+      async () => (signedIn ? { id: "u1", email: "hello@example.com" } : null),
+    ],
+    [
+      settings,
+      "getSettings",
+      async (id) => {
+        calls.push(["get", id]);
+        return shape;
+      },
+    ],
+    [
+      settings,
+      "saveProvider",
+      async (id, body) => {
+        calls.push(["save", id, body]);
+        return shape;
+      },
+    ],
+    [
+      settings,
+      "setActiveProvider",
+      async (id, body) => {
+        calls.push(["active", id, body]);
+        return shape;
+      },
+    ],
+    [
+      settings,
+      "removeProvider",
+      async (id, providerId) => {
+        calls.push(["remove", id, providerId]);
+        return shape;
+      },
+    ],
+    [
+      settings,
+      "saveSettings",
+      async (id, body) => {
+        calls.push(["legacySave", id, body]);
+        return shape;
+      },
+    ],
+    [
+      settings,
+      "deleteSettings",
+      async (id) => {
+        calls.push(["legacyDelete", id]);
+        return shape;
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    const listed = await send(base, "/api/settings");
+    assert.equal(listed.status, 200);
+    assert.deepEqual(await listed.json(), shape);
+
+    const created = await send(base, "/api/settings/providers", "POST", {
+      name: "Work Groq",
+      provider: "openai",
+      baseUrl: "https://openrouter.ai/api/v1",
+      model: "llama-3.3-70b",
+      apiKey: "personal-key",
+    });
+    assert.equal(created.status, 200);
+
+    const updated = await send(
+      base,
+      "/api/settings/providers/e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d",
+      "PUT",
+      { name: "Work Groq", provider: "groq", model: "openai/gpt-oss-120b" },
+    );
+    assert.equal(updated.status, 200);
+
+    const removed = await send(
+      base,
+      "/api/settings/providers/e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d",
+      "DELETE",
+    );
+    assert.equal(removed.status, 200);
+
+    const activated = await send(base, "/api/settings/active", "POST", {
+      providerId: null,
+    });
+    assert.equal(activated.status, 200);
+
+    const legacySave = await send(base, "/api/settings", "PUT", {
+      provider: "groq",
+      model: "openai/gpt-oss-120b",
+      apiKey: "personal-key",
+    });
+    assert.equal(legacySave.status, 200);
+
+    const legacyDelete = await send(base, "/api/settings", "DELETE");
+    assert.equal(legacyDelete.status, 200);
+
+    const unknown = await send(base, "/api/settings/nope");
+    assert.equal(unknown.status, 404);
+
+    signedIn = false;
+    const denied = await send(base, "/api/settings");
+    assert.equal(denied.status, 401);
+    signedIn = true;
+
+    assert.deepEqual(
+      calls.map((call) => call[0]),
+      ["get", "save", "save", "remove", "active", "legacySave", "legacyDelete"],
+    );
+    assert.equal(calls[1][1], "u1");
+    assert.deepEqual(calls[1][2], {
+      name: "Work Groq",
+      provider: "openai",
+      baseUrl: "https://openrouter.ai/api/v1",
+      model: "llama-3.3-70b",
+      apiKey: "personal-key",
+    });
+    assert.equal(
+      calls[2][2].providerId,
+      "e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d",
+    );
+    assert.deepEqual(calls[3][2], "e61f5f0a-2c3d-4a5b-8c7d-9e0f1a2b3c4d");
+    assert.deepEqual(calls[4][2], { providerId: null });
+    assert.equal(calls[5][2].provider, "groq");
+  });
+});
+
+test("settings validation errors return their own status and message", async () => {
+  const stubs = [
+    [database, "configured", true],
+    [
+      auth,
+      "currentUser",
+      async () => ({ id: "u1", email: "hello@example.com" }),
+    ],
+    [
+      settings,
+      "saveProvider",
+      async () => {
+        const error = new Error("Enter an API key for this provider.");
+        error.status = 400;
+        throw error;
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    const invalid = await send(base, "/api/settings/providers", "POST", {
+      name: "Work",
+      provider: "groq",
+      model: "openai/gpt-oss-120b",
+    });
+    assert.equal(invalid.status, 400);
+    assert.deepEqual(await invalid.json(), {
+      error: "Enter an API key for this provider.",
+    });
+
+    const notJson = await fetch(`${base}/api/settings/providers`, {
+      method: "POST",
+      body: "{}",
+    });
+    assert.equal(notJson.status, 415);
+
+    const missingOrigin = await fetch(`${base}/api/settings/active`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://evil.example",
+      },
+      body: JSON.stringify({ providerId: null }),
+    });
+    assert.equal(missingOrigin.status, 403);
+  });
+});

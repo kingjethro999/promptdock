@@ -43,6 +43,29 @@ module.exports = [
   )`,
   "ALTER TABLE user_ai_settings DROP CONSTRAINT IF EXISTS user_ai_settings_provider_check",
   "ALTER TABLE user_ai_settings ADD CONSTRAINT user_ai_settings_provider_check CHECK (provider IN ('groq', 'gemini', 'apmix'))",
+  `CREATE TABLE IF NOT EXISTS user_ai_providers (
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider_id uuid NOT NULL DEFAULT gen_random_uuid(),
+    name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+    provider text NOT NULL CHECK (provider IN ('groq', 'gemini', 'apmix', 'openai', 'anthropic')),
+    base_url text NOT NULL DEFAULT '',
+    model text NOT NULL,
+    encrypted_key text NOT NULL,
+    active boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, provider_id)
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS user_ai_providers_active_idx ON user_ai_providers (user_id) WHERE active",
+  "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS base_url text NOT NULL DEFAULT ''",
+  `INSERT INTO user_ai_providers (user_id, name, provider, base_url, model, encrypted_key, active)
+    SELECT s.user_id,
+      CASE s.provider WHEN 'groq' THEN 'Groq' WHEN 'gemini' THEN 'Gemini' ELSE 'APMIX' END,
+      s.provider, '', s.model, s.encrypted_key, true
+    FROM user_ai_settings s
+    WHERE NOT EXISTS (SELECT 1 FROM user_ai_providers p WHERE p.user_id = s.user_id)`,
+  `DELETE FROM user_ai_settings s
+    WHERE EXISTS (SELECT 1 FROM user_ai_providers p WHERE p.user_id = s.user_id)`,
   `CREATE TABLE IF NOT EXISTS prompts (
     owner_key char(64) NOT NULL,
     id uuid NOT NULL,

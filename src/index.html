@@ -886,41 +886,61 @@
               <span class="section-kicker">AI PROVIDER</span>
               <h2>Bring your own key</h2>
               <p>
-                Use your own Groq, Gemini, or APMIX key and model. The key is
-                encrypted on the server and is never returned to your browser.
+                Save as many providers as you like — Groq, Gemini, APMIX, or a
+                custom OpenAI- or Anthropic-compatible endpoint — then pick
+                which one is active. Keys stay encrypted on the server and are
+                never returned to your browser.
               </p>
               <p class="settings-state" id="byokState">
                 Checking your settings…
               </p>
+              <label class="settings-label" for="byokActive"
+                >Active provider</label
+              ><select id="byokActive">
+                <option value="__default__">PromptDock default</option>
+              </select>
+              <div class="settings-actions">
+                <button type="button" class="secondary-button" id="byokNew">
+                  Add a provider
+                </button>
+                <button type="button" class="text-button" id="removeByok">
+                  Use PromptDock default
+                </button>
+              </div>
               <form id="byokForm">
-                <label class="settings-label">Provider</label>
-                <div
-                  class="provider-choice"
-                  role="group"
-                  aria-label="AI provider"
-                >
-                  <button
-                    type="button"
-                    class="provider-option active"
-                    data-provider="groq"
-                    aria-pressed="true"
+                <label class="settings-label" for="byokName">Name</label
+                ><input
+                  id="byokName"
+                  name="name"
+                  type="text"
+                  maxlength="40"
+                  placeholder="e.g. Work Groq"
+                  required
+                /><label class="settings-label" for="byokType"
+                  >Provider type</label
+                ><select id="byokType" name="provider">
+                  <option value="groq">Groq</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="apmix">APMIX</option>
+                  <option value="openai">OpenAI-compatible endpoint</option>
+                  <option value="anthropic">
+                    Anthropic-compatible endpoint
+                  </option>
+                </select>
+                <div id="byokBaseUrlRow" class="hidden">
+                  <label class="settings-label" for="byokBaseUrl"
+                    >Base URL</label
+                  ><input
+                    id="byokBaseUrl"
+                    name="baseUrl"
+                    type="url"
+                    maxlength="200"
+                    placeholder="https://api.example.com/v1"
+                  /><small
+                    >HTTPS only, except for localhost. The
+                    <code>/chat/completions</code> or
+                    <code>/v1/messages</code> path is added for you.</small
                   >
-                    ✳ Groq</button
-                  ><button
-                    type="button"
-                    class="provider-option"
-                    data-provider="gemini"
-                    aria-pressed="false"
-                  >
-                    ✦ Gemini</button
-                  ><button
-                    type="button"
-                    class="provider-option"
-                    data-provider="apmix"
-                    aria-pressed="false"
-                  >
-                    ◈ APMIX
-                  </button>
                 </div>
                 <label class="settings-label" for="byokModel">Model ID</label
                 ><input
@@ -938,19 +958,20 @@
                   maxlength="500"
                   autocomplete="new-password"
                   placeholder="Paste your provider key"
-                /><small
+                /><small id="byokKeyHint"
                   >Leave this empty to keep your saved key when changing the
                   model.</small
                 >
                 <div class="settings-actions">
-                  <button type="submit" class="primary-button">
-                    Save provider</button
-                  ><button
+                  <button type="submit" class="primary-button" id="byokSave">
+                    Save provider
+                  </button>
+                  <button
                     type="button"
-                    class="secondary-button"
-                    id="removeByok"
+                    class="secondary-button hidden"
+                    id="byokDelete"
                   >
-                    Use PromptDock default
+                    Delete provider
                   </button>
                 </div>
               </form>

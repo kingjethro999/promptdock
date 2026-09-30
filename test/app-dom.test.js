@@ -71,7 +71,31 @@ async function waitFor(check, timeoutMs = 2000) {
   }
 }
 
-async function createWorkspace(seed = SEED) {
+function emptySettings() {
+  return {
+    available: true,
+    providers: [],
+    activeProviderId: null,
+    provider: null,
+    model: "",
+    hasKey: false,
+    updatedAt: null,
+  };
+}
+
+function activate(settings, providerId) {
+  settings.activeProviderId = providerId;
+  for (const entry of settings.providers)
+    entry.active = entry.providerId === providerId;
+  const active =
+    settings.providers.find((entry) => entry.providerId === providerId) || null;
+  settings.provider = active ? active.provider : null;
+  settings.model = active ? active.model : "";
+  settings.hasKey = Boolean(active);
+  settings.updatedAt = active ? active.updatedAt : null;
+}
+
+async function createWorkspace(seed = SEED, options = {}) {
   const dom = new JSDOM(html, {
     url: "http://localhost:3000/",
     runScripts: "outside-only",
@@ -89,24 +113,93 @@ async function createWorkspace(seed = SEED) {
     },
   });
   const calls = [];
-  window.fetch = async (url) => {
+  const requests = [];
+  const state = { settings: options.settings || emptySettings() };
+  window.fetch = async (url, init = {}) => {
     const pathname = String(url);
+    const method = (init.method || "GET").toUpperCase();
     calls.push(pathname);
+    let body = null;
+    if (init.body) {
+      try {
+        body = JSON.parse(init.body);
+      } catch {
+        body = null;
+      }
+    }
+    requests.push({ pathname, method, body });
     if (pathname.startsWith("/api/auth/me"))
-      return jsonResponse(401, { error: "Sign in first." });
+      return options.user
+        ? jsonResponse(200, { user: options.user })
+        : jsonResponse(401, { error: "Sign in first." });
     if (pathname.startsWith("/api/status"))
       return jsonResponse(200, {
-        aiAvailable: false,
-        voiceAvailable: false,
-        databaseAvailable: false,
+        aiAvailable: true,
+        voiceAvailable: true,
+        databaseAvailable: Boolean(options.user),
       });
+    if (pathname === "/api/settings") return jsonResponse(200, state.settings);
+    if (pathname === "/api/settings/active" && method === "POST") {
+      activate(state.settings, body ? body.providerId : null);
+      return jsonResponse(200, state.settings);
+    }
+    if (pathname === "/api/settings/providers" && method === "POST") {
+      const entry = {
+        providerId: randomUUID(),
+        name: body.name,
+        provider: body.provider,
+        model: body.model,
+        baseUrl: body.baseUrl || "",
+        active: true,
+        updatedAt: new Date().toISOString(),
+      };
+      state.settings.providers.push(entry);
+      activate(state.settings, entry.providerId);
+      return jsonResponse(200, state.settings);
+    }
+    if (pathname.startsWith("/api/settings/providers/") && method === "PUT") {
+      const providerId = pathname.slice("/api/settings/providers/".length);
+      const entry = state.settings.providers.find(
+        (item) => item.providerId === providerId,
+      );
+      if (!entry) return jsonResponse(404, { error: "Provider not found." });
+      entry.name = body.name;
+      entry.provider = body.provider;
+      entry.model = body.model;
+      entry.baseUrl = body.baseUrl || "";
+      entry.updatedAt = new Date().toISOString();
+      activate(state.settings, providerId);
+      return jsonResponse(200, state.settings);
+    }
+    if (
+      pathname.startsWith("/api/settings/providers/") &&
+      method === "DELETE"
+    ) {
+      const providerId = pathname.slice("/api/settings/providers/".length);
+      state.settings.providers = state.settings.providers.filter(
+        (item) => item.providerId !== providerId,
+      );
+      if (state.settings.activeProviderId === providerId)
+        activate(state.settings, null);
+      return jsonResponse(200, state.settings);
+    }
+    if (pathname.startsWith("/api/prompts/tags"))
+      return jsonResponse(200, { tags: [] });
+    if (pathname.startsWith("/api/prompts/export"))
+      return jsonResponse(200, { prompts: [] });
+    if (pathname.startsWith("/api/prompts"))
+      return jsonResponse(200, { prompts: [], total: 0 });
+    if (pathname.startsWith("/api/auth/sessions"))
+      return jsonResponse(200, { sessions: [] });
+    if (pathname.startsWith("/api/usage"))
+      return jsonResponse(200, { usage: [] });
     return jsonResponse(404, { error: "Not found." });
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
   for (const source of sources) window.eval(source);
   await waitFor(() => calls.some((pathname) => pathname === "/api/status"));
   await new Promise((resolve) => setTimeout(resolve, 25));
-  return { window, calls };
+  return { window, calls, requests, state };
 }
 
 function cardNames(window) {
@@ -307,4 +400,155 @@ test("importing a backup refuses duplicate ids and bad files", async (t) => {
     "Choose a PromptDock JSON backup with 1–10,000 prompts.",
   );
   assert.equal(JSON.parse(window.localStorage.getItem(STORAGE_KEY)).length, 5);
+});
+
+test("settings switches saved providers and custom endpoints", async (t) => {
+  const idGroq = "11111111-1111-4111-8111-111111111111";
+  const idLocal = "22222222-2222-4222-8222-222222222222";
+  const settings = {
+    available: true,
+    providers: [
+      {
+        providerId: idGroq,
+        name: "Work Groq",
+        provider: "groq",
+        model: "openai/gpt-oss-120b",
+        baseUrl: "",
+        active: true,
+        updatedAt: "2026-09-30T00:00:00Z",
+      },
+      {
+        providerId: idLocal,
+        name: "Local Ollama",
+        provider: "openai",
+        model: "llama3",
+        baseUrl: "http://localhost:11434/v1",
+        active: false,
+        updatedAt: "2026-09-29T00:00:00Z",
+      },
+    ],
+    activeProviderId: idGroq,
+    provider: "groq",
+    model: "openai/gpt-oss-120b",
+    hasKey: true,
+    updatedAt: "2026-09-30T00:00:00Z",
+  };
+  const { window, requests, state } = await createWorkspace([], {
+    user: { id: "u1", email: "hello@example.com" },
+    settings,
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  await waitFor(() =>
+    doc.getElementById("byokState").textContent.includes("Work Groq"),
+  );
+
+  doc.querySelector('.nav-item[data-view="settings"]').click();
+  const select = doc.getElementById("byokActive");
+  const nameInput = doc.getElementById("byokName");
+  const typeInput = doc.getElementById("byokType");
+  assert.deepEqual(
+    [...select.options].map((option) => option.textContent),
+    [
+      "PromptDock default",
+      "Work Groq · Groq",
+      "Local Ollama · OpenAI-compatible",
+    ],
+  );
+  assert.equal(select.value, idGroq);
+  assert.equal(nameInput.value, "Work Groq");
+  assert.equal(typeInput.value, "groq");
+  assert.equal(
+    doc.getElementById("byokBaseUrlRow").classList.contains("hidden"),
+    true,
+  );
+  assert.equal(
+    doc.getElementById("byokDelete").classList.contains("hidden"),
+    false,
+  );
+
+  typeInput.value = "anthropic";
+  typeInput.dispatchEvent(new window.Event("change", { bubbles: true }));
+  assert.equal(
+    doc.getElementById("byokBaseUrlRow").classList.contains("hidden"),
+    false,
+  );
+  assert.equal(doc.getElementById("byokBaseUrl").required, true);
+  typeInput.value = "groq";
+  typeInput.dispatchEvent(new window.Event("change", { bubbles: true }));
+  assert.equal(doc.getElementById("byokBaseUrl").required, false);
+
+  select.value = idLocal;
+  select.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() =>
+    requests.some(
+      (request) =>
+        request.pathname === "/api/settings/active" &&
+        request.body?.providerId === idLocal,
+    ),
+  );
+  await waitFor(() => nameInput.value === "Local Ollama");
+  assert.equal(select.value, idLocal);
+  assert.equal(state.settings.activeProviderId, idLocal);
+  assert.equal(
+    doc.getElementById("byokBaseUrl").value,
+    "http://localhost:11434/v1",
+  );
+  assert.ok(
+    doc.getElementById("byokState").textContent.includes("Local Ollama"),
+  );
+
+  doc.getElementById("byokNew").click();
+  assert.equal(nameInput.value, "");
+  assert.equal(
+    doc.getElementById("byokDelete").classList.contains("hidden"),
+    true,
+  );
+  nameInput.value = "OpenRouter";
+  typeInput.value = "openai";
+  typeInput.dispatchEvent(new window.Event("change", { bubbles: true }));
+  doc.getElementById("byokBaseUrl").value = "https://openrouter.ai/api/v1";
+  doc.getElementById("byokModel").value = "llama-3.3-70b-instruct";
+  doc.getElementById("byokKey").value = "personal-key";
+  doc
+    .getElementById("byokForm")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+  await waitFor(() =>
+    requests.some(
+      (request) =>
+        request.pathname === "/api/settings/providers" &&
+        request.method === "POST" &&
+        request.body?.name === "OpenRouter" &&
+        request.body?.baseUrl === "https://openrouter.ai/api/v1" &&
+        request.body?.apiKey === "personal-key",
+    ),
+  );
+  await waitFor(() => state.settings.providers.length === 3);
+  await waitFor(() => select.value === state.settings.activeProviderId);
+  assert.equal(
+    state.settings.activeProviderId,
+    state.settings.providers[2].providerId,
+  );
+  assert.equal(select.value, state.settings.providers[2].providerId);
+  assert.ok(
+    doc
+      .getElementById("byokFeedback")
+      .textContent.includes("added and activated"),
+  );
+
+  doc.getElementById("removeByok").click();
+  await waitFor(() => state.settings.activeProviderId === null);
+  await waitFor(() => select.value === "__default__");
+  assert.equal(state.settings.providers.length, 3);
+  assert.equal(nameInput.value, "");
+  assert.equal(
+    doc.getElementById("byokDelete").classList.contains("hidden"),
+    true,
+  );
+  assert.equal(
+    doc.getElementById("byokKeyHint").classList.contains("hidden"),
+    false,
+  );
 });

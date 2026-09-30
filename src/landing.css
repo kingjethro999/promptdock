@@ -754,24 +754,32 @@
   margin-top: 8px;
   line-height: 1.6;
 }
-.provider-choice {
-  display: flex;
-  gap: 8px;
-}
-.provider-option {
-  flex: 1;
-  min-height: 42px;
-  background: #f8faf5;
+.settings-card select {
+  width: 100%;
+  height: 44px;
   border: 1px solid #dce7da;
-  border-radius: 9px;
-  color: #5a755d;
+  border-radius: 8px;
+  background: #fafcf8;
+  padding: 0 12px;
   font-size: 12px;
+  color: #29402f;
+  font-family: inherit;
+}
+.settings-card select:focus {
+  outline: 3px solid #d5f0be;
+  border-color: #8ac077;
+}
+.settings-card select:disabled,
+.settings-card input:disabled {
+  opacity: 0.6;
+}
+#byokActive {
   font-weight: 800;
 }
-.provider-option.active {
-  background: #e5f5d5;
-  border-color: #93c16c;
-  color: #376b38;
+.settings-card small code {
+  font-family: inherit;
+  font-weight: 700;
+  color: #4f7050;
 }
 .settings-state {
   background: #f1f8e9;

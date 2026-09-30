@@ -42,8 +42,14 @@ function configuredProviders(env = process.env) {
     apmix: Boolean(env.APMIX_API_KEY && env.APMIX_BASE_URL && env.APMIX_MODEL),
     groq: Boolean(env.GROQ_API_KEY && env.GROQ_MODEL),
     gemini: Boolean(env.GEMINI_API_KEY),
+    openai: Boolean(
+      env.OPENAI_API_KEY && env.OPENAI_BASE_URL && env.OPENAI_MODEL,
+    ),
+    anthropic: Boolean(
+      env.ANTHROPIC_API_KEY && env.ANTHROPIC_BASE_URL && env.ANTHROPIC_MODEL,
+    ),
   };
-  const order = (env.AI_PROVIDER_ORDER || "apmix,groq,gemini")
+  const order = (env.AI_PROVIDER_ORDER || "apmix,groq,gemini,openai,anthropic")
     .split(",")
     .map((name) => name.trim().toLowerCase());
   return [...new Set(order)].filter((name) => available[name]);
@@ -142,7 +148,57 @@ function parseIdeaSuggestion(content, idea) {
   return { idea, data, interpretation };
 }
 
+function assertProviderUrl(endpoint) {
+  const url = new URL(endpoint);
+  const hostname = url.hostname.replace(/^\[|\]$/g, "");
+  const loopback =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname.endsWith(".localhost");
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
+    throw new Error("Provider URL must use HTTPS");
+}
+
+function anthropicRequest(messages, env, options = {}) {
+  const root = (env.ANTHROPIC_BASE_URL || "https://api.anthropic.com")
+    .replace(/\/+$/, "")
+    .replace(/\/v1\/messages$/, "")
+    .replace(/\/v1$/, "");
+  const endpoint = `${root}/v1/messages`;
+  assertProviderUrl(endpoint);
+  const system = messages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content)
+    .join("\n");
+  const rest = messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: message.content,
+    }));
+  return {
+    url: endpoint,
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: {
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: options.maxTokens || 2600,
+      ...(system ? { system } : {}),
+      messages: rest,
+    },
+    extract: (json) =>
+      Array.isArray(json.content)
+        ? json.content.map((block) => block.text || "").join("")
+        : "",
+  };
+}
+
 function providerRequest(provider, messages, env, options = {}) {
+  if (provider === "anthropic") return anthropicRequest(messages, env, options);
   if (provider === "gemini") {
     const model = env.GEMINI_MODEL || "gemini-2.5-flash";
     const body = {
@@ -164,23 +220,34 @@ function providerRequest(provider, messages, env, options = {}) {
           .join(""),
     };
   }
-  const base =
-    provider === "apmix"
+  const openai = provider === "openai";
+  const base = openai
+    ? env.OPENAI_BASE_URL
+    : provider === "apmix"
       ? env.APMIX_BASE_URL
       : "https://api.groq.com/openai/v1";
   const endpoint =
     base.replace(/\/+$/, "").replace(/\/chat\/completions$/, "") +
     "/chat/completions";
-  if (new URL(endpoint).protocol !== "https:")
-    throw new Error("Provider URL must use HTTPS");
+  assertProviderUrl(endpoint);
+  const apiKey = openai
+    ? env.OPENAI_API_KEY
+    : provider === "apmix"
+      ? env.APMIX_API_KEY
+      : env.GROQ_API_KEY;
+  const model = openai
+    ? env.OPENAI_MODEL
+    : provider === "apmix"
+      ? env.APMIX_MODEL
+      : env.GROQ_MODEL;
   return {
     url: endpoint,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${provider === "apmix" ? env.APMIX_API_KEY : env.GROQ_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: {
-      model: provider === "apmix" ? env.APMIX_MODEL : env.GROQ_MODEL,
+      model,
       messages,
       max_tokens: options.maxTokens || 2600,
     },

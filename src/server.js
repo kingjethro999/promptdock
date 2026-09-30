@@ -436,12 +436,22 @@ async function handleRequest(request, response) {
     }
     return;
   }
-  if (
-    pathname === "/api/settings" &&
-    ["GET", "PUT", "DELETE"].includes(request.method)
-  ) {
-    if (request.method !== "GET" && !validOrigin(request)) {
+  if (pathname === "/api/settings" || pathname.startsWith("/api/settings/")) {
+    const method = request.method;
+    if (!["GET", "POST", "PUT", "DELETE"].includes(method)) {
+      json(response, 405, { error: "Method not allowed." });
+      return;
+    }
+    if (method !== "GET" && !validOrigin(request)) {
       json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    const wantsBody = method === "POST" || method === "PUT";
+    if (
+      wantsBody &&
+      !request.headers["content-type"]?.startsWith("application/json")
+    ) {
+      json(response, 415, { error: "Use JSON." });
       return;
     }
     try {
@@ -450,27 +460,49 @@ async function handleRequest(request, response) {
         json(response, 401, { error: "Sign in first." });
         return;
       }
-      if (request.method === "GET")
-        json(response, 200, await settings.getSettings(user.id));
-      else if (request.method === "DELETE")
-        json(response, 200, await settings.deleteSettings(user.id));
-      else {
-        if (!request.headers["content-type"]?.startsWith("application/json")) {
-          json(response, 415, { error: "Use JSON." });
-          return;
-        }
+      const body = wantsBody ? await readBody(request) : null;
+      if (pathname === "/api/settings") {
+        if (method === "GET")
+          json(response, 200, await settings.getSettings(user.id));
+        else if (method === "PUT")
+          json(response, 200, await settings.saveSettings(user.id, body));
+        else if (method === "DELETE")
+          json(response, 200, await settings.deleteSettings(user.id));
+        else json(response, 405, { error: "Method not allowed." });
+        return;
+      }
+      if (pathname === "/api/settings/providers" && method === "POST") {
+        json(response, 200, await settings.saveProvider(user.id, body));
+        return;
+      }
+      if (pathname === "/api/settings/active" && method === "POST") {
+        json(response, 200, await settings.setActiveProvider(user.id, body));
+        return;
+      }
+      const providerId = pathname.startsWith("/api/settings/providers/")
+        ? pathname.slice("/api/settings/providers/".length)
+        : null;
+      if (providerId && method === "PUT") {
         json(
           response,
           200,
-          await settings.saveSettings(user.id, await readBody(request)),
+          await settings.saveProvider(user.id, { ...body, providerId }),
         );
+        return;
       }
+      if (providerId && method === "DELETE") {
+        json(response, 200, await settings.removeProvider(user.id, providerId));
+        return;
+      }
+      json(response, 404, { error: "Not found." });
     } catch (error) {
-      const validation = /^(Choose Groq|Enter a valid|Enter an API key)/.test(
-        error.message,
-      );
-      json(response, validation ? 400 : 503, {
-        error: validation ? error.message : "Settings are unavailable.",
+      const status =
+        error.status ||
+        (/^(Invalid JSON|Request is too large)\./.test(error.message)
+          ? 400
+          : 0);
+      json(response, status || 503, {
+        error: status ? error.message : "Settings are unavailable.",
       });
     }
     return;

@@ -370,3 +370,139 @@ test("a Gemini test run asks for plain text instead of JSON", async () => {
   assert.equal(body.generationConfig, undefined);
   assert.equal(result.text, "Answer");
 });
+
+test("configured providers include custom OpenAI and Anthropic endpoints", () => {
+  assert.deepEqual(
+    configuredProviders({
+      AI_PROVIDER_ORDER: "anthropic,openai,groq",
+      ANTHROPIC_API_KEY: "a",
+      ANTHROPIC_BASE_URL: "https://api.anthropic.com",
+      ANTHROPIC_MODEL: "claude-sonnet-4-5",
+      OPENAI_API_KEY: "b",
+      OPENAI_BASE_URL: "https://openrouter.ai/api/v1",
+      OPENAI_MODEL: "llama-3.3-70b",
+      GROQ_API_KEY: "g",
+      GROQ_MODEL: "gm",
+    }),
+    ["anthropic", "openai", "groq"],
+  );
+  assert.deepEqual(
+    configuredProviders({ OPENAI_API_KEY: "b", GROQ_API_KEY: "g" }),
+    [],
+  );
+});
+
+test("Anthropic-compatible endpoints use the Messages API", async () => {
+  let request;
+  const fakeFetch = async (url, options) => {
+    request = {
+      url,
+      headers: options.headers,
+      body: JSON.parse(options.body),
+    };
+    return {
+      ok: true,
+      json: async () => ({
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              data: { task: "Write a note", focus: "Clarity first" },
+            }),
+          },
+        ],
+      }),
+    };
+  };
+  const result = await ideaToPrompt(
+    { idea: "Write a short note" },
+    {
+      AI_PROVIDER_ORDER: "anthropic",
+      ANTHROPIC_API_KEY: "personal-key",
+      ANTHROPIC_MODEL: "claude-sonnet-4-5",
+      ANTHROPIC_BASE_URL: "https://api.anthropic.com",
+    },
+    fakeFetch,
+  );
+  assert.equal(request.url, "https://api.anthropic.com/v1/messages");
+  assert.equal(request.headers["x-api-key"], "personal-key");
+  assert.equal(request.headers["anthropic-version"], "2023-06-01");
+  assert.equal(request.body.model, "claude-sonnet-4-5");
+  assert.ok(request.body.system.includes("prompt architect"));
+  assert.deepEqual(
+    request.body.messages.map((message) => message.role),
+    ["user"],
+  );
+  assert.equal(result.data.task, "Write a note");
+});
+
+test("custom OpenAI-compatible endpoints post to their own base URL", async () => {
+  let request;
+  const fakeFetch = async (url, options) => {
+    request = {
+      url,
+      headers: options.headers,
+      body: JSON.parse(options.body),
+    };
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: "Three colours: red, green, blue." } }],
+      }),
+    };
+  };
+  const result = await runPrompt(
+    { prompt: "Task: list three colours" },
+    {
+      AI_PROVIDER_ORDER: "openai",
+      OPENAI_API_KEY: "personal-key",
+      OPENAI_MODEL: "llama-3.3-70b-instruct",
+      OPENAI_BASE_URL: "https://openrouter.ai/api/v1/chat/completions",
+    },
+    fakeFetch,
+  );
+  assert.equal(request.url, "https://openrouter.ai/api/v1/chat/completions");
+  assert.equal(request.headers.Authorization, "Bearer personal-key");
+  assert.equal(request.body.model, "llama-3.3-70b-instruct");
+  assert.equal(request.body.max_tokens, 4000);
+  assert.equal(result.text, "Three colours: red, green, blue.");
+});
+
+test("local endpoints may use HTTP while remote endpoints must use HTTPS", async () => {
+  let request;
+  const fakeFetch = async (url, options) => {
+    request = { url, body: JSON.parse(options.body) };
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: "local result" } }],
+      }),
+    };
+  };
+  const result = await runPrompt(
+    { prompt: "Task: hello" },
+    {
+      AI_PROVIDER_ORDER: "openai",
+      OPENAI_API_KEY: "local-key",
+      OPENAI_MODEL: "llama3",
+      OPENAI_BASE_URL: "http://localhost:11434/v1",
+    },
+    fakeFetch,
+  );
+  assert.equal(request.url, "http://localhost:11434/v1/chat/completions");
+  assert.equal(result.text, "local result");
+
+  await assert.rejects(
+    runPrompt(
+      { prompt: "Task: hello" },
+      {
+        AI_PROVIDER_ORDER: "openai",
+        OPENAI_API_KEY: "local-key",
+        OPENAI_MODEL: "llama3",
+        OPENAI_BASE_URL: "http://api.example.com/v1",
+      },
+      fakeFetch,
+    ),
+    /could not be run/i,
+  );
+});
