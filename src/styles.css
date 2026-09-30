@@ -930,6 +930,18 @@ p {
 .sort-control select:focus {
   border-color: #b9c8ba;
 }
+.sort-control .search-select {
+  width: 160px;
+}
+.sort-control .search-select-trigger {
+  height: 32px;
+  padding: 0 9px;
+  background: #fff;
+  font-size: 11px;
+}
+.sort-control .search-select-panel {
+  min-width: 160px;
+}
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));

@@ -196,6 +196,7 @@ function readJSON(key, fallback) {
 }
 function attachSearchableSelect(select, options = {}) {
   if (select.searchSelect) return select.searchSelect;
+  const searchable = options.searchable !== false;
   const wrap = document.createElement("div");
   wrap.className = "search-select";
   const trigger = document.createElement("button");
@@ -221,6 +222,7 @@ function attachSearchableSelect(select, options = {}) {
   input.setAttribute("role", "combobox");
   input.setAttribute("aria-autocomplete", "list");
   input.setAttribute("aria-expanded", "false");
+  if (!searchable) input.classList.add("hidden");
   const list = document.createElement("ul");
   list.className = "search-select-list";
   list.setAttribute("role", "listbox");
@@ -234,6 +236,7 @@ function attachSearchableSelect(select, options = {}) {
   wrap.append(trigger, panel);
   select.insertAdjacentElement("afterend", wrap);
   select.classList.add("search-select-native");
+  select.hidden = true;
   select.tabIndex = -1;
   select.setAttribute("aria-hidden", "true");
   for (const label of select.labels || []) label.htmlFor = trigger.id;
@@ -241,6 +244,18 @@ function attachSearchableSelect(select, options = {}) {
   let isOpen = false;
   let activeIndex = -1;
   let visible = [];
+
+  function markActive() {
+    [...list.children].forEach((item, index) => {
+      item.classList.toggle("is-active", index === activeIndex);
+    });
+    if (searchable && activeIndex >= 0 && visible[activeIndex])
+      input.setAttribute(
+        "aria-activedescendant",
+        `${select.id}-option-${activeIndex}`,
+      );
+    else input.removeAttribute("aria-activedescendant");
+  }
 
   function draw() {
     const needle = input.value.trim().toLowerCase();
@@ -255,27 +270,22 @@ function attachSearchableSelect(select, options = {}) {
         item.className = "search-select-option";
         item.setAttribute("role", "option");
         item.id = `${select.id}-option-${index}`;
+        item.tabIndex = -1;
         item.textContent = option.textContent.trim();
         if (option.selected) item.setAttribute("aria-selected", "true");
         item.classList.toggle("is-selected", Boolean(option.selected));
-        item.classList.toggle("is-active", index === activeIndex);
         item.addEventListener("click", () => choose(option));
         item.addEventListener("mousemove", () => setActive(index));
         return item;
       }),
     );
     empty.classList.toggle("hidden", visible.length > 0);
-    if (activeIndex >= 0 && visible[activeIndex])
-      input.setAttribute(
-        "aria-activedescendant",
-        `${select.id}-option-${activeIndex}`,
-      );
-    else input.removeAttribute("aria-activedescendant");
+    markActive();
   }
 
   function setActive(index) {
     activeIndex = index;
-    draw();
+    markActive();
   }
 
   function sync() {
@@ -298,7 +308,8 @@ function attachSearchableSelect(select, options = {}) {
     const selected = visible.findIndex((option) => option.selected);
     activeIndex = selected < 0 ? (visible.length ? 0 : -1) : selected;
     draw();
-    input.focus();
+    if (searchable) input.focus();
+    else list.children[activeIndex]?.focus();
   }
 
   function close() {
@@ -329,9 +340,13 @@ function attachSearchableSelect(select, options = {}) {
     activeIndex = -1;
     draw();
   });
-  input.addEventListener("keydown", (event) => {
+  panel.addEventListener("keydown", (event) => {
     if (event.key === "Escape" || event.key === "Tab") {
       close();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        trigger.focus();
+      }
       return;
     }
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -341,9 +356,10 @@ function attachSearchableSelect(select, options = {}) {
       const next = activeIndex < 0 ? 0 : activeIndex + step;
       setActive(Math.min(visible.length - 1, Math.max(0, next)));
       list.children[activeIndex]?.scrollIntoView?.({ block: "nearest" });
+      if (!searchable) list.children[activeIndex]?.focus();
       return;
     }
-    if (event.key === "Enter") {
+    if (event.key === "Enter" || (!searchable && event.key === " ")) {
       event.preventDefault();
       if (visible[activeIndex]) choose(visible[activeIndex]);
     }
@@ -369,8 +385,12 @@ function syncSearchable(select) {
 
 function initSearchableSelects() {
   document
-    .querySelectorAll("select[data-searchable]")
-    .forEach((select) => attachSearchableSelect(select));
+    .querySelectorAll("select[data-searchable], select[data-custom-select]")
+    .forEach((select) =>
+      attachSearchableSelect(select, {
+        searchable: select.hasAttribute("data-searchable"),
+      }),
+    );
 }
 
 function dataFromForm() {

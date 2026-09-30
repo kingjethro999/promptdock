@@ -882,13 +882,17 @@
               id="tagChips"
               aria-label="Filter by tag"
             ></div>
-            <label class="sort-control"
-              ><span>Sort</span
-              ><select id="librarySort" aria-label="Sort saved prompts">
+            <div class="sort-control">
+              <label for="librarySort">Sort</label
+              ><select
+                id="librarySort"
+                aria-label="Sort saved prompts"
+                data-custom-select
+              >
                 <option value="updated">Recently updated</option>
                 <option value="name">Name A–Z</option>
-              </select></label
-            >
+              </select>
+            </div>
           </div>
           <div class="library-backup">
             <button class="text-button" type="button" id="backupExport">

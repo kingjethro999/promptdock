@@ -684,6 +684,7 @@ test("long dropdowns open a searchable list that drives the select", async (t) =
   const select = doc.getElementById("byokActive");
   const wrap = select.nextElementSibling;
   assert.ok(wrap.classList.contains("search-select"));
+  assert.equal(select.hidden, true);
   const trigger = wrap.querySelector(".search-select-trigger");
   const label = wrap.querySelector(".search-select-value");
   const input = wrap.querySelector(".search-select-input");
@@ -738,6 +739,54 @@ test("long dropdowns open a searchable list that drives the select", async (t) =
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
   assert.equal(wrap.querySelectorAll(".search-select-option").length, 0);
   assert.equal(empty.classList.contains("hidden"), false);
+});
+
+test("every workspace select has one visible custom control", async (t) => {
+  const { window } = await createWorkspace(SEED);
+  t.after(() => window.close());
+  const doc = window.document;
+  const selects = [...doc.querySelectorAll("select")];
+  assert.deepEqual(selects.map((select) => select.id).sort(), [
+    "byokActive",
+    "byokType",
+    "librarySort",
+  ]);
+  for (const select of selects) {
+    assert.equal(select.hidden, true, `${select.id} native control is hidden`);
+    assert.equal(select.tabIndex, -1);
+    assert.equal(
+      select.nextElementSibling.classList.contains("search-select"),
+      true,
+    );
+  }
+
+  doc.querySelector('.nav-item[data-view="library"]').click();
+  const sort = doc.getElementById("librarySort");
+  const wrap = sort.nextElementSibling;
+  const trigger = wrap.querySelector(".search-select-trigger");
+  trigger.click();
+  assert.equal(
+    wrap.querySelector(".search-select-input").classList.contains("hidden"),
+    true,
+  );
+  const nameOption = [...wrap.querySelectorAll(".search-select-option")].find(
+    (option) => option.textContent === "Name A–Z",
+  );
+  nameOption.dispatchEvent(
+    new window.MouseEvent("mousemove", { bubbles: true }),
+  );
+  assert.equal(
+    nameOption.isConnected,
+    true,
+    "hover does not replace the clicked option",
+  );
+  nameOption.click();
+  assert.equal(sort.value, "name");
+  assert.deepEqual(cardNames(window), [
+    "Blog outline",
+    "Launch email",
+    "Support reply",
+  ]);
 });
 
 test("pasting a prompt gives the library a named, tagged entry", async (t) => {
