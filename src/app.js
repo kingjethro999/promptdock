@@ -2096,15 +2096,20 @@ function switchView(view) {
     .forEach((item) =>
       item.classList.toggle("active", item.dataset.view === view),
     );
-  $("sidebar").classList.remove("open");
-  $("menuButton").setAttribute("aria-expanded", "false");
-  $("sidebarOverlay").classList.remove("visible");
+  setSidebarOpen(false);
   if (view === "library") {
     renderLibrary();
     refreshTagChips();
   }
   if (view === "settings") loadSettings();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setSidebarOpen(open) {
+  $("sidebar").classList.toggle("open", open);
+  $("sidebarOverlay").classList.toggle("visible", open);
+  $("menuButton").setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("nav-open", open);
 }
 
 function downloadPrompt() {
@@ -2668,15 +2673,13 @@ $("passwordForm").addEventListener("submit", async (event) => {
 $("helpButton").addEventListener("click", () => $("helpDialog").showModal());
 $("closeHelp").addEventListener("click", () => $("helpDialog").close());
 $("gotItButton").addEventListener("click", () => $("helpDialog").close());
-$("menuButton").addEventListener("click", () => {
-  const open = $("sidebar").classList.toggle("open");
-  $("sidebarOverlay").classList.toggle("visible", open);
-  $("menuButton").setAttribute("aria-expanded", String(open));
-});
-$("sidebarOverlay").addEventListener("click", () => {
-  $("sidebar").classList.remove("open");
-  $("sidebarOverlay").classList.remove("visible");
-  $("menuButton").setAttribute("aria-expanded", "false");
+$("menuButton").addEventListener("click", () =>
+  setSidebarOpen(!$("sidebar").classList.contains("open")),
+);
+$("sidebarOverlay").addEventListener("click", () => setSidebarOpen(false));
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 760 && $("sidebar").classList.contains("open"))
+    setSidebarOpen(false);
 });
 window.addEventListener("pagehide", () => {
   voiceRequestId++;

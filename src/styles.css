@@ -48,12 +48,24 @@ p {
   position: sticky;
   top: 0;
   height: 100vh;
+  /* dvh keeps the whole sidebar, version line included, reachable while the
+     mobile browser chrome shrinks the visible viewport. */
+  height: 100dvh;
   background: #172923;
   color: #e5f1e5;
   padding: 29px 16px 18px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #263d33;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #58745d #172923;
+}
+/* Flex children of a scroll container may shrink to nothing, which used to
+   clip the bottom of the sidebar instead of scrolling to it. */
+.sidebar > * {
+  flex: none;
 }
 .brand {
   display: flex;
@@ -778,6 +790,8 @@ p {
 }
 .library-intro {
   margin-bottom: 34px;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 .new-prompt-button {
   padding: 0 18px;
@@ -1090,14 +1104,20 @@ p {
   }
   .sidebar {
     position: fixed;
+    top: 0;
+    left: 0;
     z-index: 20;
     width: 250px;
     transform: translateX(-100%);
     transition: transform 0.25s;
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.1);
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
   .sidebar.open {
     transform: translateX(0);
+  }
+  body.nav-open {
+    overflow: hidden;
   }
   .mobile-menu {
     display: block;
@@ -1194,12 +1214,6 @@ p {
   }
 }
 
-.sidebar {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #45644f #172923;
-}
 .sidebar-version {
   padding: 10px 13px 0;
   color: #728f79;
@@ -1728,13 +1742,6 @@ p {
   .account-trigger {
     max-width: 125px;
   }
-}
-/* Keep navigation reachable on short screens and when templates grow. */
-.sidebar {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #58745d #172923;
 }
 .prompt-tags {
   display: flex;
