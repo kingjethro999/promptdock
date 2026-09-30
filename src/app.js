@@ -125,6 +125,7 @@ const elements = Object.fromEntries(
 );
 const $ = (id) => document.getElementById(id);
 let currentId = null;
+let currentRawPrompt = false;
 let toastTimer;
 let aiAvailable = false;
 let aiBusy = false;
@@ -353,9 +354,17 @@ function initSearchableSelects() {
 }
 
 function dataFromForm() {
-  return Object.fromEntries(
+  const data = Object.fromEntries(
     fields.map((field) => [field, elements[field].value.trim()]),
   );
+  if (
+    currentRawPrompt &&
+    fields.every((field) => field === "task" || !data[field])
+  ) {
+    data.task = elements.task.value;
+    data.raw = true;
+  }
+  return data;
 }
 function suggestedPromptName() {
   const source = $("ideaInput").value.trim() || elements.task.value.trim();
@@ -376,6 +385,7 @@ function suggestedPromptName() {
   );
 }
 function setForm(data) {
+  currentRawPrompt = data.raw === true;
   fields.forEach((field) => {
     elements[field].value = data[field] || "";
   });
@@ -1835,6 +1845,7 @@ async function createPastedPrompt({ name, text, tags }) {
     data: Object.fromEntries([
       ...fields.map((field) => [field, ""]),
       ["task", text],
+      ["raw", true],
     ]),
     idea: "",
     analysis: null,
@@ -1873,13 +1884,13 @@ async function savePastedPrompt() {
   const error = $("pasteError");
   error.textContent = "";
   const name = $("pasteName").value.trim();
-  const text = $("pasteText").value.trim();
+  const text = $("pasteText").value;
   const tags = parseTagList($("pasteTags").value);
   if (!name) {
     error.textContent = "Give your prompt a title.";
     return;
   }
-  if (!text) {
+  if (!text.trim()) {
     error.textContent = "Paste the prompt you want to keep.";
     return;
   }

@@ -1,5 +1,20 @@
 window.PromptDockBuildPrompt = function buildPrompt(data) {
   if (!data?.task) return "";
+  if (
+    data.raw === true &&
+    ![
+      "role",
+      "context",
+      "audience",
+      "approach",
+      "format",
+      "tone",
+      "focus",
+      "depth",
+      "constraints",
+    ].some((field) => data[field])
+  )
+    return data.task;
   const parts = [];
   if (data.role) parts.push(`Act as ${data.role.replace(/[.\s]+$/, "")}.`);
   parts.push(`Task: ${data.task}`);

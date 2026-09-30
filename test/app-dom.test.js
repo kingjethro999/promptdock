@@ -685,8 +685,25 @@ test("pasting a prompt gives the library a named, tagged entry", async (t) => {
   const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
   assert.equal(saved[0].name, "Trading bot prompt");
   assert.equal(saved[0].data.task, "You are a trading bot.\nBe careful.");
+  assert.equal(saved[0].data.raw, true);
+  assert.equal(
+    window.PromptDockBuildPrompt(saved[0].data),
+    "You are a trading bot.\nBe careful.",
+  );
   assert.deepEqual(saved[0].tags, ["trading", "bots"]);
   assert.equal(window.document.getElementById("libraryCount").textContent, "1");
+  doc.querySelector(".library-card-footer button").click();
+  assert.equal(
+    doc.getElementById("promptOutput").textContent,
+    "You are a trading bot.\nBe careful.",
+  );
+  const role = doc.getElementById("role");
+  role.value = "a trading coach";
+  role.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.match(
+    doc.getElementById("promptOutput").textContent,
+    /Act as a trading coach\.\n\nTask: You are a trading bot\./,
+  );
 });
 
 test("long builder dropdowns filter as you type", async (t) => {
