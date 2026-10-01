@@ -14,6 +14,7 @@ const policies = Object.freeze({
   "/api/auth/reset": { capacity: 10, periodSeconds: 900 },
   "/api/auth/delete-account": { capacity: 5, periodSeconds: 900 },
   "/api/usage": { capacity: 120, periodSeconds: 3600 },
+  "/api/feedback": { capacity: 5, periodSeconds: 3600 },
 });
 const localBuckets = new Map();
 const bucketTtlSeconds =

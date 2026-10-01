@@ -14,6 +14,8 @@ If PromptDock helps your work, [support the project on GitHub Sponsors](https://
 
 The UI and API deploy together as **one Vercel project**. The browser calls `/api/*` on the same site; no separate backend URL or CORS setting is needed. API keys and `DATABASE_URL` belong in Vercel's server-side environment variables, never in the browser build.
 
+Guests and signed-in users can choose **Send feedback** on the landing page or **Report an issue or idea** in the workspace sidebar. Reports are saved in PostgreSQL's `feedback_reports` table with a type, message, optional reply email, and account ID when signed in. The API accepts up to five reports per hour per account or guest IP. To review submissions, run `SELECT kind, message, contact_email, created_at FROM feedback_reports ORDER BY created_at DESC;` in your database console. Do not put private details or provider keys in a report.
+
 ## Run locally
 
 Requires Node.js 20.19+ — that is the floor in `package.json` `engines`, and the lowest release ESLint accepts. The test suite adds one more constraint: the jsdom DOM tests need Node 22.22+ or 24.15+, and GitHub Actions runs Node 24. Copy `.env.example` to `.env` and set a provider key for AI features. The manual builder works without one.

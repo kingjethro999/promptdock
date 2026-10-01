@@ -6,7 +6,39 @@ const {
   importPrompts,
   listPrompts,
   normalizeImportedTimestamp,
+  validateFeedback,
 } = require("../src/database");
+
+test("feedback accepts a trimmed report and optional reply email", () => {
+  assert.deepEqual(
+    validateFeedback({
+      kind: "bug",
+      message: "  Button stuck  ",
+      contactEmail: " a@b.co ",
+    }),
+    { kind: "bug", message: "Button stuck", contactEmail: "a@b.co" },
+  );
+  assert.equal(
+    validateFeedback({ kind: "idea", message: "Nice idea" }).contactEmail,
+    null,
+  );
+  assert.throws(
+    () => validateFeedback({ kind: "bad", message: "x" }),
+    /feedback type/,
+  );
+  assert.throws(
+    () => validateFeedback({ kind: "bug", message: "  " }),
+    /report between/,
+  );
+  assert.throws(
+    () => validateFeedback({ kind: "bug", message: "x".repeat(10001) }),
+    /report between/,
+  );
+  assert.throws(
+    () => validateFeedback({ kind: "bug", message: "x", contactEmail: "bad" }),
+    /valid email/,
+  );
+});
 
 test("Render external database URLs verify TLS without changing local URLs", () => {
   const external = normalizeDatabaseUrl(

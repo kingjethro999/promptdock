@@ -202,6 +202,8 @@ async function createWorkspace(seed = SEED, options = {}) {
       return jsonResponse(200, { sessions: [] });
     if (pathname.startsWith("/api/usage"))
       return jsonResponse(200, { usage: [] });
+    if (pathname === "/api/feedback" && method === "POST")
+      return jsonResponse(201, { ok: true, id: randomUUID() });
     return jsonResponse(404, { error: "Not found." });
   };
   const dialogProto = window.HTMLDialogElement.prototype;
@@ -962,4 +964,30 @@ test("creating an account asks for a username and sends it", async (t) => {
     signedIn.window.document.getElementById("settingsUsername").value,
     "KingJethro",
   );
+});
+
+test("guest feedback opens from the landing page and shows a saved confirmation", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  doc.querySelector(".landing-footer [data-open-feedback]").click();
+  assert.equal(doc.getElementById("feedbackDialog").open, true);
+  doc.getElementById("feedbackMessage").value =
+    "The save button is hard to find";
+  doc.getElementById("feedbackEmail").value = "visitor@example.com";
+  doc
+    .getElementById("feedbackForm")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+  await waitFor(() =>
+    doc.getElementById("feedbackResponse").textContent.includes("received"),
+  );
+  const report = requests.find((item) => item.pathname === "/api/feedback");
+  assert.equal(report.method, "POST");
+  assert.deepEqual(report.body, {
+    kind: "bug",
+    message: "The save button is hard to find",
+    contactEmail: "visitor@example.com",
+  });
 });

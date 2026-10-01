@@ -37,6 +37,84 @@ function send(base, path, method = "GET", body, origin) {
   });
 }
 
+test("feedback accepts guest and account reports, then enforces the limit", async () => {
+  const saved = [];
+  let user = null;
+  let allowed = true;
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => user],
+    [
+      rateLimit,
+      "consume",
+      async (_request, route, options) => {
+        assert.equal(route, "/api/feedback");
+        assert.equal(options.subject, user ? `user:${user.id}` : undefined);
+        return { allowed, retryAfter: 90 };
+      },
+    ],
+    [
+      database,
+      "createFeedback",
+      async (body, userId) => {
+        saved.push([body, userId]);
+        return "report-id";
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    const guest = await send(base, "/api/feedback", "POST", {
+      kind: "bug",
+      message: "Button does nothing",
+      contactEmail: "guest@example.com",
+    });
+    assert.equal(guest.status, 201);
+    assert.deepEqual(await guest.json(), { ok: true, id: "report-id" });
+    user = { id: "user-id", email: "person@example.com" };
+    const account = await send(base, "/api/feedback", "POST", {
+      kind: "idea",
+      message: "Add a shortcut",
+    });
+    assert.equal(account.status, 201);
+    assert.equal(
+      (
+        await send(base, "/api/feedback", "POST", {
+          kind: "idea",
+          message: " ",
+        })
+      ).status,
+      400,
+    );
+    allowed = false;
+    const limited = await send(base, "/api/feedback", "POST", {
+      kind: "other",
+      message: "Another note",
+    });
+    assert.equal(limited.status, 429);
+    assert.equal(limited.headers.get("retry-after"), "90");
+    assert.equal((await send(base, "/api/feedback", "GET")).status, 405);
+    assert.equal(
+      (
+        await send(
+          base,
+          "/api/feedback",
+          "POST",
+          {
+            kind: "bug",
+            message: "hello",
+          },
+          "https://other.example",
+        )
+      ).status,
+      403,
+    );
+  });
+  assert.deepEqual(
+    saved.map((entry) => entry[1]),
+    [null, "user-id"],
+  );
+});
+
 test("account routes dispatch registration, login, verification, and reset with safe cookies", async () => {
   const calls = [];
   const stubs = [

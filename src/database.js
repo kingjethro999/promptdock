@@ -452,6 +452,37 @@ async function forkPublicPrompt(key, publicId) {
   return result.rows[0] || null;
 }
 
+function validateFeedback(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Enter a report before sending.");
+  const kind = input.kind;
+  const message = typeof input.message === "string" ? input.message.trim() : "";
+  const contactEmail =
+    typeof input.contactEmail === "string" ? input.contactEmail.trim() : "";
+  if (!["bug", "idea", "other"].includes(kind))
+    throw new Error("Choose a feedback type.");
+  if (!message || message.length > 10000)
+    throw new Error("Write a report between 1 and 10,000 characters.");
+  if (
+    contactEmail &&
+    (contactEmail.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail))
+  )
+    throw new Error("Enter a valid email address or leave it blank.");
+  return { kind, message, contactEmail: contactEmail || null };
+}
+
+async function createFeedback(input, userId = null) {
+  const { kind, message, contactEmail } = validateFeedback(input);
+  await ensureSchema();
+  const result = await pool.query(
+    `INSERT INTO feedback_reports (user_id, kind, message, contact_email)
+    VALUES ($1, $2, $3, $4) RETURNING id`,
+    [userId, kind, message, contactEmail],
+  );
+  return result.rows[0].id;
+}
+
 module.exports = {
   configured,
   pool,
@@ -475,4 +506,6 @@ module.exports = {
   setOwnerUsername,
   getPublicPrompt,
   forkPublicPrompt,
+  validateFeedback,
+  createFeedback,
 };

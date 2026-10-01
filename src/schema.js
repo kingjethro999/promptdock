@@ -101,6 +101,15 @@ module.exports = [
     FOREIGN KEY (owner_key, prompt_id) REFERENCES prompts(owner_key, id) ON DELETE CASCADE
   )`,
   "CREATE INDEX IF NOT EXISTS prompt_revisions_prompt_idx ON prompt_revisions (owner_key, prompt_id, revision_id DESC)",
+  `CREATE TABLE IF NOT EXISTS feedback_reports (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+    kind text NOT NULL CHECK (kind IN ('bug', 'idea', 'other')),
+    message text NOT NULL CHECK (char_length(message) BETWEEN 1 AND 10000),
+    contact_email text,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE INDEX IF NOT EXISTS feedback_reports_created_idx ON feedback_reports (created_at DESC)",
   `CREATE TABLE IF NOT EXISTS api_rate_limits (
     bucket_key char(64) PRIMARY KEY,
     tokens double precision NOT NULL,

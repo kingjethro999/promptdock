@@ -216,6 +216,56 @@ async function handleRequest(request, response) {
     }
     return;
   }
+  if (pathname === "/api/feedback") {
+    if (request.method !== "POST") {
+      json(response, 405, { error: "Method not allowed." });
+      return;
+    }
+    if (!validOrigin(request)) {
+      json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    if (!request.headers["content-type"]?.startsWith("application/json")) {
+      json(response, 415, { error: "Send feedback as JSON." });
+      return;
+    }
+    if (!database.configured) {
+      json(response, 503, { error: "Feedback is unavailable right now." });
+      return;
+    }
+    try {
+      const body = await readBody(request, 32000);
+      database.validateFeedback(body);
+      const user = await auth.currentUser(request);
+      const limit = await rateLimit.consume(request, pathname, {
+        ...(user ? { subject: rateSubject(user) } : {}),
+      });
+      if (!limit.allowed) {
+        json(
+          response,
+          429,
+          { error: "Too many reports. Please try again later." },
+          { "Retry-After": String(limit.retryAfter) },
+        );
+        return;
+      }
+      const id = await database.createFeedback(body, user?.id || null);
+      json(response, 201, { ok: true, id });
+    } catch (error) {
+      const invalid = [
+        "Invalid JSON.",
+        "Request is too large.",
+        "Enter a report before sending.",
+        "Choose a feedback type.",
+        "Write a report between 1 and 10,000 characters.",
+        "Enter a valid email address or leave it blank.",
+      ].includes(error.message);
+      json(response, invalid ? 400 : 503, {
+        error: invalid ? error.message : "Feedback is unavailable right now.",
+      });
+    }
+    return;
+  }
   if (pathname === "/api/auth/me" && request.method === "GET") {
     try {
       json(response, 200, { user: await auth.currentUser(request) });

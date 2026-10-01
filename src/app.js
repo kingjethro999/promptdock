@@ -3214,6 +3214,52 @@ $("passwordForm").addEventListener("submit", async (event) => {
 $("helpButton").addEventListener("click", () => $("helpDialog").showModal());
 $("closeHelp").addEventListener("click", () => $("helpDialog").close());
 $("gotItButton").addEventListener("click", () => $("helpDialog").close());
+document.querySelectorAll("[data-open-feedback]").forEach((button) =>
+  button.addEventListener("click", () => {
+    $("feedbackForm").reset();
+    $("feedbackEmail").value = currentUser?.email || "";
+    $("feedbackResponse").textContent = "";
+    $("feedbackResponse").classList.remove("error", "success");
+    setSidebarOpen(false);
+    $("feedbackDialog").showModal();
+    $("feedbackMessage").focus();
+  }),
+);
+for (const id of ["closeFeedback", "cancelFeedback"])
+  $(id).addEventListener("click", () => $("feedbackDialog").close());
+$("feedbackForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const responseText = $("feedbackResponse");
+  const sendButton = $("sendFeedback");
+  responseText.textContent = "";
+  responseText.classList.remove("error", "success");
+  sendButton.disabled = true;
+  sendButton.textContent = "Sending…";
+  try {
+    const response = await apiFetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: $("feedbackForm").elements.feedbackKind.value,
+        message: $("feedbackMessage").value,
+        contactEmail: $("feedbackEmail").value,
+      }),
+    });
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not send feedback. Try again.");
+    $("feedbackForm").reset();
+    responseText.textContent = "Thanks — your feedback has been received.";
+    responseText.classList.add("success");
+  } catch (error) {
+    responseText.textContent =
+      error.message || "Could not send feedback. Try again.";
+    responseText.classList.add("error");
+  } finally {
+    sendButton.disabled = false;
+    sendButton.textContent = "Send feedback";
+  }
+});
 $("menuButton").addEventListener("click", () =>
   setSidebarOpen(!$("sidebar").classList.contains("open")),
 );

@@ -281,8 +281,11 @@
         </div>
       </section>
       <footer class="landing-footer">
-        <span>✳ promptdock</span><span>Ideas deserve a clearer path.</span
-        ><button type="button" data-auth-mode="login">Sign in ↗</button>
+        <span>✳ promptdock</span><span>Ideas deserve a clearer path.</span>
+        <div class="landing-footer-actions">
+          <button type="button" data-open-feedback>Send feedback</button>
+          <button type="button" data-auth-mode="login">Sign in ↗</button>
+        </div>
       </footer>
     </div>
     <div class="app-shell hidden" id="appShell">
@@ -330,6 +333,9 @@
         <div class="template-nav" id="templateNav"></div>
 
         <div class="sidebar-bottom">
+          <button type="button" class="sidebar-feedback" data-open-feedback>
+            <span aria-hidden="true">✎</span> Report an issue or idea
+          </button>
           <div class="sidebar-sponsor">
             <span class="sidebar-sponsor-icon" aria-hidden="true">✳</span>
             <strong>Enjoying PromptDock?</strong>
@@ -1393,6 +1399,73 @@
         <li>Platform buttons copy your prompt and open the selected site.</li>
       </ul>
       <button class="primary-button" id="gotItButton">Got it</button>
+    </dialog>
+    <dialog id="feedbackDialog" class="app-dialog feedback-dialog">
+      <form id="feedbackForm">
+        <button
+          type="button"
+          class="dialog-close"
+          id="closeFeedback"
+          aria-label="Close"
+        >
+          ×
+        </button>
+        <span class="dialog-icon" aria-hidden="true">✎</span>
+        <h2>Help improve PromptDock</h2>
+        <p>
+          Tell us what you noticed or what you would like to see. You can send
+          feedback without an account.
+        </p>
+        <fieldset class="feedback-types">
+          <legend>What is this about?</legend>
+          <label
+            ><input type="radio" name="feedbackKind" value="bug" checked /><span
+              >Something broke</span
+            ></label
+          >
+          <label
+            ><input type="radio" name="feedbackKind" value="idea" /><span
+              >An idea</span
+            ></label
+          >
+          <label
+            ><input type="radio" name="feedbackKind" value="other" /><span
+              >Other</span
+            ></label
+          >
+        </fieldset>
+        <label for="feedbackMessage">Your report</label>
+        <textarea
+          id="feedbackMessage"
+          maxlength="10000"
+          required
+          placeholder="What happened? What did you expect? Any details that could help us reproduce it?"
+        ></textarea>
+        <label for="feedbackEmail"
+          >Email for a reply <span class="optional">optional</span></label
+        >
+        <input
+          id="feedbackEmail"
+          type="email"
+          maxlength="254"
+          autocomplete="email"
+          placeholder="you@example.com"
+        />
+        <p
+          class="feedback-response"
+          id="feedbackResponse"
+          role="status"
+          aria-live="polite"
+        ></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" id="cancelFeedback">
+            Cancel
+          </button>
+          <button type="submit" class="primary-button" id="sendFeedback">
+            Send feedback
+          </button>
+        </div>
+      </form>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>

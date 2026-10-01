@@ -1045,6 +1045,65 @@ p {
 .app-dialog::backdrop {
   background: rgba(12, 27, 17, 0.43);
 }
+.feedback-dialog {
+  width: min(520px, calc(100% - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
+}
+.feedback-types {
+  border: 0;
+  padding: 0;
+  margin: 20px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.feedback-types legend {
+  margin-bottom: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #344538;
+}
+.feedback-types label {
+  margin: 0;
+  cursor: pointer;
+}
+.feedback-dialog .feedback-types input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.feedback-types span {
+  display: inline-block;
+  padding: 9px 12px;
+  border: 1px solid #d7e3d2;
+  border-radius: 8px;
+  background: #fbfcf9;
+}
+.feedback-types input:checked + span {
+  border-color: #8cbe62;
+  background: #e8f7d8;
+  color: #315c32;
+}
+.feedback-types input:focus-visible + span {
+  outline: 2px solid #528545;
+  outline-offset: 2px;
+}
+.feedback-dialog textarea {
+  min-height: 140px;
+}
+.feedback-response {
+  min-height: 18px;
+  margin: 12px 0 0;
+}
+.feedback-response.error {
+  color: #b23c35;
+}
+.feedback-response.success {
+  color: #2e7541;
+  font-weight: 700;
+}
 .app-dialog form {
   position: relative;
 }

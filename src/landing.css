@@ -770,6 +770,14 @@
   color: #d4f37e;
   background: transparent;
 }
+.landing-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.landing-footer-actions button:hover {
+  color: #fff;
+}
 .sidebar-sponsor {
   display: grid;
   gap: 5px;
@@ -825,6 +833,24 @@
   font-size: 12px;
   font-weight: 800;
   text-align: left;
+}
+.sidebar-feedback {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  border: 1px solid #4b6c52;
+  border-radius: 9px;
+  background: #263d32;
+  color: #e1f4ca;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+}
+.sidebar-feedback:hover {
+  background: #355440;
 }
 .sidebar-signout:hover {
   background: #2b4434;
