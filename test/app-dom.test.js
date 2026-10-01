@@ -1020,6 +1020,7 @@ test("one idea box previews raw text and sends optional guidance with generation
     doc.getElementById("promptOutput").textContent,
     "Build a small browser game",
   );
+  assert.equal(doc.getElementById("previewHeading").textContent, "Your draft");
   assert.equal(doc.getElementById("saveButton").disabled, false);
   assert.equal(
     doc.querySelectorAll("textarea#task").length,
@@ -1042,6 +1043,10 @@ test("one idea box previews raw text and sends optional guidance with generation
   doc.getElementById("ideaGenerateButton").click();
   await waitFor(() =>
     doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your finished prompt",
   );
   const sent = requests.find((item) => item.pathname === "/api/idea-to-prompt");
   assert.deepEqual(sent.body, {

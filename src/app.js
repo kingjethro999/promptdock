@@ -784,8 +784,8 @@ function setComposerExpanded(expanded) {
   $("promptForm").classList.toggle("collapsed", !expanded);
   $("toggleComposer").setAttribute("aria-expanded", String(expanded));
   $("toggleComposer").textContent = expanded
-    ? "Hide guidance ⌃"
-    : "Add guidance ⌄";
+    ? "Hide fine-tuning ⌃"
+    : "Fine-tune (optional) ⌄";
   document
     .querySelector(".composer-card")
     .classList.toggle("is-collapsed", !expanded);
@@ -926,7 +926,7 @@ async function finishVoiceRecording(mimeType) {
     const sent = await generateIdeaPrompt();
     $("voiceStatus").textContent = sent
       ? "Voice idea transcribed and sent."
-      : "Transcript added. Use Shape this prompt to try again.";
+      : "Transcript added. Turn your idea into a prompt when you're ready.";
   } catch (error) {
     voiceState = "idle";
     updateIdeaButton();
@@ -1064,8 +1064,7 @@ async function generateIdeaPrompt() {
     guidanceBeforeGeneration = guidance;
     lastGeneratedData = result.data;
     renderInterpretation(currentAnalysis);
-    $("ideaStatus").textContent =
-      "Prompt ready. Review the result or adjust the guidance above.";
+    $("ideaStatus").textContent = "Prompt ready. Make it yours.";
     showToast(
       `Idea shaped with ${result.provider}. Review the prompt before using it.`,
     );
@@ -1721,11 +1720,24 @@ async function copyRunOutput() {
 function updatePreview() {
   const data = dataFromForm();
   const prompt = buildPrompt(data);
+  const isDraft = Boolean(
+    prompt &&
+    $("ideaInput").value.trim() &&
+    !generatedSource &&
+    !currentRawPrompt,
+  );
   const output = $("promptOutput");
   output.textContent =
     prompt ||
-    "Your prompt will appear here. Type, paste, or dictate an idea to begin.";
+    "Your prompt will appear here. Start with whatever is on your mind.";
   output.classList.toggle("is-empty", !prompt);
+  $("previewHeading").textContent = isDraft
+    ? "Your draft"
+    : "Your finished prompt";
+  $("previewSubtitle").textContent = isDraft
+    ? "Your words so far. PromptDock can build on them."
+    : "Built as you type, ready for any AI platform.";
+  $("readyBadgeText").textContent = isDraft ? "Draft preview" : "Ready to copy";
   $("wordCount").textContent =
     `${prompt ? prompt.split(/\s+/).length : 0} words`;
   $("copyButton").disabled = !prompt;
@@ -2640,8 +2652,8 @@ $("ideaInput").addEventListener("input", () => {
   persistDraft();
   updateIdeaButton();
   $("ideaStatus").textContent = aiAvailable
-    ? "Ready to shape this prompt"
-    : "AI is unavailable. Check your provider in Settings.";
+    ? "Ready to turn your idea into a prompt"
+    : "AI is unavailable right now. You can still work on your draft.";
 });
 $("ideaGenerateButton").addEventListener("click", generateIdeaPrompt);
 $("micButton").addEventListener("click", () => {

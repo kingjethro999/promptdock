@@ -150,8 +150,8 @@
               <div class="landing-step-icon">✎</div>
               <h3>Say it naturally</h3>
               <p>
-                Type, paste, or dictate an idea or existing prompt. A sentence
-                is enough to start.
+                Type a messy thought or dictate it. A sentence is enough to
+                start.
               </p>
             </article>
             <article>
@@ -168,8 +168,8 @@
               <div class="landing-step-icon">↗</div>
               <h3>Make it yours</h3>
               <p>
-                Adjust the idea or guidance, save the result, or copy it into
-                your favorite AI tool.
+                Save what works, share it, or copy it into your favorite AI
+                tool.
               </p>
             </article>
           </div>
@@ -427,10 +427,11 @@
                 </div>
                 <h2 id="ideaHeading">What is your idea?</h2>
                 <p>
-                  Type, paste, or dictate a rough idea or an existing prompt.
+                  Write it naturally. A sentence, a messy thought, or a full
+                  brief all work. Already have a prompt? Paste it here too.
                 </p>
                 <label class="sr-only" for="ideaInput"
-                  >Describe your idea or paste an existing prompt</label
+                  >Describe your idea</label
                 >
                 <div class="idea-input-wrap">
                   <textarea
@@ -487,11 +488,11 @@
               <section class="composer-card" aria-labelledby="composerHeading">
                 <div class="card-heading">
                   <div>
-                    <div class="section-kicker">✦ &nbsp; OPTIONAL GUIDANCE</div>
-                    <h2 id="composerHeading">Fine-tune this idea</h2>
+                    <div class="section-kicker">✦ &nbsp; OPTIONAL DETAILS</div>
+                    <h2 id="composerHeading">Fine-tune your prompt</h2>
                     <p>
-                      Add details before generating, or adjust them afterward.
-                      Leave them blank and AI will decide.
+                      Know the tone, format, or focus you want? Add it here.
+                      Otherwise, your idea is enough to get started.
                     </p>
                   </div>
                   <button
@@ -501,7 +502,7 @@
                     aria-expanded="false"
                     aria-controls="promptForm"
                   >
-                    Add guidance ⌄
+                    Fine-tune (optional) ⌄
                   </button>
                 </div>
                 <form id="promptForm" class="collapsed">
@@ -651,7 +652,7 @@
                     class="primary-button idea-generate"
                     disabled
                   >
-                    <span>✦</span> Shape this prompt
+                    <span>✦</span> Turn idea into prompt
                     <span class="button-arrow">↗</span></button
                   ><span id="ideaStatus" role="status"
                     >Add your idea to begin</span
@@ -693,8 +694,8 @@
                   <ul id="ideaMissingDetails"></ul>
                 </div>
                 <p class="interpretation-footnote">
-                  This is an interpretation. Review the prompt in the preview
-                  and adjust the guidance above if needed.
+                  This is how AI understood your idea. The final prompt is yours
+                  to keep or change.
                 </p>
               </section>
             </div>
@@ -704,11 +705,12 @@
                 <div class="preview-top">
                   <div class="section-kicker">LIVE PREVIEW</div>
                   <span class="ready-badge" id="readyBadge"
-                    ><span class="status-dot"></span> Ready to copy</span
+                    ><span class="status-dot"></span>
+                    <span id="readyBadgeText">Ready to copy</span></span
                   >
                 </div>
                 <h2 id="previewHeading">Your finished prompt</h2>
-                <p class="preview-subtitle">
+                <p class="preview-subtitle" id="previewSubtitle">
                   Built as you type, ready for any AI platform.
                 </p>
                 <div
@@ -1358,9 +1360,9 @@
       ><span class="dialog-icon">✦</span>
       <h2>How PromptDock works</h2>
       <p>
-        Type, paste, or dictate a rough idea or existing prompt in the main box.
-        Add optional guidance below it when you know what you want, then shape
-        the combined request. Leave guidance blank and AI will decide.
+        Start with a rough idea, however it comes to you. PromptDock turns it
+        into a detailed prompt and shows what it focused on. If you already know
+        details like tone or format, the fine-tune section can include them too.
       </p>
       <ul>
         <li>
