@@ -126,6 +126,9 @@ const elements = Object.fromEntries(
 const $ = (id) => document.getElementById(id);
 let currentId = null;
 let currentRawPrompt = false;
+let generatedSource = "";
+let guidanceBeforeGeneration = null;
+let lastGeneratedData = null;
 let toastTimer;
 let aiAvailable = false;
 let aiBusy = false;
@@ -397,14 +400,33 @@ function dataFromForm() {
   const data = Object.fromEntries(
     fields.map((field) => [field, elements[field].value.trim()]),
   );
+  const idea = $("ideaInput").value.trim();
+  if (!data.task || (generatedSource && generatedSource !== idea))
+    data.task = idea;
   if (
-    currentRawPrompt &&
+    (currentRawPrompt || !generatedSource) &&
     fields.every((field) => field === "task" || !data[field])
-  ) {
-    data.task = elements.task.value;
+  )
     data.raw = true;
-  }
   return data;
+}
+function guidanceFromForm() {
+  const current = Object.fromEntries(
+    fields
+      .filter((field) => field !== "task")
+      .map((field) => [field, elements[field].value.trim()])
+      .filter(([, value]) => value),
+  );
+  if (!lastGeneratedData) return current;
+  const guidance = { ...(guidanceBeforeGeneration || {}) };
+  for (const field of fields.filter((name) => name !== "task")) {
+    const value = current[field] || "";
+    if (value !== (lastGeneratedData[field] || "")) {
+      if (value) guidance[field] = value;
+      else delete guidance[field];
+    }
+  }
+  return guidance;
 }
 function suggestedPromptName() {
   const source = $("ideaInput").value.trim() || elements.task.value.trim();
@@ -426,6 +448,10 @@ function suggestedPromptName() {
 }
 function setForm(data) {
   currentRawPrompt = data.raw === true;
+  guidanceBeforeGeneration = null;
+  lastGeneratedData = null;
+  generatedSource =
+    data.task && $("ideaInput").value.trim() ? $("ideaInput").value.trim() : "";
   fields.forEach((field) => {
     elements[field].value = data[field] || "";
   });
@@ -758,8 +784,8 @@ function setComposerExpanded(expanded) {
   $("promptForm").classList.toggle("collapsed", !expanded);
   $("toggleComposer").setAttribute("aria-expanded", String(expanded));
   $("toggleComposer").textContent = expanded
-    ? "Hide details ⌃"
-    : "Edit details ⌄";
+    ? "Hide guidance ⌃"
+    : "Add guidance ⌄";
   document
     .querySelector(".composer-card")
     .classList.toggle("is-collapsed", !expanded);
@@ -900,7 +926,7 @@ async function finishVoiceRecording(mimeType) {
     const sent = await generateIdeaPrompt();
     $("voiceStatus").textContent = sent
       ? "Voice idea transcribed and sent."
-      : "Transcript added. Use Turn idea into prompt to try again.";
+      : "Transcript added. Use Shape this prompt to try again.";
   } catch (error) {
     voiceState = "idle";
     updateIdeaButton();
@@ -1004,6 +1030,7 @@ async function generateIdeaPrompt() {
   const idea = $("ideaInput").value.trim();
   if (!aiAvailable || aiBusy || voiceState !== "idle" || idea.length < 4)
     return false;
+  const guidance = guidanceFromForm();
   aiBusy = true;
   $("ideaGenerateButton").classList.add("busy");
   $("ideaStatus").textContent = "Reading your idea and shaping the prompt…";
@@ -1013,16 +1040,19 @@ async function generateIdeaPrompt() {
     const response = await apiFetch("/api/idea-to-prompt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idea }),
+      body: JSON.stringify({ idea, guidance }),
     });
     const result = await response.json();
     if (!response.ok)
       throw new Error(
         result.error || "Could not turn this idea into a prompt.",
       );
-    if (idea !== $("ideaInput").value.trim()) {
+    if (
+      idea !== $("ideaInput").value.trim() ||
+      JSON.stringify(guidance) !== JSON.stringify(guidanceFromForm())
+    ) {
       $("ideaStatus").textContent =
-        "Your idea changed. Run it again when ready.";
+        "Your idea or guidance changed. Run it again when ready.";
       return false;
     }
     currentId = null;
@@ -1031,9 +1061,11 @@ async function generateIdeaPrompt() {
       originalDepth: result.data.depth,
     };
     setForm(result.data);
+    guidanceBeforeGeneration = guidance;
+    lastGeneratedData = result.data;
     renderInterpretation(currentAnalysis);
     $("ideaStatus").textContent =
-      "Prompt ready. Review its direction and edit any detail.";
+      "Prompt ready. Review the result or adjust the guidance above.";
     showToast(
       `Idea shaped with ${result.provider}. Review the prompt before using it.`,
     );
@@ -1075,9 +1107,6 @@ async function loadAiStatus() {
     await loadRemoteLibrary();
     await loadSettings();
   }
-  $("aiStatus").textContent = aiAvailable
-    ? "Sends this draft to your chosen AI provider"
-    : "Add a provider key in Settings to enable AI suggestions";
   $("runNote").textContent = aiAvailable
     ? "Tests this prompt on your configured AI"
     : "Add a provider key in Settings to run prompts";
@@ -1532,7 +1561,6 @@ function renderSessions(sessions) {
 
 const usageLabels = {
   "/api/run": "Run prompt",
-  "/api/enhance": "Improve with AI",
   "/api/idea-to-prompt": "Idea to prompt",
   "/api/transcribe": "Voice transcription",
 };
@@ -1634,48 +1662,10 @@ async function signOut(all = false) {
   showToast("Signed out.");
 }
 
-async function enhancePrompt() {
-  if (!aiAvailable || aiBusy || !elements.task.value.trim()) return;
-  const original = dataFromForm();
-  aiBusy = true;
-  $("enhanceButton").disabled = true;
-  $("enhanceButton").classList.add("busy");
-  $("aiStatus").textContent = "Improving your prompt…";
-  try {
-    const response = await apiFetch("/api/enhance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(original),
-    });
-    const result = await readApiJson(response);
-    if (!response.ok)
-      throw new Error(result.error || "AI suggestions are unavailable.");
-    if (JSON.stringify(original) !== JSON.stringify(dataFromForm())) {
-      showToast("Your draft changed. AI suggestions were not applied.");
-      return;
-    }
-    currentId = null;
-    currentAnalysis = null;
-    setForm(result.data);
-    renderInterpretation(null);
-    showToast(
-      `Prompt enhanced with ${result.provider}. Review before using it.`,
-    );
-  } catch (error) {
-    showToast(error.message || "AI suggestions are unavailable.");
-  } finally {
-    aiBusy = false;
-    $("enhanceButton").classList.remove("busy");
-    $("aiStatus").textContent =
-      "Sends this draft to your configured AI provider";
-    updatePreview();
-  }
-}
-
 async function runPrompt() {
   const prompt = buildPrompt(dataFromForm());
   if (!prompt) {
-    showToast("Add a task first.");
+    showToast("Add an idea or prompt first.");
     return;
   }
   if (!aiAvailable) {
@@ -1734,7 +1724,7 @@ function updatePreview() {
   const output = $("promptOutput");
   output.textContent =
     prompt ||
-    "Your prompt will appear here. Start with a rough idea, or open the details editor to build it yourself.";
+    "Your prompt will appear here. Type, paste, or dictate an idea to begin.";
   output.classList.toggle("is-empty", !prompt);
   $("wordCount").textContent =
     `${prompt ? prompt.split(/\s+/).length : 0} words`;
@@ -1743,7 +1733,6 @@ function updatePreview() {
   $("saveButton").disabled = !prompt;
   $("runButton").disabled = !prompt || !aiAvailable || runBusy;
   $("readyBadge").style.visibility = prompt ? "visible" : "hidden";
-  $("enhanceButton").disabled = !prompt || !aiAvailable || aiBusy;
   if (currentAnalysis) {
     $("ideaDepthBadge").textContent = `${data.depth || "Balanced"} depth`;
     $("ideaDepthReason").textContent =
@@ -1766,7 +1755,7 @@ function updatePreview() {
     .querySelectorAll("#scoreBars i")
     .forEach((bar, index) => bar.classList.toggle("filled", index < score));
   const advice = !data.task
-    ? ["A good start", "Add your task to get started."]
+    ? ["A good start", "Add an idea or prompt to get started."]
     : !data.context
       ? [
           "Add some context",
@@ -1793,7 +1782,7 @@ function updatePreview() {
 async function copyPrompt() {
   const prompt = buildPrompt(dataFromForm());
   if (!prompt) {
-    showToast("Add a task first.");
+    showToast("Add an idea or prompt first.");
     return false;
   }
   try {
@@ -1998,12 +1987,13 @@ function renderTemplates() {
       button.addEventListener("click", () => {
         currentId = null;
         currentAnalysis = null;
-        $("ideaInput").value = "";
-        setForm(template.data);
+        $("ideaInput").value = template.data.task;
+        setForm({ ...template.data, task: "" });
         renderInterpretation(null);
         setComposerExpanded(true);
         updateIdeaButton();
-        $("ideaStatus").textContent = "Add a new idea whenever you like";
+        $("ideaStatus").textContent =
+          "Template loaded. Shape it whenever you are ready.";
         switchView("builder");
         showToast(`${template.name} template loaded.`);
       });
@@ -2210,7 +2200,8 @@ async function openHistory(item) {
           );
           if (searched) Object.assign(searched, result.prompt);
           if (currentId === result.prompt.id) {
-            $("ideaInput").value = result.prompt.idea || "";
+            $("ideaInput").value =
+              result.prompt.idea || result.prompt.data.task || "";
             currentAnalysis = result.prompt.analysis;
             setForm(result.prompt.data);
             renderInterpretation(currentAnalysis);
@@ -2500,7 +2491,7 @@ function renderLibrary() {
     open.addEventListener("click", () => {
       currentId = item.id;
       currentAnalysis = item.analysis || null;
-      $("ideaInput").value = item.idea || "";
+      $("ideaInput").value = item.idea || item.data.task || "";
       setForm(item.data);
       renderInterpretation(currentAnalysis);
       updateIdeaButton();
@@ -2637,15 +2628,20 @@ $("toggleComposer").addEventListener("click", () =>
   setComposerExpanded($("promptForm").classList.contains("collapsed")),
 );
 $("ideaInput").addEventListener("input", () => {
+  if (generatedSource && generatedSource !== $("ideaInput").value.trim()) {
+    const guidance = guidanceFromForm();
+    setForm({ task: "", ...guidance });
+  }
   if (currentAnalysis) {
     currentAnalysis = null;
     renderInterpretation(null);
   }
+  updatePreview();
   persistDraft();
   updateIdeaButton();
   $("ideaStatus").textContent = aiAvailable
-    ? "Ready to turn this idea into a prompt"
-    : "Add an API key to .env to use AI";
+    ? "Ready to shape this prompt"
+    : "AI is unavailable. Check your provider in Settings.";
 });
 $("ideaGenerateButton").addEventListener("click", generateIdeaPrompt);
 $("micButton").addEventListener("click", () => {
@@ -2662,7 +2658,6 @@ document.querySelectorAll(".idea-example").forEach((button) =>
     $("ideaInput").focus();
   }),
 );
-$("enhanceButton").addEventListener("click", enhancePrompt);
 $("promptForm").addEventListener("submit", (event) => event.preventDefault());
 document
   .querySelectorAll(".nav-item")
@@ -2899,7 +2894,7 @@ $("clearButton").addEventListener("click", () => {
   renderInterpretation(null);
   updateIdeaButton();
   $("ideaStatus").textContent = "Add your idea to begin";
-  elements.task.focus();
+  $("ideaInput").focus();
   showToast("Prompt cleared.");
 });
 $("newPromptButton").addEventListener("click", () => {
@@ -2925,7 +2920,7 @@ $("runDismissButton").addEventListener("click", () => {
 });
 $("downloadButton").addEventListener("click", downloadPrompt);
 $("saveButton").addEventListener("click", () => {
-  if (!elements.task.value.trim()) return;
+  if (!dataFromForm().task) return;
   if (databaseAvailable && !currentUser) {
     pendingSave = true;
     openAuth();
@@ -3348,7 +3343,7 @@ $("appVersion").textContent = config.version;
 initSearchableSelects();
 const savedDraft = readJSON(DRAFT_KEY, {});
 currentAnalysis = savedDraft.analysis || null;
-$("ideaInput").value = savedDraft.idea || "";
+$("ideaInput").value = savedDraft.idea || savedDraft.data?.task || "";
 setForm(savedDraft.data || savedDraft);
 renderInterpretation(currentAnalysis);
 renderLibrary();

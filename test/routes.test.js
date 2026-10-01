@@ -590,7 +590,7 @@ test("usage endpoint reports the current AI budgets", async () => {
     const response = await send(base, "/api/usage");
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.equal(body.usage.length, 4);
+    assert.equal(body.usage.length, 3);
     assert.deepEqual(body.usage[0], {
       route: "/api/run",
       capacity: 20,
@@ -600,8 +600,38 @@ test("usage endpoint reports the current AI budgets", async () => {
     });
     assert.deepEqual(
       body.usage.map((item) => item.route),
-      ["/api/run", "/api/enhance", "/api/idea-to-prompt", "/api/transcribe"],
+      ["/api/run", "/api/idea-to-prompt", "/api/transcribe"],
     );
+  });
+});
+
+test("idea route forwards optional guidance in the same request", async () => {
+  let sent;
+  const stubs = [
+    [database, "configured", false],
+    [rateLimit, "consume", async () => ({ allowed: true })],
+    [
+      ai,
+      "ideaToPrompt",
+      async (body) => {
+        sent = body;
+        return { data: { task: "Build a game" }, interpretation: {} };
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    const body = {
+      idea: "Build a game",
+      guidance: { format: "JSON", depth: "Quick" },
+    };
+    const response = await send(base, "/api/idea-to-prompt", "POST", body);
+    assert.equal(response.status, 200);
+    assert.deepEqual(sent, body);
+    const invalid = await send(base, "/api/idea-to-prompt", "POST", {
+      idea: "Build a game",
+      guidance: { format: "Unsupported" },
+    });
+    assert.equal(invalid.status, 400);
   });
 });
 

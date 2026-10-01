@@ -138,6 +138,23 @@ async function createWorkspace(seed = SEED, options = {}) {
         voiceAvailable: true,
         databaseAvailable: Boolean(options.user),
       });
+    if (pathname === "/api/idea-to-prompt" && method === "POST")
+      return jsonResponse(
+        200,
+        options.ideaResponse || {
+          provider: "test",
+          data: {
+            task: `Create a useful answer for: ${body.idea}`,
+            focus: "The requested result first",
+            depth: "Balanced",
+          },
+          interpretation: {
+            goal: "Create the requested result",
+            focusAreas: ["The requested result first"],
+            missingDetails: [],
+          },
+        },
+      );
     if (pathname === "/api/settings") return jsonResponse(200, state.settings);
     if (pathname === "/api/settings/active" && method === "POST") {
       activate(state.settings, body ? body.providerId : null);
@@ -990,4 +1007,111 @@ test("guest feedback opens from the landing page and shows a saved confirmation"
     message: "The save button is hard to find",
     contactEmail: "visitor@example.com",
   });
+});
+
+test("one idea box previews raw text and sends optional guidance with generation", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  const idea = doc.getElementById("ideaInput");
+  idea.value = "Build a small browser game";
+  idea.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.equal(
+    doc.getElementById("promptOutput").textContent,
+    "Build a small browser game",
+  );
+  assert.equal(doc.getElementById("saveButton").disabled, false);
+  assert.equal(
+    doc.querySelectorAll("textarea#task").length,
+    0,
+    "fine-tune must not have another source box",
+  );
+  doc.getElementById("toggleComposer").click();
+  doc.getElementById("role").value = "Game developer";
+  doc
+    .getElementById("role")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc.getElementById("audience").value = "New players";
+  doc
+    .getElementById("audience")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.match(
+    doc.getElementById("promptOutput").textContent,
+    /Act as Game developer/,
+  );
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const sent = requests.find((item) => item.pathname === "/api/idea-to-prompt");
+  assert.deepEqual(sent.body, {
+    idea: "Build a small browser game",
+    guidance: { role: "Game developer", audience: "New players" },
+  });
+  assert.match(
+    doc.getElementById("promptOutput").textContent,
+    /Create a useful answer/,
+  );
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(
+    () =>
+      requests.filter((item) => item.pathname === "/api/idea-to-prompt")
+        .length === 2,
+  );
+  const second = requests.filter(
+    (item) => item.pathname === "/api/idea-to-prompt",
+  )[1];
+  assert.deepEqual(second.body.guidance, {
+    role: "Game developer",
+    audience: "New players",
+  });
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  doc.getElementById("role").value = "Technical designer";
+  doc
+    .getElementById("role")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  idea.value = "Explain this code";
+  idea.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.equal(doc.getElementById("task").value, "");
+  assert.equal(doc.getElementById("role").value, "Technical designer");
+  assert.equal(doc.getElementById("audience").value, "New players");
+  assert.match(
+    doc.getElementById("promptOutput").textContent,
+    /Explain this code/,
+  );
+  assert.doesNotMatch(
+    doc.getElementById("promptOutput").textContent,
+    /Build a small browser game/,
+  );
+});
+
+test("an idea with collapsed guidance sends no fine-tune details", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  doc.getElementById("ideaInput").value = "Write a launch note";
+  doc
+    .getElementById("ideaInput")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(() =>
+    requests.some((item) => item.pathname === "/api/idea-to-prompt"),
+  );
+  const sent = requests.find((item) => item.pathname === "/api/idea-to-prompt");
+  assert.deepEqual(sent.body, { idea: "Write a launch note", guidance: {} });
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(
+    () =>
+      requests.filter((item) => item.pathname === "/api/idea-to-prompt")
+        .length === 2,
+  );
+  const again = requests.filter(
+    (item) => item.pathname === "/api/idea-to-prompt",
+  )[1];
+  assert.deepEqual(again.body.guidance, {});
 });

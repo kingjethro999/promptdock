@@ -6,6 +6,7 @@ const {
   ideaToPrompt,
   normalizeDraft,
   normalizeIdea,
+  normalizeIdeaGuidance,
   normalizeRunInput,
   parseIdeaSuggestion,
   runPrompt,
@@ -66,6 +67,20 @@ test("rough ideas require a useful amount of input", () => {
   assert.equal(
     normalizeIdea({ idea: "  meal planning app  " }),
     "meal planning app",
+  );
+});
+
+test("fine-tune guidance is optional and validates only supported details", () => {
+  assert.deepEqual(normalizeIdeaGuidance({ idea: "Build a game" }), {});
+  assert.deepEqual(
+    normalizeIdeaGuidance({
+      guidance: { tone: " Creative ", focus: " Gameplay ", task: "ignore" },
+    }),
+    { tone: "Creative", focus: "Gameplay" },
+  );
+  assert.throws(
+    () => normalizeIdeaGuidance({ guidance: { format: "Unknown" } }),
+    /Invalid fine-tune/,
   );
 });
 
@@ -145,12 +160,66 @@ test("idea generation passes the raw idea and returns a structured prompt", asyn
   );
   assert.deepEqual(JSON.parse(submitted.messages[1].content), {
     idea: "I want a meal planning app",
+    guidance: {},
   });
   assert.match(submitted.messages[0].content, /build means build/);
   assert.equal(result.provider, "groq");
   assert.equal(result.data.depth, "Deep");
   assert.match(result.data.approach, /first release/);
   assert.equal(result.interpretation.focusAreas[0], "User needs");
+});
+
+test("idea generation sends guidance with the idea and keeps explicit choices", async () => {
+  let submitted;
+  const result = await ideaToPrompt(
+    {
+      idea: "Build a small game",
+      guidance: {
+        format: "JSON",
+        depth: "Quick",
+        focus: "Playable game first",
+        constraints: "Use plain JavaScript",
+      },
+    },
+    { AI_PROVIDER_ORDER: "groq", GROQ_API_KEY: "test", GROQ_MODEL: "test" },
+    async (_url, options) => {
+      submitted = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  data: {
+                    task: "Build a small game",
+                    focus: "Something else",
+                    format: "Table",
+                    depth: "Deep",
+                  },
+                  interpretation: { focusAreas: ["Something else"] },
+                }),
+              },
+            },
+          ],
+        }),
+      };
+    },
+  );
+  assert.deepEqual(JSON.parse(submitted.messages[1].content), {
+    idea: "Build a small game",
+    guidance: {
+      format: "JSON",
+      depth: "Quick",
+      focus: "Playable game first",
+      constraints: "Use plain JavaScript",
+    },
+  });
+  assert.equal(result.data.format, "JSON");
+  assert.equal(result.data.depth, "Quick");
+  assert.equal(result.data.focus, "Playable game first");
+  assert.equal(result.data.constraints, "Use plain JavaScript");
+  assert.deepEqual(result.interpretation.focusAreas, ["Playable game first"]);
 });
 
 test("a working build keeps implementation depth even when a model undershoots", () => {
@@ -208,6 +277,7 @@ test("Gemini receives a separate system instruction and JSON output request", as
   assert.match(body.systemInstruction.parts[0].text, /prompt architect/);
   assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), {
     idea: "Write a quick note",
+    guidance: {},
   });
   assert.equal(body.generationConfig.responseMimeType, "application/json");
 });

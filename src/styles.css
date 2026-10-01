@@ -1599,6 +1599,22 @@ p {
   padding: 28px 30px 25px;
   background: linear-gradient(145deg, #edf8df 0%, #f6fbed 60%, #eff7e5 100%);
   border: 1px solid #dcebc9;
+  border-bottom: 0;
+  border-radius: 17px 17px 0 0;
+}
+.creation-column > .composer-card {
+  margin-top: -17px;
+  border-color: #dcebc9;
+  border-radius: 0 0 17px 17px;
+  box-shadow: 0 4px 18px rgba(32, 55, 34, 0.025);
+}
+.composer-card .card-heading h2 {
+  white-space: normal;
+}
+.composer-card .idea-footer {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e5eddd;
 }
 .idea-card-top {
   display: flex;

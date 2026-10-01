@@ -369,7 +369,6 @@ async function handleRequest(request, response) {
       const usage = [];
       for (const route of [
         "/api/run",
-        "/api/enhance",
         "/api/idea-to-prompt",
         "/api/transcribe",
       ]) {
@@ -848,8 +847,10 @@ async function handleRequest(request, response) {
         return;
       }
       const body = await readBody(request);
-      if (pathname === "/api/idea-to-prompt") ai.normalizeIdea(body);
-      else if (pathname === "/api/enhance") ai.normalizeDraft(body);
+      if (pathname === "/api/idea-to-prompt") {
+        ai.normalizeIdea(body);
+        ai.normalizeIdeaGuidance(body);
+      } else if (pathname === "/api/enhance") ai.normalizeDraft(body);
       else ai.normalizeRunInput(body);
       const limit = await rateLimit.consume(request, pathname, {
         subject: rateSubject(user),
@@ -887,6 +888,7 @@ async function handleRequest(request, response) {
               "Invalid JSON.",
               "Add a task before enhancing.",
               "Describe your idea in a few words.",
+              "Invalid fine-tune details.",
               "Add a task before running the prompt.",
             ].includes(message)
           ? 400

@@ -94,7 +94,30 @@ function normalizeIdea(input) {
   return idea;
 }
 
-function parseIdeaSuggestion(content, idea) {
+function normalizeIdeaGuidance(input) {
+  const source = input?.guidance;
+  if (source == null) return {};
+  if (typeof source !== "object" || Array.isArray(source))
+    throw new Error("Invalid fine-tune details.");
+  const guidance = {};
+  for (const field of fieldNames.filter((name) => name !== "task")) {
+    const value = source[field];
+    if (value == null || value === "") continue;
+    if (typeof value !== "string" || value.length > 100000)
+      throw new Error("Invalid fine-tune details.");
+    if (value.trim()) guidance[field] = value.trim();
+  }
+  if (
+    (guidance.format && !formats.includes(guidance.format)) ||
+    (guidance.tone && !tones.includes(guidance.tone)) ||
+    (guidance.depth && !depths.includes(guidance.depth)) ||
+    JSON.stringify(guidance).length > 400000
+  )
+    throw new Error("Invalid fine-tune details.");
+  return guidance;
+}
+
+function parseIdeaSuggestion(content, idea, guidance = {}) {
   if (typeof content !== "string") throw new Error("Empty AI response");
   const start = content.indexOf("{");
   const end = content.lastIndexOf("}");
@@ -108,7 +131,6 @@ function parseIdeaSuggestion(content, idea) {
       typeof source[field] === "string"
         ? source[field].trim().slice(0, 100000)
         : "";
-  if (!data.task || !data.focus) throw new Error("Incomplete AI response");
   if (!formats.includes(data.format)) data.format = "";
   if (!tones.includes(data.tone)) data.tone = "";
   if (!depths.includes(data.depth)) data.depth = "Balanced";
@@ -116,6 +138,8 @@ function parseIdeaSuggestion(content, idea) {
     /\b(build|implement|develop|code)\b/i.test(idea) &&
     /\b(app|game|website|tool|platform|system|api|feature)\b/i.test(idea);
   if (buildArtifact && !/\b(quick|brief)\b/i.test(idea)) data.depth = "Deep";
+  Object.assign(data, guidance);
+  if (!data.task || !data.focus) throw new Error("Incomplete AI response");
   const raw = parsed.interpretation || {};
   const list = (value, limit) =>
     Array.isArray(value)
@@ -145,6 +169,14 @@ function parseIdeaSuggestion(content, idea) {
       .map((item) => item.replace(/^\s*\d+[.)]\s*/, "").trim())
       .filter(Boolean)
       .slice(0, 4);
+  if (guidance.focus)
+    interpretation.focusAreas = guidance.focus
+      .split(/\n|;/)
+      .map((item) => item.replace(/^\s*\d+[.)]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 4);
+  if (guidance.depth)
+    interpretation.whyThisDepth = `You chose ${guidance.depth.toLowerCase()} depth in fine-tune.`;
   return { idea, data, interpretation };
 }
 
@@ -325,6 +357,7 @@ Keep facts supplied by the user; leave unknown details blank and do not invent a
 
 async function ideaToPrompt(input, env = process.env, request = fetch) {
   const idea = normalizeIdea(input);
+  const guidance = normalizeIdeaGuidance(input);
   const system = `You are PromptDock's prompt architect. Convert a rough idea into a prompt the user can paste into another AI assistant. Do not fulfill the request yourself.
 
 Return only one valid JSON object with exactly this shape: {"data":{"task":"","role":"","audience":"","context":"","format":"","tone":"","approach":"","focus":"","depth":"","constraints":""},"interpretation":{"goal":"","whyThisDepth":"","focusAreas":[],"missingDetails":[]}}. All data values are strings. focusAreas and missingDetails are arrays of strings. No markdown or commentary outside JSON.
@@ -340,13 +373,14 @@ Examples of intent preservation:
 - "Give me a quick summary of this article" → task: summarize the supplied article; depth: Quick; approach: empty.
 - "Help me decide between two database options" → task: compare the two options and recommend one against the user's criteria; focus: decision criteria first, tradeoffs second; use Balanced unless the user requests deep analysis.
 - "Write a warm invitation email for Friday's art show" → task: write the email; use placeholders for unknown time and venue; do not invent an RSVP requirement.`;
+  const guidedSystem = `${system}\n\nThe user's optional fine-tune details are preferences for this same idea, not a second task. Respect every supplied detail exactly where compatible with the idea; do not ignore an explicit format, tone, or depth. If a detail conflicts with the idea, preserve the user's requested deliverable and adapt the detail. Empty details mean you should infer the best structure from the idea.`;
   const messages = [
-    { role: "system", content: system },
-    { role: "user", content: JSON.stringify({ idea }) },
+    { role: "system", content: guidedSystem },
+    { role: "user", content: JSON.stringify({ idea, guidance }) },
   ];
   return generateWithProviders(
     messages,
-    (content) => parseIdeaSuggestion(content, idea),
+    (content) => parseIdeaSuggestion(content, idea, guidance),
     env,
     request,
   );
@@ -391,6 +425,7 @@ module.exports = {
   configuredProviders,
   normalizeDraft,
   normalizeIdea,
+  normalizeIdeaGuidance,
   normalizeRunInput,
   parseSuggestion,
   parseIdeaSuggestion,

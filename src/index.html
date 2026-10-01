@@ -150,8 +150,8 @@
               <div class="landing-step-icon">✎</div>
               <h3>Say it naturally</h3>
               <p>
-                Type a messy thought or dictate it. A sentence is enough to
-                start.
+                Type, paste, or dictate an idea or existing prompt. A sentence
+                is enough to start.
               </p>
             </article>
             <article>
@@ -168,8 +168,8 @@
               <div class="landing-step-icon">↗</div>
               <h3>Make it yours</h3>
               <p>
-                Edit the prompt, save it to your library, or copy it into your
-                favorite AI tool.
+                Adjust the idea or guidance, save the result, or copy it into
+                your favorite AI tool.
               </p>
             </article>
           </div>
@@ -212,7 +212,7 @@
               <span class="feature-symbol">⌘</span>
               <h3>Keep control</h3>
               <p>
-                Fine-tune every field, copy the final prompt, or export it as
+                Fine-tune the details, copy the final prompt, or export it as
                 Markdown.
               </p>
             </article>
@@ -427,11 +427,10 @@
                 </div>
                 <h2 id="ideaHeading">What is your idea?</h2>
                 <p>
-                  Write it naturally. A sentence, a messy thought, or a full
-                  brief all work.
+                  Type, paste, or dictate a rough idea or an existing prompt.
                 </p>
                 <label class="sr-only" for="ideaInput"
-                  >Describe your idea</label
+                  >Describe your idea or paste an existing prompt</label
                 >
                 <div class="idea-input-wrap">
                   <textarea
@@ -483,66 +482,17 @@
                     Plan an app
                   </button>
                 </div>
-                <div class="idea-footer">
-                  <button
-                    id="ideaGenerateButton"
-                    type="button"
-                    class="primary-button idea-generate"
-                    disabled
-                  >
-                    <span>✦</span> Turn idea into prompt
-                    <span class="button-arrow">↗</span></button
-                  ><span id="ideaStatus" role="status"
-                    >Add your idea to begin</span
-                  >
-                </div>
-              </section>
-
-              <section
-                class="interpretation-card hidden"
-                id="interpretationCard"
-                aria-labelledby="interpretationHeading"
-              >
-                <div class="interpretation-heading">
-                  <div>
-                    <div class="section-kicker">HOW AI READ YOUR IDEA</div>
-                    <h2 id="interpretationHeading">
-                      The direction behind your prompt
-                    </h2>
-                  </div>
-                  <span id="ideaDepthBadge" class="depth-badge">Balanced</span>
-                </div>
-                <div class="interpretation-goal">
-                  <span>YOUR GOAL</span><strong id="ideaGoal"></strong>
-                  <p id="ideaDepthReason"></p>
-                </div>
-                <div
-                  class="interpretation-list hidden"
-                  id="ideaApproachSection"
-                >
-                  <span>THE PATH</span>
-                  <ol id="ideaApproach"></ol>
-                </div>
-                <div class="interpretation-list">
-                  <span>WHERE AI WILL FOCUS</span>
-                  <ol id="ideaFocusAreas"></ol>
-                </div>
-                <div class="missing-details hidden" id="missingDetails">
-                  <span>DETAILS STILL OPEN</span>
-                  <ul id="ideaMissingDetails"></ul>
-                </div>
-                <p class="interpretation-footnote">
-                  This is an interpretation. Review and fine-tune the prompt
-                  below before using it.
-                </p>
               </section>
 
               <section class="composer-card" aria-labelledby="composerHeading">
                 <div class="card-heading">
                   <div>
-                    <div class="section-kicker">✦ &nbsp; PROMPT CONTROLS</div>
-                    <h2 id="composerHeading">Fine-tune your prompt</h2>
-                    <p>Edit what AI inferred or build one yourself.</p>
+                    <div class="section-kicker">✦ &nbsp; OPTIONAL GUIDANCE</div>
+                    <h2 id="composerHeading">Fine-tune this idea</h2>
+                    <p>
+                      Add details before generating, or adjust them afterward.
+                      Leave them blank and AI will decide.
+                    </p>
                   </div>
                   <button
                     class="text-button"
@@ -551,38 +501,15 @@
                     aria-expanded="false"
                     aria-controls="promptForm"
                   >
-                    Edit details ⌄
+                    Add guidance ⌄
                   </button>
                 </div>
                 <form id="promptForm" class="collapsed">
+                  <input id="task" type="hidden" />
                   <div class="form-tools">
                     <button class="text-button" id="clearButton" type="button">
-                      ↺ &nbsp; Clear prompt
+                      ↺ &nbsp; Clear idea and guidance
                     </button>
-                  </div>
-                  <div class="field">
-                    <label for="task"
-                      >Your task <span class="required">*</span></label
-                    >
-                    <p class="field-hint">The one thing you want AI to do</p>
-                    <textarea
-                      id="task"
-                      rows="3"
-                      placeholder="e.g. Write a launch email for my new productivity app"
-                      required
-                    ></textarea>
-                  </div>
-                  <div class="ai-toolbar">
-                    <button
-                      class="ai-button"
-                      id="enhanceButton"
-                      type="button"
-                      disabled
-                    >
-                      <span>✳</span> Enhance with AI</button
-                    ><span id="aiStatus" role="status"
-                      >Add a task to get AI suggestions</span
-                    >
                   </div>
                   <div class="field-row">
                     <div class="field">
@@ -717,6 +644,58 @@
                     ></textarea>
                   </div>
                 </form>
+                <div class="idea-footer">
+                  <button
+                    id="ideaGenerateButton"
+                    type="button"
+                    class="primary-button idea-generate"
+                    disabled
+                  >
+                    <span>✦</span> Shape this prompt
+                    <span class="button-arrow">↗</span></button
+                  ><span id="ideaStatus" role="status"
+                    >Add your idea to begin</span
+                  >
+                </div>
+              </section>
+
+              <section
+                class="interpretation-card hidden"
+                id="interpretationCard"
+                aria-labelledby="interpretationHeading"
+              >
+                <div class="interpretation-heading">
+                  <div>
+                    <div class="section-kicker">HOW AI READ YOUR IDEA</div>
+                    <h2 id="interpretationHeading">
+                      The direction behind your prompt
+                    </h2>
+                  </div>
+                  <span id="ideaDepthBadge" class="depth-badge">Balanced</span>
+                </div>
+                <div class="interpretation-goal">
+                  <span>YOUR GOAL</span><strong id="ideaGoal"></strong>
+                  <p id="ideaDepthReason"></p>
+                </div>
+                <div
+                  class="interpretation-list hidden"
+                  id="ideaApproachSection"
+                >
+                  <span>THE PATH</span>
+                  <ol id="ideaApproach"></ol>
+                </div>
+                <div class="interpretation-list">
+                  <span>WHERE AI WILL FOCUS</span>
+                  <ol id="ideaFocusAreas"></ol>
+                </div>
+                <div class="missing-details hidden" id="missingDetails">
+                  <span>DETAILS STILL OPEN</span>
+                  <ul id="ideaMissingDetails"></ul>
+                </div>
+                <p class="interpretation-footnote">
+                  This is an interpretation. Review the prompt in the preview
+                  and adjust the guidance above if needed.
+                </p>
               </section>
             </div>
 
@@ -786,7 +765,7 @@
                 <div class="score-bars" id="scoreBars" aria-hidden="true">
                   <i></i><i></i><i></i><i></i><i></i>
                 </div>
-                <p id="qualityTip">Add your task to get started.</p>
+                <p id="qualityTip">Add an idea or prompt to get started.</p>
               </section>
               <section class="run-card" id="runCard" hidden>
                 <div class="run-header">
@@ -1379,9 +1358,9 @@
       ><span class="dialog-icon">✦</span>
       <h2>How PromptDock works</h2>
       <p>
-        Start with a rough idea. AI will draft a prompt, show its priorities,
-        and flag details you may want to add. You can edit every part before
-        using it.
+        Type, paste, or dictate a rough idea or existing prompt in the main box.
+        Add optional guidance below it when you know what you want, then shape
+        the combined request. Leave guidance blank and AI will decide.
       </p>
       <ul>
         <li>
