@@ -9,6 +9,7 @@
       content="Build better prompts, save what works, and use them with your favorite AI platform."
     />
     <title>PromptDock — Your AI prompt workspace</title>
+    <!--INVITE_META-->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/landing.css" />
@@ -43,6 +44,7 @@
         </div>
       </header>
       <main id="top">
+        <!--INVITE_BANNER-->
         <section class="landing-hero">
           <div class="landing-hero-copy">
             <div class="landing-eyebrow">
@@ -333,6 +335,9 @@
         <div class="template-nav" id="templateNav"></div>
 
         <div class="sidebar-bottom">
+          <button type="button" class="sidebar-feedback" id="inviteFriends">
+            <span aria-hidden="true">↗</span> Invite friends
+          </button>
           <button type="button" class="sidebar-feedback" data-open-feedback>
             <span aria-hidden="true">✎</span> Report an issue or idea
           </button>
@@ -1338,6 +1343,53 @@
       </div>
       <p class="settings-feedback" id="shareFeedback" role="status"></p>
     </dialog>
+    <dialog id="inviteDialog" class="app-dialog invite-dialog">
+      <button
+        class="dialog-close"
+        type="button"
+        id="closeInvite"
+        aria-label="Close invitation"
+      >
+        ×
+      </button>
+      <span class="dialog-icon" aria-hidden="true">↗</span>
+      <h2>Bring a friend along</h2>
+      <p>
+        Share PromptDock with someone who has ideas worth building. Each friend
+        who verifies an account adds to your hourly AI and voice allowance, up
+        to five friends.
+      </p>
+      <div class="invite-stats" aria-live="polite">
+        <div>
+          <strong id="inviteVerified">—</strong><span>Verified friends</span>
+        </div>
+        <div>
+          <strong id="inviteBonus">—</strong
+          ><span>Extra uses per AI action / hour</span>
+        </div>
+        <div>
+          <strong id="inviteVoiceBonus">—</strong
+          ><span>Extra voice recordings / hour</span>
+        </div>
+      </div>
+      <p id="invitePending" class="invite-pending"></p>
+      <label for="inviteLink">Your invitation link</label>
+      <input
+        id="inviteLink"
+        type="text"
+        readonly
+        aria-label="Your invitation link"
+      />
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" id="nativeShareInvite">
+          Share…
+        </button>
+        <button class="primary-button" type="button" id="copyInviteLink">
+          Copy link
+        </button>
+      </div>
+      <p class="settings-feedback" id="inviteFeedback" role="status"></p>
+    </dialog>
     <dialog id="historyDialog" class="app-dialog history-dialog">
       <button
         class="dialog-close"
@@ -1356,30 +1408,141 @@
       <div id="historyList" class="history-list"></div>
     </dialog>
     <dialog id="helpDialog" class="app-dialog help-dialog">
-      <button class="dialog-close" id="closeHelp" aria-label="Close">×</button
-      ><span class="dialog-icon">✦</span>
-      <h2>How PromptDock works</h2>
-      <p>
-        Start with a rough idea, however it comes to you. PromptDock turns it
-        into a detailed prompt and shows what it focused on. If you already know
-        details like tone or format, the fine-tune section can include them too.
-      </p>
-      <ul>
-        <li>
-          Use the mic to record. Stop &amp; send transcribes your speech with
-          Groq, then turns the transcript into a prompt.
-        </li>
-        <li>
-          Sign in to save and sync your library across devices. Voice audio is
-          sent to Groq only after Stop &amp; send.
-        </li>
-        <li>
-          Publish a saved prompt to get a public link. Guests can view and copy
-          it; signed-in users can save their own version.
-        </li>
-        <li>Platform buttons copy your prompt and open the selected site.</li>
-      </ul>
-      <button class="primary-button" id="gotItButton">Got it</button>
+      <button class="dialog-close" id="closeHelp" aria-label="Close help">
+        ×
+      </button>
+      <span class="dialog-icon" aria-hidden="true">✦</span>
+      <h2>Find your flow</h2>
+      <p>Start wherever you are. Pick a topic to see the next step.</p>
+      <div class="help-tabs" role="tablist" aria-label="Help topics">
+        <button
+          type="button"
+          role="tab"
+          id="helpTabCreate"
+          aria-controls="helpPanelCreate"
+          aria-selected="true"
+          data-help-topic="create"
+        >
+          Create
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="helpTabLibrary"
+          aria-controls="helpPanelLibrary"
+          aria-selected="false"
+          data-help-topic="library"
+        >
+          Library
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="helpTabShare"
+          aria-controls="helpPanelShare"
+          aria-selected="false"
+          data-help-topic="share"
+        >
+          Share
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="helpTabSettings"
+          aria-controls="helpPanelSettings"
+          aria-selected="false"
+          data-help-topic="settings"
+        >
+          Settings
+        </button>
+      </div>
+      <section
+        id="helpPanelCreate"
+        role="tabpanel"
+        aria-labelledby="helpTabCreate"
+        data-help-panel="create"
+      >
+        <h3>From thought to prompt</h3>
+        <ol>
+          <li>
+            Write an idea as you would explain it to a friend. You can also
+            paste existing text or use the mic to dictate it.
+          </li>
+          <li>
+            Open <strong>Fine-tune your prompt</strong> if you know details such
+            as tone, audience, or format. Those details travel with the same
+            idea; you can leave them alone.
+          </li>
+          <li>
+            Generate a prompt, review what PromptDock focused on, then edit,
+            copy, run, or save it.
+          </li>
+        </ol>
+        <button type="button" class="help-go" data-help-view="builder">
+          Open idea to prompt ↗
+        </button>
+      </section>
+      <section
+        id="helpPanelLibrary"
+        role="tabpanel"
+        aria-labelledby="helpTabLibrary"
+        data-help-panel="library"
+        hidden
+      >
+        <h3>Keep and improve your work</h3>
+        <p>
+          Save generated prompts or paste one you made elsewhere. Name it, add
+          tags, search your collection, and sort it when it grows. Duplicate a
+          private prompt to try a new direction. History lets you compare and
+          restore earlier versions. Export JSON for a backup, or import one
+          later.
+        </p>
+        <button type="button" class="help-go" data-help-view="library">
+          Open my library ↗
+        </button>
+      </section>
+      <section
+        id="helpPanelShare"
+        role="tabpanel"
+        aria-labelledby="helpTabShare"
+        data-help-panel="share"
+        hidden
+      >
+        <h3>Two ways to share</h3>
+        <p>
+          <strong>Publish a prompt</strong> from your library when you want
+          someone to view and copy that finished prompt. Anyone can open it;
+          they need an account to save their own copy.
+        </p>
+        <p>
+          <strong>Invite friends</strong> when you want to introduce them to
+          PromptDock itself. Your invite has its own preview and link. When a
+          friend signs up and verifies their email, your hourly AI and voice
+          limits grow.
+        </p>
+        <button type="button" class="help-go" id="helpOpenInvite">
+          Get my invite link ↗
+        </button>
+      </section>
+      <section
+        id="helpPanelSettings"
+        role="tabpanel"
+        aria-labelledby="helpTabSettings"
+        data-help-panel="settings"
+        hidden
+      >
+        <h3>Make the workspace yours</h3>
+        <p>
+          Settings shows your hourly usage and active sessions. You can use
+          PromptDock’s default AI or save several of your own provider keys,
+          including compatible custom endpoints, then switch the active one.
+          Your username appears on shared prompts; legacy accounts can add one
+          here.
+        </p>
+        <button type="button" class="help-go" data-help-view="settings">
+          Open settings ↗
+        </button>
+      </section>
     </dialog>
     <dialog id="feedbackDialog" class="app-dialog feedback-dialog">
       <form id="feedbackForm">

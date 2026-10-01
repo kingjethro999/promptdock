@@ -1125,7 +1125,9 @@ async function loadAiStatus() {
 }
 
 function renderAccount() {
-  $("accountButton").textContent = currentUser ? currentUser.email : "Account";
+  $("accountButton").textContent = currentUser
+    ? currentUser.username || currentUser.email
+    : "Account";
   $("settingsEmail").textContent = currentUser?.email || "";
   $("settingsUsername").value = currentUser?.username || "";
   $("privacyNote").textContent = currentUser
@@ -1246,7 +1248,11 @@ async function submitAuth(event) {
       authMode === "reset"
         ? { token: resetToken, password: $("authPassword").value }
         : { email: $("authEmail").value, password: $("authPassword").value };
-    if (authMode === "register") body.username = $("authUsername").value.trim();
+    if (authMode === "register") {
+      body.username = $("authUsername").value.trim();
+      const referralCode = sessionStorage.getItem("promptdock.inviteCode");
+      if (referralCode) body.referralCode = referralCode;
+    }
     const response = await apiFetch(`/api/auth/${route}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1269,6 +1275,8 @@ async function submitAuth(event) {
       throw new Error(result.error || "Could not continue.");
     }
     if (authMode === "register" || authMode === "pending-verify") {
+      if (authMode === "register")
+        sessionStorage.removeItem("promptdock.inviteCode");
       openAuth("pending-verify");
       $("authSuccess").textContent =
         "Verification email sent. Check your inbox and spam folder.";
@@ -2969,6 +2977,63 @@ $("pasteForm").addEventListener("submit", async (event) => {
   await savePastedPrompt();
 });
 $("closeShare").addEventListener("click", () => $("shareDialog").close());
+async function openInviteDialog() {
+  setSidebarOpen(false);
+  $("inviteFeedback").textContent = "";
+  $("inviteLink").value = "";
+  $("inviteDialog").showModal();
+  try {
+    const response = await apiFetch("/api/referrals");
+    const result = await readApiJson(response);
+    if (!response.ok)
+      throw new Error(result.error || "Could not load your invitation.");
+    $("inviteLink").value = result.url;
+    $("inviteVerified").textContent =
+      `${result.verified} / ${result.maxRewards}`;
+    $("inviteBonus").textContent = `+${result.rewardLevel * 2}`;
+    $("inviteVoiceBonus").textContent = `+${result.rewardLevel}`;
+    const pending = Math.max(0, result.total - result.verified);
+    $("invitePending").textContent = pending
+      ? `${pending} friend${pending === 1 ? "" : "s"} signed up and ${pending === 1 ? "is" : "are"} waiting to verify email.`
+      : result.rewardLevel >= result.maxRewards
+        ? "You reached the maximum referral bonus. Your link still welcomes new people."
+        : "Your bonus grows when a friend verifies their email.";
+    $("nativeShareInvite").hidden = !navigator.share;
+  } catch (error) {
+    $("inviteFeedback").textContent =
+      error.message || "Invitation unavailable.";
+  }
+}
+$("inviteFriends").addEventListener("click", openInviteDialog);
+$("closeInvite").addEventListener("click", () => $("inviteDialog").close());
+$("copyInviteLink").addEventListener("click", async () => {
+  const link = $("inviteLink").value;
+  if (!link) return;
+  try {
+    if (navigator.clipboard && window.isSecureContext)
+      await navigator.clipboard.writeText(link);
+    else {
+      $("inviteLink").select();
+      if (!document.execCommand("copy")) throw new Error("Copy failed");
+    }
+    $("inviteFeedback").textContent = "Invitation link copied.";
+  } catch {
+    $("inviteLink").select();
+    $("inviteFeedback").textContent = "Select the link above to copy it.";
+  }
+});
+$("nativeShareInvite").addEventListener("click", async () => {
+  if (!navigator.share || !$("inviteLink").value) return;
+  try {
+    await navigator.share({
+      title: `${currentUser?.username || "I"} invited you to PromptDock`,
+      text: "Bring your rough ideas. PromptDock helps turn them into useful prompts.",
+      url: $("inviteLink").value,
+    });
+  } catch {
+    // Closing the native share sheet is expected.
+  }
+});
 $("closeHistory").addEventListener("click", () => $("historyDialog").close());
 $("copyShareLink").addEventListener("click", async () => {
   try {
@@ -3218,9 +3283,56 @@ $("passwordForm").addEventListener("submit", async (event) => {
     feedback.classList.add("error");
   }
 });
-$("helpButton").addEventListener("click", () => $("helpDialog").showModal());
+function setHelpTopic(topic) {
+  document.querySelectorAll("[data-help-topic]").forEach((tab) => {
+    const selected = tab.dataset.helpTopic === topic;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  document.querySelectorAll("[data-help-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.helpPanel !== topic;
+  });
+}
+$("helpButton").addEventListener("click", () => {
+  const current = $("breadcrumbCurrent").textContent;
+  setHelpTopic(
+    current === "My library"
+      ? "library"
+      : current === "Settings"
+        ? "settings"
+        : "create",
+  );
+  $("helpDialog").showModal();
+});
 $("closeHelp").addEventListener("click", () => $("helpDialog").close());
-$("gotItButton").addEventListener("click", () => $("helpDialog").close());
+document.querySelectorAll("[data-help-topic]").forEach((tab) => {
+  tab.addEventListener("click", () => setHelpTopic(tab.dataset.helpTopic));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = [...document.querySelectorAll("[data-help-topic]")];
+    const index = tabs.indexOf(tab);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) %
+            tabs.length;
+    setHelpTopic(tabs[next].dataset.helpTopic);
+    tabs[next].focus();
+  });
+});
+document.querySelectorAll("[data-help-view]").forEach((button) =>
+  button.addEventListener("click", () => {
+    $("helpDialog").close();
+    switchView(button.dataset.helpView);
+  }),
+);
+$("helpOpenInvite").addEventListener("click", () => {
+  $("helpDialog").close();
+  openInviteDialog();
+});
 document.querySelectorAll("[data-open-feedback]").forEach((button) =>
   button.addEventListener("click", () => {
     $("feedbackForm").reset();
@@ -3360,6 +3472,9 @@ setForm(savedDraft.data || savedDraft);
 renderInterpretation(currentAnalysis);
 renderLibrary();
 (async () => {
+  const inviteCode = document.body.dataset.inviteCode;
+  if (/^[A-Za-z0-9_-]{12}$/.test(inviteCode || ""))
+    sessionStorage.setItem("promptdock.inviteCode", inviteCode);
   const forkIntent = captureForkIntent();
   const openLibrary = new URLSearchParams(window.location.search).has(
     "library",

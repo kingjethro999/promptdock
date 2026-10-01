@@ -30,6 +30,7 @@ module.exports = [
       "src/diff.js",
       "src/mailer.js",
       "src/rate-limit.js",
+      "src/referrals.js",
       "src/schema.js",
       "src/security.js",
       "src/server.js",

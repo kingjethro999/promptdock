@@ -10,12 +10,23 @@ function fakeAuthDatabase() {
   const sessions = new Map();
   async function query(sql, params = []) {
     if (/^(BEGIN|COMMIT|ROLLBACK)$/.test(sql)) return { rows: [], rowCount: 0 };
+    if (
+      sql.startsWith(
+        "SELECT id, username, email FROM users WHERE referral_code",
+      )
+    ) {
+      const user = [...users.values()].find(
+        (entry) => entry.referral_code === params[0] && entry.email_verified_at,
+      );
+      return { rows: user ? [user] : [], rowCount: user ? 1 : 0 };
+    }
     if (sql.startsWith("INSERT INTO users")) {
       const user = {
         id: params[0],
         email: params[1],
         username: params[2],
         password_hash: params[3],
+        referred_by: params[4] || null,
         failed_logins: 0,
         locked_until: null,
         email_verified_at: null,
@@ -307,5 +318,48 @@ test("database username collisions return a clear conflict", async () => {
   } finally {
     database.pool = original.pool;
     database.ensureSchema = original.ensureSchema;
+  }
+});
+
+test("sign-up records a valid inviter while the reward waits for verification", async () => {
+  const fake = fakeAuthDatabase();
+  const original = {
+    pool: database.pool,
+    ensureSchema: database.ensureSchema,
+    configured: mailer.configured,
+    sendAuthLink: mailer.sendAuthLink,
+  };
+  fake.users.set("owner@example.com", {
+    id: "owner-id",
+    email: "owner@example.com",
+    username: "Owner",
+    referral_code: "verified1234",
+    email_verified_at: new Date(),
+  });
+  database.pool = fake.pool;
+  database.ensureSchema = async () => {};
+  mailer.configured = () => true;
+  mailer.sendAuthLink = async () => {};
+  try {
+    await auth.register({
+      email: "friend@example.com",
+      username: "Friend",
+      password: "long-enough-password",
+      referralCode: "verified1234",
+    });
+    assert.equal(fake.users.get("friend@example.com").referred_by, "owner-id");
+    assert.equal(fake.users.get("friend@example.com").email_verified_at, null);
+    await auth.register({
+      email: "other@example.com",
+      username: "Other",
+      password: "long-enough-password",
+      referralCode: "bad-code",
+    });
+    assert.equal(fake.users.get("other@example.com").referred_by, null);
+  } finally {
+    database.pool = original.pool;
+    database.ensureSchema = original.ensureSchema;
+    mailer.configured = original.configured;
+    mailer.sendAuthLink = original.sendAuthLink;
   }
 });

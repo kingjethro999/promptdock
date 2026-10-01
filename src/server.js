@@ -12,6 +12,7 @@ const database = require("./database");
 const auth = require("./auth");
 const settings = require("./settings");
 const rateLimit = require("./rate-limit");
+const referrals = require("./referrals");
 const securityHeaders = require("./security");
 
 const root = path.join(__dirname, "dist");
@@ -101,6 +102,68 @@ function escapeHtml(value) {
   );
 }
 
+function publicOrigin(request) {
+  const fallbackHost = process.env.VERCEL
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
+    : request.headers.host;
+  return process.env.APP_URL
+    ? new URL(process.env.APP_URL).origin
+    : `${process.env.VERCEL ? "https" : "http"}://${fallbackHost}`;
+}
+
+function renderInviteHtml(template, inviter, code, canonical, image) {
+  const name = inviter.username || "A PromptDock member";
+  const title = `${name} invited you to PromptDock`;
+  const description =
+    "Turn rough ideas into prompts worth keeping. Create a free workspace, save what works, and share it with others.";
+  const meta = `<meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="PromptDock — Good ideas deserve a clearer prompt"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="canonical" href="${escapeHtml(canonical)}">`;
+  return template
+    .replace(
+      "<title>PromptDock — Your AI prompt workspace</title>",
+      `<title>${escapeHtml(title)}</title>`,
+    )
+    .replace(
+      'content="Build better prompts, save what works, and use them with your favorite AI platform."',
+      `content="${escapeHtml(description)}"`,
+    )
+    .replace("<!--INVITE_META-->", meta)
+    .replace("<body>", `<body data-invite-code="${escapeHtml(code)}">`)
+    .replace(
+      "<!--INVITE_BANNER-->",
+      `<div class="invite-banner"><span class="invite-banner-mark" aria-hidden="true">✳</span><div><strong>${escapeHtml(name)} invited you in</strong><p>Bring a rough idea. Leave with a prompt you can actually use.</p></div><button type="button" data-auth-mode="register">Join PromptDock <span aria-hidden="true">↗</span></button></div>`,
+    );
+}
+
+async function serveInvitePage(request, response, code) {
+  try {
+    const inviter = await referrals.inviterFor(code);
+    if (!inviter) {
+      response
+        .writeHead(404, {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+        })
+        .end("Invitation unavailable.");
+      return;
+    }
+    const origin = publicOrigin(request);
+    const canonical = new URL(`/invite/${code}`, origin).toString();
+    const image = new URL("/social-card.png", origin).toString();
+    const template = await fs.promises.readFile(
+      path.join(root, "index.html"),
+      "utf8",
+    );
+    response.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    });
+    response.end(renderInviteHtml(template, inviter, code, canonical, image));
+  } catch {
+    json(response, 503, { error: "Invitation is unavailable right now." });
+  }
+}
+
 function renderSharedHtml(template, prompt, canonical, image) {
   const username =
     typeof prompt.ownerUsername === "string" ? prompt.ownerUsername.trim() : "";
@@ -140,12 +203,7 @@ async function serveSharedPage(request, response, publicId) {
         .end("Shared prompt unavailable.");
       return;
     }
-    const fallbackHost = process.env.VERCEL
-      ? process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
-      : request.headers.host;
-    const origin = process.env.APP_URL
-      ? new URL(process.env.APP_URL).origin
-      : `${process.env.VERCEL ? "https" : "http"}://${fallbackHost}`;
+    const origin = publicOrigin(request);
     const canonical = new URL(`/p/${publicId}`, origin).toString();
     const image = new URL("/social-card.png", origin).toString();
     const template = await fs.promises.readFile(
@@ -182,6 +240,37 @@ async function handleRequest(request, response) {
     pathname.match(/^\/p\/([0-9a-f-]{36})$/i)?.[1];
   if (sharedPageId && request.method === "GET") {
     await serveSharedPage(request, response, sharedPageId);
+    return;
+  }
+  const inviteCode =
+    url.searchParams.get("invite") ||
+    pathname.match(/^\/invite\/([A-Za-z0-9_-]{12})$/)?.[1];
+  if (inviteCode && request.method === "GET") {
+    await serveInvitePage(request, response, inviteCode);
+    return;
+  }
+  if (pathname === "/api/referrals") {
+    if (request.method !== "GET") {
+      json(response, 405, { error: "Method not allowed." });
+      return;
+    }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) {
+        json(response, 401, { error: "Sign in to invite friends." });
+        return;
+      }
+      const summary = await referrals.summary(user);
+      json(response, 200, {
+        ...summary,
+        url: new URL(
+          `/invite/${summary.code}`,
+          publicOrigin(request),
+        ).toString(),
+      });
+    } catch {
+      json(response, 503, { error: "Invitations are unavailable right now." });
+    }
     return;
   }
   if (pathname === "/api/status" && request.method === "GET") {
@@ -365,7 +454,7 @@ async function handleRequest(request, response) {
         return;
       }
       const user = await auth.currentUser(request).catch(() => null);
-      const subject = rateSubject(user);
+      const level = await referrals.rewardLevel(user);
       const usage = [];
       for (const route of [
         "/api/run",
@@ -374,7 +463,11 @@ async function handleRequest(request, response) {
       ]) {
         usage.push({
           route,
-          ...(await rateLimit.peek(request, route, subject ? { subject } : {})),
+          ...(await rateLimit.peek(
+            request,
+            route,
+            referrals.rateOptions(route, user, level),
+          )),
         });
       }
       json(response, 200, { usage });
@@ -795,7 +888,11 @@ async function handleRequest(request, response) {
         return;
       }
       const limit = await rateLimit.consume(request, pathname, {
-        subject: rateSubject(user),
+        ...referrals.rateOptions(
+          pathname,
+          user,
+          await referrals.rewardLevel(user),
+        ),
       });
       if (!limit.allowed) {
         json(
@@ -853,7 +950,11 @@ async function handleRequest(request, response) {
       } else if (pathname === "/api/enhance") ai.normalizeDraft(body);
       else ai.normalizeRunInput(body);
       const limit = await rateLimit.consume(request, pathname, {
-        subject: rateSubject(user),
+        ...referrals.rateOptions(
+          pathname,
+          user,
+          await referrals.rewardLevel(user),
+        ),
       });
       if (!limit.allowed) {
         json(
@@ -929,3 +1030,4 @@ if (require.main === module)
     );
 module.exports = handleRequest;
 module.exports.renderSharedHtml = renderSharedHtml;
+module.exports.renderInviteHtml = renderInviteHtml;

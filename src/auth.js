@@ -8,6 +8,7 @@ const {
 const { promisify } = require("node:util");
 const database = require("./database");
 const mailer = require("./mailer");
+const referrals = require("./referrals");
 
 const scrypt = promisify(callbackScrypt);
 const COOKIE = "promptdock_session";
@@ -176,10 +177,17 @@ async function register(body) {
   await database.ensureSchema();
   if (await usernameTaken(username))
     throw new AuthError("That username is taken.", 409);
+  const inviter = await referrals.inviterFor(body?.referralCode, email);
   try {
     const result = await database.pool.query(
-      "INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, email, username",
-      [randomUUID(), email, username, await hashPassword(password)],
+      "INSERT INTO users (id, email, username, password_hash, referred_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, username",
+      [
+        randomUUID(),
+        email,
+        username,
+        await hashPassword(password),
+        inviter?.id || null,
+      ],
     );
     await sendToken(result.rows[0], "verify");
     return { pending: true, email };
@@ -399,8 +407,8 @@ async function deleteAccount(user, body) {
     throw new AuthError("Password is incorrect.", 401);
   const ownerKey = database.accountKey(user.id);
   const bucketKeys = ["idea-to-prompt", "enhance", "transcribe", "run"].map(
-    (route) =>
-      createHash("sha256").update(`${route}:user:${user.id}`).digest("hex"),
+    (name) =>
+      createHash("sha256").update(`/api/${name}:user:${user.id}`).digest("hex"),
   );
   const client = await database.pool.connect();
   try {

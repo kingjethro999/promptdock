@@ -1232,13 +1232,107 @@ p {
 }
 .help-dialog {
   position: relative;
+  width: min(590px, calc(100% - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
 }
-.help-dialog ul {
-  padding-left: 18px;
-  margin: 19px 0 24px;
+.help-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 19px 0;
+  padding-bottom: 4px;
 }
-.help-dialog .primary-button {
-  padding: 0 20px;
+.help-tabs button {
+  flex: 1 0 auto;
+  border: 1px solid #dce8d8;
+  border-radius: 9px;
+  background: #fff;
+  color: #405c44;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.help-tabs button[aria-selected="true"] {
+  background: #dcf9ad;
+  border-color: #a4cf73;
+  color: #1d3928;
+  font-weight: 700;
+}
+.help-dialog [role="tabpanel"] h3 {
+  margin: 0 0 9px;
+  font:
+    700 16px Manrope,
+    sans-serif;
+}
+.help-dialog [role="tabpanel"] ol {
+  padding-left: 20px;
+  margin: 0 0 18px;
+}
+.help-dialog [role="tabpanel"] li {
+  margin: 8px 0;
+}
+.help-go {
+  border: 1px solid #bed6b1;
+  border-radius: 9px;
+  background: #f2faeb;
+  color: #26512c;
+  font-weight: 700;
+  padding: 10px 13px;
+  cursor: pointer;
+}
+.help-go:hover,
+.help-go:focus-visible {
+  background: #dcf9ad;
+}
+.invite-dialog {
+  width: min(490px, calc(100% - 28px));
+}
+.invite-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+.invite-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f2f8eb;
+}
+.invite-stats strong {
+  font:
+    800 22px Manrope,
+    sans-serif;
+  color: #315b30;
+}
+.invite-stats span {
+  color: #516c52;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.invite-dialog input[readonly] {
+  width: 100%;
+  margin-top: 7px;
+  background: #f8faf5;
+}
+.invite-dialog .dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+.invite-pending {
+  margin: 10px 0 0;
+}
+@media (max-width: 480px) {
+  .invite-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .invite-stats > div:first-child {
+    grid-column: 1 / -1;
+  }
 }
 .toast {
   position: fixed;

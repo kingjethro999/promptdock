@@ -31,6 +31,55 @@
   color: #173225;
   overflow: hidden;
 }
+.invite-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 1120px;
+  margin: 24px auto 0;
+  padding: 15px 18px;
+  border: 1px solid #c8e8b0;
+  border-radius: 14px;
+  background: #ecfadf;
+  color: #21412b;
+}
+.invite-banner-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 39px;
+  height: 39px;
+  border-radius: 10px;
+  background: #d0f39c;
+  font-size: 22px;
+}
+.invite-banner div {
+  flex: 1;
+}
+.invite-banner strong {
+  font-size: 14px;
+}
+.invite-banner p {
+  margin: 3px 0 0;
+  font-size: 12px;
+}
+.invite-banner button {
+  border: 0;
+  border-radius: 8px;
+  background: #1e3a29;
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .invite-banner {
+    margin: 14px 16px 0;
+    flex-wrap: wrap;
+  }
+  .invite-banner button {
+    width: 100%;
+  }
+}
 .landing-header {
   height: 86px;
   max-width: 1300px;

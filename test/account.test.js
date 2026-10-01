@@ -176,7 +176,7 @@ test("sessions list with their device, revoke individually, and an account can b
 
     fake.prompts.set(ownerKey, 4);
     fake.rateRows.add(
-      createHash("sha256").update(`run:user:${userId}`).digest("hex"),
+      createHash("sha256").update(`/api/run:user:${userId}`).digest("hex"),
     );
     await auth.deleteAccount({ id: userId }, { password: "long-password" });
     assert.equal(fake.users.size, 0);

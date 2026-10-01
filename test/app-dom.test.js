@@ -102,6 +102,8 @@ async function createWorkspace(seed = SEED, options = {}) {
     pretendToBeVisual: true,
   });
   const { window } = dom;
+  if (options.inviteCode)
+    window.document.body.dataset.inviteCode = options.inviteCode;
   window.PROMPTDOCK_CONFIG = { version: "0.0.0-test" };
   window.scrollTo = () => {};
   window.confirm = () => true;
@@ -219,6 +221,18 @@ async function createWorkspace(seed = SEED, options = {}) {
       return jsonResponse(200, { sessions: [] });
     if (pathname.startsWith("/api/usage"))
       return jsonResponse(200, { usage: [] });
+    if (pathname === "/api/referrals")
+      return jsonResponse(
+        200,
+        options.referrals || {
+          code: "AbCdEf123_-x",
+          url: "https://thepromptdock.vercel.app/invite/AbCdEf123_-x",
+          total: 2,
+          verified: 1,
+          rewardLevel: 1,
+          maxRewards: 5,
+        },
+      );
     if (pathname === "/api/feedback" && method === "POST")
       return jsonResponse(201, { ok: true, id: randomUUID() });
     return jsonResponse(404, { error: "Not found." });
@@ -981,6 +995,89 @@ test("creating an account asks for a username and sends it", async (t) => {
     signedIn.window.document.getElementById("settingsUsername").value,
     "KingJethro",
   );
+});
+
+test("header favors usernames, while legacy accounts still show email", async (t) => {
+  const named = await createWorkspace([], {
+    user: { id: "u1", email: "named@example.com", username: "Jethro" },
+  });
+  const legacy = await createWorkspace([], {
+    user: { id: "u2", email: "legacy@example.com", username: null },
+  });
+  t.after(() => {
+    named.window.close();
+    legacy.window.close();
+  });
+  await waitFor(
+    () =>
+      named.window.document.getElementById("accountButton").textContent ===
+      "Jethro",
+  );
+  await waitFor(
+    () =>
+      legacy.window.document.getElementById("accountButton").textContent ===
+      "legacy@example.com",
+  );
+});
+
+test("invite link shows earned limits and follows the registration request", async (t) => {
+  const account = await createWorkspace([], {
+    user: { id: "u1", email: "owner@example.com", username: "Owner" },
+  });
+  t.after(() => account.window.close());
+  const doc = account.window.document;
+  doc.getElementById("inviteFriends").click();
+  await waitFor(() => doc.getElementById("inviteLink").value !== "");
+  assert.equal(doc.getElementById("inviteBonus").textContent, "+2");
+  assert.equal(doc.getElementById("inviteVoiceBonus").textContent, "+1");
+  assert.match(
+    doc.getElementById("invitePending").textContent,
+    /waiting to verify/,
+  );
+  assert.equal(doc.getElementById("inviteDialog").open, true);
+
+  const guest = await createWorkspace([], { inviteCode: "AbCdEf123_-x" });
+  t.after(() => guest.window.close());
+  guest.window.document.querySelector('[data-auth-mode="register"]').click();
+  guest.window.document.getElementById("authEmail").value =
+    "friend@example.com";
+  guest.window.document.getElementById("authUsername").value = "Friend";
+  guest.window.document.getElementById("authPassword").value =
+    "long-enough-password";
+  guest.window.document.getElementById("authConfirm").value =
+    "long-enough-password";
+  guest.window.document
+    .getElementById("authForm")
+    .dispatchEvent(
+      new guest.window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+  await waitFor(() =>
+    guest.requests.some((request) => request.pathname === "/api/auth/register"),
+  );
+  assert.equal(
+    guest.requests.find((request) => request.pathname === "/api/auth/register")
+      .body.referralCode,
+    "AbCdEf123_-x",
+  );
+});
+
+test("help opens on the current area and guides people to the next action", async (t) => {
+  const { window } = await createWorkspace([], {
+    user: { id: "u1", email: "owner@example.com", username: "Owner" },
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  doc.querySelector('[data-view="library"]').click();
+  doc.getElementById("helpButton").click();
+  assert.equal(
+    doc.getElementById("helpTabLibrary").getAttribute("aria-selected"),
+    "true",
+  );
+  doc.getElementById("helpTabShare").click();
+  assert.equal(doc.getElementById("helpPanelShare").hidden, false);
+  doc.getElementById("helpOpenInvite").click();
+  await waitFor(() => doc.getElementById("inviteDialog").open);
+  assert.equal(doc.getElementById("helpDialog").open, false);
 });
 
 test("guest feedback opens from the landing page and shows a saved confirmation", async (t) => {

@@ -6,6 +6,7 @@ const handleRequest = require("../src/server");
 const database = require("../src/database");
 const auth = require("../src/auth");
 const rateLimit = require("../src/rate-limit");
+const referrals = require("../src/referrals");
 const settings = require("../src/settings");
 const ai = require("../src/ai");
 
@@ -457,6 +458,7 @@ test("the run endpoint executes a prompt for the signed-in account", async () =>
   let signedIn = true;
   const stubs = [
     [database, "configured", true],
+    [referrals, "rewardLevel", async () => 0],
     [
       auth,
       "currentUser",
@@ -601,6 +603,91 @@ test("usage endpoint reports the current AI budgets", async () => {
     assert.deepEqual(
       body.usage.map((item) => item.route),
       ["/api/run", "/api/idea-to-prompt", "/api/transcribe"],
+    );
+  });
+});
+
+test("invitation API is private and returns a stable public URL", async () => {
+  let user = null;
+  const stubs = [
+    [auth, "currentUser", async () => user],
+    [
+      referrals,
+      "summary",
+      async () => ({
+        code: "AbCdEf123_-x",
+        total: 2,
+        verified: 1,
+        rewardLevel: 1,
+        maxRewards: 5,
+      }),
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    assert.equal((await send(base, "/api/referrals")).status, 401);
+    user = { id: "owner", username: "Owner" };
+    const response = await send(base, "/api/referrals");
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(new URL(data.url).pathname, "/invite/AbCdEf123_-x");
+    assert.equal(
+      new URL(data.url).origin,
+      process.env.APP_URL
+        ? new URL(process.env.APP_URL).origin
+        : new URL(base).origin,
+    );
+    assert.equal(data.verified, 1);
+    assert.equal((await send(base, "/api/referrals", "POST")).status, 405);
+  });
+});
+
+test("verified invitations raise the policy used by AI requests and the usage meter", async () => {
+  const seen = [];
+  const user = { id: "owner", email: "owner@example.com" };
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => user],
+    [referrals, "rewardLevel", async () => 2],
+    [
+      settings,
+      "effectiveEnv",
+      async () => ({ GROQ_API_KEY: "test", GROQ_MODEL: "test" }),
+    ],
+    [
+      rateLimit,
+      "consume",
+      async (_request, route, options) => {
+        if (route === "/api/run") seen.push(options);
+        return { allowed: true };
+      },
+    ],
+    [
+      rateLimit,
+      "peek",
+      async (_request, route, options) => {
+        seen.push(options);
+        return {
+          capacity: options.policy.capacity,
+          remaining: options.policy.capacity,
+          used: 0,
+          resetsIn: 0,
+        };
+      },
+    ],
+    [ai, "runPrompt", async () => ({ text: "Done", provider: "groq" })],
+  ];
+  await withServer(stubs, async (base) => {
+    const run = await send(base, "/api/run", "POST", {
+      prompt: "Write a useful answer",
+    });
+    assert.equal(run.status, 200);
+    assert.equal(seen[0].policy.capacity, 24);
+    assert.equal(seen[0].subject, "user:owner");
+    const usage = await send(base, "/api/usage");
+    assert.equal(usage.status, 200);
+    assert.deepEqual(
+      (await usage.json()).usage.map((item) => item.capacity),
+      [24, 24, 12],
     );
   });
 });

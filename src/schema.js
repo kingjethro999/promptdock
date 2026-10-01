@@ -11,6 +11,10 @@ module.exports = [
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS username text",
   "CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users (lower(username))",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES users(id) ON DELETE SET NULL",
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_referral_code_key ON users (referral_code) WHERE referral_code IS NOT NULL",
+  "CREATE INDEX IF NOT EXISTS users_referred_by_idx ON users (referred_by) WHERE referred_by IS NOT NULL",
   "CREATE TABLE IF NOT EXISTS schema_migrations (key text PRIMARY KEY)",
   `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('grandfather_existing_accounts_v1')
     ON CONFLICT DO NOTHING RETURNING key)

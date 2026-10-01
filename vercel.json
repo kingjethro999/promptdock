@@ -47,6 +47,10 @@
     {
       "source": "/p/:id",
       "destination": "/api/index?share=:id"
+    },
+    {
+      "source": "/invite/:code",
+      "destination": "/api/index?invite=:code"
     }
   ]
 }
