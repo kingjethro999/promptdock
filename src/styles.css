@@ -817,7 +817,7 @@ p {
   border-radius: 8px;
   object-fit: contain;
   padding: 5px;
-  background: #e4f6ec;
+  background: transparent;
   filter: brightness(0) saturate(100%) invert(31%) sepia(14%) saturate(1000%)
     hue-rotate(82deg) brightness(88%);
   flex: none;
