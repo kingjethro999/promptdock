@@ -3,6 +3,7 @@
 Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Gemini, and other AI tools. The app includes a public interactive landing page, templates, voice input, account-based library sync, public prompt sharing, bring-your-own-key settings, copy, and Markdown export.
 
 If PromptDock helps your work, [support the project on GitHub Sponsors](https://github.com/sponsors/kingjethro999).
+You can also support it through [thanks.dev](https://thanks.dev/u/gh/kingjethro999).
 
 PromptDock is an independent personal project by [King Jethro](https://github.com/kingjethro999). The hosted site publishes a [Privacy Policy](src/privacy.html), [Terms of Use](src/terms.html), and [Copyright & independence notice](src/copyright.html). The source code is MIT licensed; user prompts are not automatically open source. Links to these pages appear on the landing page, signup form, shared prompt page, and workspace sidebar. The notices describe the current deployment and should be reviewed whenever its data handling or provider integrations change.
 

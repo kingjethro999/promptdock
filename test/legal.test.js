@@ -22,6 +22,7 @@ test("legal pages and their stylesheet are public on local and Vercel routes", a
       assert.match(page.headers.get("content-type"), /text\/html/);
       const html = await page.text();
       assert.match(html, /King Jethro/);
+      assert.match(html, /https:\/\/thanks\.dev\/u\/gh\/kingjethro999/);
       assert.match(html, new RegExp(`href="/${name}" aria-current="page"`));
       assert.ok(
         vercel.rewrites.some(
