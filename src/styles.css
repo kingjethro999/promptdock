@@ -341,6 +341,15 @@ p {
   line-height: 11px;
   text-align: center;
 }
+.updates-badge:not(.hidden) {
+  animation: updates-badge-pulse 1.6s ease-in-out infinite;
+}
+@keyframes updates-badge-pulse {
+  50% {
+    box-shadow: 0 0 0 5px #e37a4f26;
+    transform: scale(1.12);
+  }
+}
 .updates-popover {
   position: absolute;
   z-index: 25;
@@ -442,6 +451,18 @@ p {
   font-size: 11px;
   font-weight: 800;
   text-decoration: none;
+}
+.toast.live-update-toast {
+  top: 18px;
+  right: 50%;
+  bottom: auto;
+  transform: translate(50%, -10px);
+  border: 1px solid #6f9f58;
+  background: #244a30;
+  box-shadow: 0 14px 30px #1b392755;
+}
+.toast.live-update-toast.show {
+  transform: translate(50%, 0);
 }
 .mobile-menu {
   display: none;

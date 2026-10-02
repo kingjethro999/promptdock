@@ -39,6 +39,7 @@ module.exports = [
       "src/server.js",
       "src/settings.js",
       "src/speech.js",
+      "src/updates.js",
       "api/**/*.js",
       "scripts/**/*.js",
       "test/**/*.js",

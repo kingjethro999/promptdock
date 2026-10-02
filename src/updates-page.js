@@ -1,11 +1,10 @@
 (() => {
   const updates = window.PROMPTDOCK_UPDATES || [];
-  const key = "promptdock.updates.read.v1";
   const params = new URLSearchParams(window.location.search);
   const requested =
     window.location.pathname.match(/^\/updates\/([^/]+)/)?.[1] ||
     params.get("id");
-  const read = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+  let read = new Set();
   const list = document.getElementById("updatesList");
   const esc = (value) =>
     String(value).replace(
@@ -19,9 +18,17 @@
           "'": "&#39;",
         })[char],
     );
-  const mark = (id) => {
+  const mark = async (id) => {
+    const response = await fetch(
+      `/api/updates/${encodeURIComponent(id)}/read`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+      },
+    );
+    if (response.status === 401) throw new Error("Sign in to save read state.");
+    if (!response.ok) throw new Error("Could not save read state.");
     read.add(id);
-    localStorage.setItem(key, JSON.stringify([...read]));
   };
   const render = () => {
     const items = requested
@@ -41,10 +48,24 @@
       .join("");
     list.querySelectorAll("[data-read]").forEach((button) =>
       button.addEventListener("click", () => {
-        mark(button.dataset.read);
-        render();
+        mark(button.dataset.read)
+          .then(render)
+          .catch((error) => {
+            const notice = document.createElement("p");
+            notice.textContent = error.message;
+            notice.className = "updates-page-notice";
+            list.prepend(notice);
+          });
       }),
     );
   };
-  render();
+  fetch("/api/updates", { credentials: "same-origin" })
+    .then((response) => response.json())
+    .then((payload) => {
+      if (Array.isArray(payload.updates))
+        updates.splice(0, updates.length, ...payload.updates);
+      read = new Set(Array.isArray(payload.readIds) ? payload.readIds : []);
+      render();
+    })
+    .catch(() => render());
 })();

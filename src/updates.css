@@ -147,6 +147,14 @@
   color: #3e7547;
   font-weight: 800;
 }
+.updates-page-notice {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #fff2db;
+  color: #8a5a29;
+  font-size: 12px;
+}
 @media (max-width: 600px) {
   .updates-page {
     padding: 20px 17px 50px;

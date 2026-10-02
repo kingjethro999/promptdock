@@ -710,6 +710,7 @@ function persistDraft() {
 function showToast(message) {
   const toast = $("toast");
   toast.textContent = message;
+  toast.classList.remove("live-update-toast");
   toast.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
@@ -1259,18 +1260,11 @@ function renderAccount() {
   renderLibrary();
 }
 
-const updatesReadKey = "promptdock.updates.read.v1";
-function readUpdateIds() {
-  try {
-    const value = JSON.parse(localStorage.getItem(updatesReadKey) || "[]");
-    return new Set(Array.isArray(value) ? value : []);
-  } catch {
-    return new Set();
-  }
-}
-function saveReadUpdateIds(ids) {
-  localStorage.setItem(updatesReadKey, JSON.stringify([...ids]));
-}
+let updatesState = {
+  items: window.PROMPTDOCK_UPDATES || [],
+  readIds: new Set(),
+  ready: false,
+};
 function escapeUpdateText(value) {
   return String(value).replace(
     /[&<>"']/g,
@@ -1281,8 +1275,8 @@ function escapeUpdateText(value) {
   );
 }
 function renderUpdatesPreview() {
-  const updates = window.PROMPTDOCK_UPDATES || [];
-  const read = readUpdateIds();
+  const updates = updatesState.items;
+  const read = updatesState.readIds;
   const latest = updates.slice(0, 3);
   $("updatesBadge").textContent = String(
     latest.filter((item) => !read.has(item.id)).length || "",
@@ -1305,12 +1299,62 @@ function renderUpdatesPreview() {
     .querySelectorAll("[data-mark-update]")
     .forEach((button) =>
       button.addEventListener("click", () => {
-        const next = readUpdateIds();
-        next.add(button.dataset.markUpdate);
-        saveReadUpdateIds(next);
-        renderUpdatesPreview();
+        markUpdateRead(button.dataset.markUpdate);
       }),
     );
+}
+
+async function markUpdateRead(id) {
+  try {
+    const response = await fetch(
+      `/api/updates/${encodeURIComponent(id)}/read`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+      },
+    );
+    if (!response.ok) throw new Error("Sign in to save read state.");
+    updatesState.readIds.add(id);
+    renderUpdatesPreview();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function refreshLiveUpdates(announce = false) {
+  try {
+    const response = await fetch("/api/updates", {
+      credentials: "same-origin",
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const previous = new Set(updatesState.items.map((item) => item.id));
+    const incoming = Array.isArray(payload.updates) ? payload.updates : [];
+    const newItems = incoming.filter((item) => !previous.has(item.id));
+    updatesState.items = incoming;
+    updatesState.readIds = new Set(
+      Array.isArray(payload.readIds) ? payload.readIds : [],
+    );
+    renderUpdatesPreview();
+    if (announce && updatesState.ready && newItems.length) {
+      const item = newItems[0];
+      showLiveUpdateToast(`${item.version}: ${item.title}`);
+    }
+    updatesState.ready = true;
+  } catch {
+    // The static update list remains usable while the API is unavailable.
+  }
+}
+
+function showLiveUpdateToast(message) {
+  const toast = $("toast");
+  toast.textContent = `New update · ${message}`;
+  toast.classList.add("show", "live-update-toast");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(
+    () => toast.classList.remove("show", "live-update-toast"),
+    2000,
+  );
 }
 
 function renderShell() {
@@ -3270,13 +3314,19 @@ $("saveForm").addEventListener("submit", async (event) => {
 });
 $("accountButton").addEventListener("click", () => switchView("settings"));
 renderUpdatesPreview();
+refreshLiveUpdates();
+setInterval(() => refreshLiveUpdates(true), 30000);
 $("updatesButton").addEventListener("click", () => {
   window.location.assign("/updates");
 });
 $("markUpdatesRead").addEventListener("click", () => {
-  const ids = new Set((window.PROMPTDOCK_UPDATES || []).map((item) => item.id));
-  saveReadUpdateIds(ids);
-  renderUpdatesPreview();
+  fetch("/api/updates/read-all", { method: "POST", credentials: "same-origin" })
+    .then((response) => {
+      if (!response.ok) throw new Error("Sign in to save read state.");
+      updatesState.readIds = new Set(updatesState.items.map((item) => item.id));
+      renderUpdatesPreview();
+    })
+    .catch((error) => showToast(error.message));
 });
 $("updatesMenu").addEventListener("mouseenter", () => {
   $("updatesButton").setAttribute("aria-expanded", "true");

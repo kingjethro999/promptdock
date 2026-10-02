@@ -13,6 +13,7 @@ const auth = require("./auth");
 const settings = require("./settings");
 const rateLimit = require("./rate-limit");
 const referrals = require("./referrals");
+const updates = require("./updates");
 const securityHeaders = require("./security");
 
 const root = path.join(__dirname, "dist");
@@ -371,6 +372,49 @@ async function handleRequest(request, response) {
       json(response, 200, { user: await auth.currentUser(request) });
     } catch {
       json(response, 503, { error: "Account service is unavailable." });
+    }
+    return;
+  }
+  if (pathname === "/api/updates" && request.method === "GET") {
+    try {
+      const user = await auth.currentUser(request).catch(() => null);
+      json(response, 200, {
+        updates,
+        readIds:
+          user && database.configured
+            ? await database.listReadUpdates(user.id)
+            : [],
+      });
+    } catch {
+      json(response, 200, { updates, readIds: [] });
+    }
+    return;
+  }
+  const updateRead = pathname.match(/^\/api\/updates\/([^/]+)\/read$/);
+  if (
+    (updateRead || pathname === "/api/updates/read-all") &&
+    request.method === "POST"
+  ) {
+    if (!validOrigin(request))
+      return json(response, 403, { error: "Invalid origin." });
+    const user = await auth.currentUser(request).catch(() => null);
+    if (!user)
+      return json(response, 401, { error: "Sign in to save update state." });
+    if (!database.configured)
+      return json(response, 503, { error: "Update state is unavailable." });
+    try {
+      if (updateRead) {
+        if (!updates.some((item) => item.id === updateRead[1]))
+          return json(response, 404, { error: "Update not found." });
+        await database.markUpdateRead(user.id, updateRead[1]);
+      } else
+        await database.markAllUpdatesRead(
+          user.id,
+          updates.map((item) => item.id),
+        );
+      json(response, 200, { ok: true });
+    } catch {
+      json(response, 503, { error: "Update state is unavailable." });
     }
     return;
   }

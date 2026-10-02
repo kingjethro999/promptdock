@@ -483,6 +483,35 @@ async function createFeedback(input, userId = null) {
   return result.rows[0].id;
 }
 
+async function listReadUpdates(userId) {
+  await ensureSchema();
+  const result = await pool.query(
+    "SELECT update_id FROM user_update_reads WHERE user_id = $1",
+    [userId],
+  );
+  return result.rows.map((row) => row.update_id);
+}
+
+async function markUpdateRead(userId, updateId) {
+  await ensureSchema();
+  await pool.query(
+    `INSERT INTO user_update_reads (user_id, update_id) VALUES ($1, $2)
+     ON CONFLICT (user_id, update_id) DO UPDATE SET read_at = now()`,
+    [userId, updateId],
+  );
+}
+
+async function markAllUpdatesRead(userId, updateIds) {
+  await ensureSchema();
+  if (!updateIds.length) return;
+  await pool.query(
+    `INSERT INTO user_update_reads (user_id, update_id)
+     SELECT $1, value FROM jsonb_array_elements_text($2::jsonb)
+     ON CONFLICT (user_id, update_id) DO UPDATE SET read_at = now()`,
+    [userId, JSON.stringify(updateIds)],
+  );
+}
+
 module.exports = {
   configured,
   pool,
@@ -508,4 +537,7 @@ module.exports = {
   forkPublicPrompt,
   validateFeedback,
   createFeedback,
+  listReadUpdates,
+  markUpdateRead,
+  markAllUpdatesRead,
 };

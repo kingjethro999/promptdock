@@ -114,6 +114,13 @@ module.exports = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   "CREATE INDEX IF NOT EXISTS feedback_reports_created_idx ON feedback_reports (created_at DESC)",
+  `CREATE TABLE IF NOT EXISTS user_update_reads (
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    update_id text NOT NULL,
+    read_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, update_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS user_update_reads_user_idx ON user_update_reads (user_id, read_at DESC)",
   `CREATE TABLE IF NOT EXISTS api_rate_limits (
     bucket_key char(64) PRIMARY KEY,
     tokens double precision NOT NULL,
