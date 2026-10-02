@@ -3316,6 +3316,35 @@ $("accountButton").addEventListener("click", () => switchView("settings"));
 renderUpdatesPreview();
 refreshLiveUpdates();
 setInterval(() => refreshLiveUpdates(true), 30000);
+function positionUpdatesPopover() {
+  const button = $("updatesButton");
+  const popover = $("updatesPopover");
+  if (window.innerWidth > 760) {
+    popover.style.left = "";
+    popover.style.top = "";
+    popover.style.right = "";
+    popover.style.width = "";
+    return;
+  }
+  const trigger = button.getBoundingClientRect();
+  const width = Math.min(360, window.innerWidth - 24);
+  const left = Math.max(
+    12,
+    Math.min(
+      trigger.left + trigger.width / 2 - width / 2,
+      window.innerWidth - width - 12,
+    ),
+  );
+  popover.style.left = `${left}px`;
+  popover.style.right = "auto";
+  popover.style.top = `${trigger.bottom + 10}px`;
+  popover.style.width = `${width}px`;
+  popover.style.setProperty(
+    "--updates-pointer-left",
+    `${trigger.left + trigger.width / 2 - left - 6}px`,
+  );
+}
+window.addEventListener("resize", positionUpdatesPopover);
 $("updatesButton").addEventListener("click", () => {
   window.location.assign("/updates");
 });
@@ -3329,14 +3358,16 @@ $("markUpdatesRead").addEventListener("click", () => {
     .catch((error) => showToast(error.message));
 });
 $("updatesMenu").addEventListener("mouseenter", () => {
+  positionUpdatesPopover();
   $("updatesButton").setAttribute("aria-expanded", "true");
 });
 $("updatesMenu").addEventListener("mouseleave", () => {
   $("updatesButton").setAttribute("aria-expanded", "false");
 });
-$("updatesButton").addEventListener("focus", () =>
-  $("updatesButton").setAttribute("aria-expanded", "true"),
-);
+$("updatesButton").addEventListener("focus", () => {
+  positionUpdatesPopover();
+  $("updatesButton").setAttribute("aria-expanded", "true");
+});
 watchUsername($("authUsername"), $("authSubmit"));
 watchUsername($("settingsUsername"), $("saveUsername"));
 $("authForm").addEventListener("submit", submitAuth);

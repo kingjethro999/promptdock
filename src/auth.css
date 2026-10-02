@@ -29,14 +29,16 @@
   text-decoration: none;
 }
 .auth-brand > span:last-child {
-  display: grid;
+  display: block;
   line-height: 1;
+  white-space: nowrap;
 }
 .auth-brand > span:last-child > span {
   color: #c9ef75;
   display: inline;
 }
 .auth-brand small {
+  display: block;
   margin-top: 6px;
   color: #8cab91;
   font:

@@ -367,6 +367,19 @@ p {
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
+  --updates-pointer-left: calc(100% - 28px);
+}
+.updates-popover::before {
+  position: absolute;
+  top: -7px;
+  left: var(--updates-pointer-left);
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid #d8e5d3;
+  border-left: 1px solid #d8e5d3;
+  background: #fff;
+  content: "";
+  transform: rotate(45deg);
 }
 .updates-menu:hover .updates-popover,
 .updates-menu:focus-within .updates-popover {
@@ -463,6 +476,15 @@ p {
 }
 .toast.live-update-toast.show {
   transform: translate(50%, 0);
+}
+@media (max-width: 760px) {
+  .updates-popover {
+    position: fixed;
+    top: 70px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
 }
 .mobile-menu {
   display: none;
