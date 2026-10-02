@@ -386,4 +386,22 @@
   .shared-footer span:nth-child(2) {
     display: none;
   }
+  .shared-footer nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    border-top: 1px solid #365043;
+    padding-top: 10px;
+  }
+  .shared-footer nav a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .shared-footer nav a:first-child {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
 }

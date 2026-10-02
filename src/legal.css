@@ -297,6 +297,20 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
   .legal-footer nav {
+    display: grid;
     grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    border-top: 1px solid #365043;
+    padding-top: 12px;
+  }
+  .legal-footer nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 4px;
+  }
+  .legal-footer nav a:nth-child(n + 5) {
+    grid-column: 1 / -1;
   }
 }
