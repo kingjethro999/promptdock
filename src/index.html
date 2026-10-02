@@ -16,6 +16,7 @@
     <script src="/config.js" defer></script>
     <script src="/prompt-format.js" defer></script>
     <script src="/diff.js" defer></script>
+    <script src="/updates-data.js" defer></script>
     <script src="/app.js" defer></script>
   </head>
   <body>
@@ -418,8 +419,40 @@
           </div>
           <div class="top-actions">
             <button class="account-trigger" id="accountButton" type="button">
-              Sign in to sync</button
-            ><button
+              Sign in to sync
+            </button>
+            <div class="updates-menu" id="updatesMenu">
+              <button
+                class="updates-button"
+                id="updatesButton"
+                type="button"
+                aria-label="Product updates"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+                  /></svg
+                ><span class="updates-badge hidden" id="updatesBadge"></span>
+              </button>
+              <div
+                class="updates-popover"
+                id="updatesPopover"
+                role="status"
+                aria-label="Latest product updates"
+              >
+                <div class="updates-popover-head">
+                  <strong>Latest updates</strong
+                  ><button type="button" id="markUpdatesRead">
+                    Mark all read
+                  </button>
+                </div>
+                <div id="updatesPreview"></div>
+                <a class="updates-see-all" href="/updates">See all updates ↗</a>
+              </div>
+            </div>
+            <button
               class="help-button"
               id="helpButton"
               aria-label="How PromptDock works"

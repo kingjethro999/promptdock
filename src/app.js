@@ -1259,6 +1259,60 @@ function renderAccount() {
   renderLibrary();
 }
 
+const updatesReadKey = "promptdock.updates.read.v1";
+function readUpdateIds() {
+  try {
+    const value = JSON.parse(localStorage.getItem(updatesReadKey) || "[]");
+    return new Set(Array.isArray(value) ? value : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveReadUpdateIds(ids) {
+  localStorage.setItem(updatesReadKey, JSON.stringify([...ids]));
+}
+function escapeUpdateText(value) {
+  return String(value).replace(
+    /[&<>"']/g,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ],
+  );
+}
+function renderUpdatesPreview() {
+  const updates = window.PROMPTDOCK_UPDATES || [];
+  const read = readUpdateIds();
+  const latest = updates.slice(0, 3);
+  $("updatesBadge").textContent = String(
+    latest.filter((item) => !read.has(item.id)).length || "",
+  );
+  $("updatesBadge").classList.toggle(
+    "hidden",
+    !latest.some((item) => !read.has(item.id)),
+  );
+  $("updatesPreview").innerHTML = latest
+    .map(
+      (
+        item,
+      ) => `<article class="updates-preview-item ${read.has(item.id) ? "is-read" : ""}">
+        <a href="/updates/${encodeURIComponent(item.id)}"><span class="updates-preview-meta">${escapeUpdateText(item.version)} · ${escapeUpdateText(item.date)}</span><strong>${escapeUpdateText(item.title)}</strong><span>${escapeUpdateText(item.summary)}</span></a>
+        <button type="button" data-mark-update="${escapeUpdateText(item.id)}" aria-label="Mark ${escapeUpdateText(item.title)} as read">✓</button>
+      </article>`,
+    )
+    .join("");
+  $("updatesPreview")
+    .querySelectorAll("[data-mark-update]")
+    .forEach((button) =>
+      button.addEventListener("click", () => {
+        const next = readUpdateIds();
+        next.add(button.dataset.markUpdate);
+        saveReadUpdateIds(next);
+        renderUpdatesPreview();
+      }),
+    );
+}
+
 function renderShell() {
   const enteringWorkspace =
     currentUser && $("appShell").classList.contains("hidden");
@@ -3215,6 +3269,24 @@ $("saveForm").addEventListener("submit", async (event) => {
   $("saveDialog").close();
 });
 $("accountButton").addEventListener("click", () => switchView("settings"));
+renderUpdatesPreview();
+$("updatesButton").addEventListener("click", () => {
+  window.location.assign("/updates");
+});
+$("markUpdatesRead").addEventListener("click", () => {
+  const ids = new Set((window.PROMPTDOCK_UPDATES || []).map((item) => item.id));
+  saveReadUpdateIds(ids);
+  renderUpdatesPreview();
+});
+$("updatesMenu").addEventListener("mouseenter", () => {
+  $("updatesButton").setAttribute("aria-expanded", "true");
+});
+$("updatesMenu").addEventListener("mouseleave", () => {
+  $("updatesButton").setAttribute("aria-expanded", "false");
+});
+$("updatesButton").addEventListener("focus", () =>
+  $("updatesButton").setAttribute("aria-expanded", "true"),
+);
 watchUsername($("authUsername"), $("authSubmit"));
 watchUsername($("settingsUsername"), $("saveUsername"));
 $("authForm").addEventListener("submit", submitAuth);

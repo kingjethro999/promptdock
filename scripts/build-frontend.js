@@ -13,6 +13,7 @@ for (const file of [
   "terms.html",
   "copyright.html",
   "auth.html",
+  "updates.html",
   "app.js",
   "share.js",
   "prompt-format.js",
@@ -34,6 +35,18 @@ fs.copyFileSync(path.join(source, "auth.css"), path.join(output, "auth.css"));
 fs.copyFileSync(
   path.join(source, "auth-page.js"),
   path.join(output, "auth-page.js"),
+);
+fs.copyFileSync(
+  path.join(source, "updates.css"),
+  path.join(output, "updates.css"),
+);
+fs.copyFileSync(
+  path.join(source, "updates-data.js"),
+  path.join(output, "updates-data.js"),
+);
+fs.copyFileSync(
+  path.join(source, "updates-page.js"),
+  path.join(output, "updates-page.js"),
 );
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 fs.writeFileSync(

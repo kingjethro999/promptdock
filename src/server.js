@@ -31,6 +31,7 @@ const publicFiles = new Set([
   "/terms.html",
   "/copyright.html",
   "/auth.html",
+  "/updates.html",
   "/styles.css",
   "/landing.css",
   "/share.css",
@@ -43,6 +44,9 @@ const publicFiles = new Set([
   "/social-card.png",
   "/auth.css",
   "/auth-page.js",
+  "/updates.css",
+  "/updates-data.js",
+  "/updates-page.js",
 ]);
 
 function json(response, status, body, headers = {}) {
@@ -1040,6 +1044,8 @@ async function handleRequest(request, response) {
   }
   if (pathname === "/") pathname = "/index.html";
   if (pathname === "/auth") pathname = "/auth.html";
+  if (pathname === "/updates" || pathname.startsWith("/updates/"))
+    pathname = "/updates.html";
   if (["/privacy", "/terms", "/copyright"].includes(pathname))
     pathname += ".html";
   if (!publicFiles.has(pathname)) {
