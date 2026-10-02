@@ -27,9 +27,13 @@ const types = {
 const publicFiles = new Set([
   "/index.html",
   "/share.html",
+  "/privacy.html",
+  "/terms.html",
+  "/copyright.html",
   "/styles.css",
   "/landing.css",
   "/share.css",
+  "/legal.css",
   "/app.js",
   "/share.js",
   "/prompt-format.js",
@@ -1032,6 +1036,8 @@ async function handleRequest(request, response) {
     return;
   }
   if (pathname === "/") pathname = "/index.html";
+  if (["/privacy", "/terms", "/copyright"].includes(pathname))
+    pathname += ".html";
   if (!publicFiles.has(pathname)) {
     response.writeHead(404).end("Not found");
     return;

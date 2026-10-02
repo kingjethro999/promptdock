@@ -976,6 +976,14 @@ test("creating an account asks for a username and sends it", async (t) => {
   doc.querySelector('[data-auth-mode="register"]').click();
   assert.equal(doc.getElementById("authDialog").open, true);
   assert.equal(usernameWrap.classList.contains("hidden"), false);
+  assert.equal(
+    doc.getElementById("authLegal").classList.contains("hidden"),
+    false,
+  );
+  assert.equal(
+    doc.querySelector('#authLegal a[href="/privacy"]') !== null,
+    true,
+  );
   assert.equal(doc.getElementById("authUsername").required, true);
 
   doc.getElementById("authEmail").value = "new@example.com";

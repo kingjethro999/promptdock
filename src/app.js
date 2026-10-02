@@ -1333,6 +1333,7 @@ function openAuth(mode = "login") {
   $("authSubmit").classList.toggle("hidden", mode === "verifying");
   $("authToggle").classList.toggle("hidden", mode === "verifying");
   $("authForgot").classList.toggle("hidden", mode !== "login");
+  $("authLegal").classList.toggle("hidden", mode !== "register");
   $("authPassword").autocomplete =
     mode === "login" ? "current-password" : "new-password";
   $("authUsername").value = "";

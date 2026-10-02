@@ -220,6 +220,22 @@ p {
   color: #8da392;
   padding-left: 13px;
 }
+.sidebar-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  padding: 13px;
+  font-size: 10px;
+}
+.sidebar-legal a {
+  color: #adc4ac;
+  text-decoration: none;
+}
+.sidebar-legal a:hover,
+.sidebar-legal a:focus-visible {
+  color: #d7f477;
+  text-decoration: underline;
+}
 .status-dot {
   display: inline-block;
   width: 7px;
@@ -2061,6 +2077,16 @@ p {
   min-height: 16px;
   margin: 12px 0 0 !important;
   color: #aa3f34 !important;
+}
+.auth-legal {
+  margin: 14px 0 0 !important;
+  color: #748578 !important;
+  font-size: 11px !important;
+  line-height: 1.5;
+}
+.auth-legal a {
+  color: #386b3e;
+  font-weight: 700;
 }
 .username-status {
   display: block;

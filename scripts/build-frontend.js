@@ -8,6 +8,9 @@ fs.mkdirSync(output, { recursive: true });
 for (const file of [
   "index.html",
   "share.html",
+  "privacy.html",
+  "terms.html",
+  "copyright.html",
   "app.js",
   "share.js",
   "prompt-format.js",
@@ -15,6 +18,7 @@ for (const file of [
   "styles.css",
   "landing.css",
   "share.css",
+  "legal.css",
   "favicon.svg",
   "social-card.png",
 ])

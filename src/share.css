@@ -301,6 +301,12 @@
   text-decoration: none;
   font-weight: 800;
 }
+.shared-footer nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
 @media (max-width: 830px) {
   .shared-content {
     grid-template-columns: 1fr;

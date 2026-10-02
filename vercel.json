@@ -51,6 +51,18 @@
     {
       "source": "/invite/:code",
       "destination": "/api/index?invite=:code"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/copyright",
+      "destination": "/copyright.html"
     }
   ]
 }

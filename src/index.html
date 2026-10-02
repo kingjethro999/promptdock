@@ -287,6 +287,9 @@
         <div class="landing-footer-actions">
           <button type="button" data-open-feedback>Send feedback</button>
           <button type="button" data-auth-mode="login">Sign in ↗</button>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/copyright">Copyright</a>
         </div>
       </footer>
     </div>
@@ -364,6 +367,10 @@
             <span class="status-dot"></span>
             <span id="privacyNote">Saved prompts stay in this browser</span>
           </div>
+          <nav class="sidebar-legal" aria-label="Legal information">
+            <a href="/privacy">Privacy</a><a href="/terms">Terms</a
+            ><a href="/copyright">Copyright</a>
+          </nav>
           <div class="sidebar-version">
             PromptDock <span id="appVersion">Loading…</span>
           </div>
@@ -1220,6 +1227,16 @@
             Sign in
           </button>
         </div>
+        <p id="authLegal" class="auth-legal hidden">
+          By creating an account, you agree to the
+          <a href="/terms" target="_blank" rel="noopener noreferrer"
+            >Terms of Use</a
+          >
+          and acknowledge the
+          <a href="/privacy" target="_blank" rel="noopener noreferrer"
+            >Privacy Policy</a
+          >.
+        </p>
       </form>
     </dialog>
     <dialog id="saveDialog" class="app-dialog">
