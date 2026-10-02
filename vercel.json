@@ -63,6 +63,18 @@
     {
       "source": "/copyright",
       "destination": "/copyright.html"
+    },
+    {
+      "source": "/auth",
+      "destination": "/auth.html"
+    },
+    {
+      "source": "/updates",
+      "destination": "/updates.html"
+    },
+    {
+      "source": "/updates/:id",
+      "destination": "/updates.html"
     }
   ]
 }
