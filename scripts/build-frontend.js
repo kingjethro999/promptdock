@@ -5,6 +5,7 @@ const root = path.resolve(__dirname, "..");
 const source = path.join(root, "src");
 const output = path.join(source, "dist");
 fs.mkdirSync(output, { recursive: true });
+fs.mkdirSync(path.join(output, "assets", "brands"), { recursive: true });
 for (const file of [
   "index.html",
   "share.html",
@@ -23,6 +24,11 @@ for (const file of [
   "social-card.png",
 ])
   fs.copyFileSync(path.join(source, file), path.join(output, file));
+for (const file of ["openai.png", "anthropic.png", "gemini.png", "github.png"])
+  fs.copyFileSync(
+    path.join(source, "assets", "brands", file),
+    path.join(output, "assets", "brands", file),
+  );
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 fs.writeFileSync(
   path.join(output, "config.js"),

@@ -815,9 +815,11 @@ p {
   height: 29px;
   width: 29px;
   border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 20px;
+  object-fit: contain;
+  padding: 5px;
+  background: #e4f6ec;
+  filter: brightness(0) saturate(100%) invert(31%) sepia(14%) saturate(1000%)
+    hue-rotate(82deg) brightness(88%);
   flex: none;
 }
 .chatgpt-logo {

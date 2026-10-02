@@ -736,15 +736,24 @@
   color: #f5f9ed;
   box-shadow: 0 20px 45px -26px #24463078;
 }
-.sponsor-card-sparkle {
+.sponsor-card-icon {
   position: absolute;
   top: 14px;
   right: 28px;
-  color: #d7f477;
-  font-size: 88px;
-  line-height: 1;
-  opacity: 0.75;
-  transform: rotate(-16deg);
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(85%) sepia(47%) saturate(600%)
+    hue-rotate(35deg) brightness(105%);
+  opacity: 0.9;
+}
+.brand-icon {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  vertical-align: -4px;
+  filter: brightness(0) saturate(100%) invert(72%) sepia(38%) saturate(650%)
+    hue-rotate(39deg) brightness(103%);
 }
 .sponsor-card-body {
   position: relative;
@@ -865,9 +874,11 @@
   color: #f2f6eb;
 }
 .sidebar-sponsor-icon {
-  color: #d7f477;
-  font-size: 25px;
-  line-height: 1;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(85%) sepia(47%) saturate(600%)
+    hue-rotate(35deg) brightness(105%);
 }
 .sidebar-sponsor strong {
   font-size: 12px;
@@ -1379,9 +1390,6 @@ select.search-select-native {
 @media (max-width: 600px) {
   .landing-sponsor {
     padding: 42px 17px;
-  }
-  .sponsor-card-sparkle {
-    display: none;
   }
   .landing-header {
     padding: 0 16px;
