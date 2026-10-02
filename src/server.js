@@ -30,6 +30,7 @@ const publicFiles = new Set([
   "/privacy.html",
   "/terms.html",
   "/copyright.html",
+  "/auth.html",
   "/styles.css",
   "/landing.css",
   "/share.css",
@@ -40,6 +41,8 @@ const publicFiles = new Set([
   "/config.js",
   "/favicon.svg",
   "/social-card.png",
+  "/auth.css",
+  "/auth-page.js",
 ]);
 
 function json(response, status, body, headers = {}) {
@@ -1036,6 +1039,7 @@ async function handleRequest(request, response) {
     return;
   }
   if (pathname === "/") pathname = "/index.html";
+  if (pathname === "/auth") pathname = "/auth.html";
   if (["/privacy", "/terms", "/copyright"].includes(pathname))
     pathname += ".html";
   if (!publicFiles.has(pathname)) {

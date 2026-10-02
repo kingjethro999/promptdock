@@ -12,6 +12,7 @@ for (const file of [
   "privacy.html",
   "terms.html",
   "copyright.html",
+  "auth.html",
   "app.js",
   "share.js",
   "prompt-format.js",
@@ -29,6 +30,11 @@ for (const file of ["openai.png", "anthropic.png", "gemini.png", "github.png"])
     path.join(source, "assets", "brands", file),
     path.join(output, "assets", "brands", file),
   );
+fs.copyFileSync(path.join(source, "auth.css"), path.join(output, "auth.css"));
+fs.copyFileSync(
+  path.join(source, "auth-page.js"),
+  path.join(output, "auth-page.js"),
+);
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 fs.writeFileSync(
   path.join(output, "config.js"),

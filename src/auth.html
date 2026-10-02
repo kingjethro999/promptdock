@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8f3" />
+    <meta
+      name="description"
+      content="Sign in or create your PromptDock workspace."
+    />
+    <title>Sign in — PromptDock</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="stylesheet" href="/auth.css" />
+  </head>
+  <body class="auth-page-body">
+    <main class="auth-page">
+      <section class="auth-story" aria-label="About PromptDock">
+        <a class="auth-brand" href="/" aria-label="PromptDock home">
+          <span class="auth-brand-mark">✳</span>
+          <span>prompt<span>dock</span><small>YOUR AI WORKSPACE</small></span>
+        </a>
+        <div class="auth-story-copy">
+          <span class="landing-kicker">YOUR IDEAS, WITH A CLEARER PATH</span>
+          <h1>Turn a rough thought into a prompt worth keeping.</h1>
+          <p>
+            Save what works, return from any device, and share your best prompts
+            with your people.
+          </p>
+        </div>
+        <div class="auth-story-note">
+          <span>✦</span> Start free. Bring your own model keys when you are
+          ready.
+        </div>
+      </section>
+      <section class="auth-panel" aria-labelledby="authTitle">
+        <a class="auth-back" href="/">← Back to PromptDock</a>
+        <div class="auth-card">
+          <span class="auth-card-mark" aria-hidden="true">✳</span>
+          <h1 id="authTitle">Sign in</h1>
+          <p id="authDescription">
+            Sign in to open your saved prompts on any device.
+          </p>
+          <form id="authPageForm" novalidate>
+            <div id="authPageEmailWrap">
+              <label for="authPageEmail">Email</label>
+              <input
+                id="authPageEmail"
+                type="email"
+                maxlength="254"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div id="authPageUsernameWrap" class="hidden">
+              <label for="authPageUsername">Username</label>
+              <input
+                id="authPageUsername"
+                type="text"
+                minlength="3"
+                maxlength="24"
+                pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}"
+                autocomplete="username"
+                placeholder="e.g. kingjethro"
+                aria-describedby="authPageUsernameFeedback"
+              />
+              <small>3–24 letters, numbers, or underscores.</small>
+              <span
+                id="authPageUsernameFeedback"
+                class="auth-page-status"
+                role="status"
+                aria-live="polite"
+              ></span>
+            </div>
+            <div id="authPagePasswordWrap">
+              <label for="authPagePassword">Password</label>
+              <div class="auth-password-field">
+                <input
+                  id="authPagePassword"
+                  type="password"
+                  minlength="12"
+                  maxlength="200"
+                  autocomplete="current-password"
+                  required
+                /><button type="button" data-toggle-password="authPagePassword">
+                  Show
+                </button>
+              </div>
+            </div>
+            <div id="authPageConfirmWrap" class="hidden">
+              <label for="authPageConfirm">Confirm password</label>
+              <div class="auth-password-field">
+                <input
+                  id="authPageConfirm"
+                  type="password"
+                  minlength="12"
+                  maxlength="200"
+                  autocomplete="new-password"
+                /><button type="button" data-toggle-password="authPageConfirm">
+                  Show
+                </button>
+              </div>
+            </div>
+            <button type="button" class="auth-page-link" id="authPageForgot">
+              Forgot password?
+            </button>
+            <p class="auth-error" id="authPageError" role="alert"></p>
+            <p
+              class="auth-success"
+              id="authPageSuccess"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <div class="auth-page-actions">
+              <button
+                class="secondary-button"
+                type="button"
+                id="authPageToggle"
+              >
+                Create account
+              </button>
+              <button class="primary-button" type="submit" id="authPageSubmit">
+                Sign in
+              </button>
+            </div>
+            <p id="authPageLegal" class="auth-legal hidden">
+              By creating an account, you agree to the
+              <a href="/terms">Terms of Use</a> and acknowledge the
+              <a href="/privacy">Privacy Policy</a>.
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="/config.js"></script>
+    <script src="/auth-page.js" defer></script>
+  </body>
+</html>

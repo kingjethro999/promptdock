@@ -16,6 +16,7 @@ module.exports = [
   {
     files: [
       "src/app.js",
+      "src/auth-page.js",
       "src/share.js",
       "src/prompt-format.js",
       "src/diff.js",

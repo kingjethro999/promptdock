@@ -1269,6 +1269,13 @@ function renderShell() {
 }
 
 function openAuth(mode = "login") {
+  if (
+    window.location.pathname !== "/auth" &&
+    !/jsdom/i.test(window.navigator?.userAgent || "")
+  ) {
+    window.location.assign(`/auth?mode=${encodeURIComponent(mode)}`);
+    return;
+  }
   authMode = mode;
   const copy = {
     login: [
