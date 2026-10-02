@@ -9,6 +9,7 @@ const policies = Object.freeze({
   "/api/run": { capacity: 20, periodSeconds: 3600 },
   "/api/auth/login": { capacity: 20, periodSeconds: 900 },
   "/api/auth/register": { capacity: 10, periodSeconds: 3600 },
+  "/api/auth/username-check": { capacity: 120, periodSeconds: 3600 },
   "/api/auth/forgot": { capacity: 6, periodSeconds: 3600 },
   "/api/auth/resend": { capacity: 6, periodSeconds: 3600 },
   "/api/auth/reset": { capacity: 10, periodSeconds: 900 },

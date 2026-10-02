@@ -641,6 +641,60 @@ test("invitation API is private and returns a stable public URL", async () => {
   });
 });
 
+test("username availability is checked for guests and existing account owners", async () => {
+  let user = null;
+  let allowed = true;
+  const checks = [];
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => user],
+    [
+      auth,
+      "checkUsername",
+      async (username, userId) => {
+        checks.push([username, userId]);
+        if (username === "bad!") {
+          const error = new Error(
+            "Username must be 3-24 letters, numbers, or underscores.",
+          );
+          error.status = 400;
+          throw error;
+        }
+        return { username, available: username !== "Taken" || Boolean(userId) };
+      },
+    ],
+    [rateLimit, "consume", async () => ({ allowed, retryAfter: 30 })],
+  ];
+  await withServer(stubs, async (base) => {
+    assert.deepEqual(
+      await (
+        await send(base, "/api/auth/username-check?username=Taken")
+      ).json(),
+      { username: "Taken", available: false },
+    );
+    user = { id: "owner" };
+    assert.deepEqual(
+      await (
+        await send(base, "/api/auth/username-check?username=Taken")
+      ).json(),
+      { username: "Taken", available: true },
+    );
+    assert.deepEqual(checks, [
+      ["Taken", undefined],
+      ["Taken", "owner"],
+    ]);
+    assert.equal(
+      (await send(base, "/api/auth/username-check?username=bad!")).status,
+      400,
+    );
+    allowed = false;
+    assert.equal(
+      (await send(base, "/api/auth/username-check?username=Fresh")).status,
+      429,
+    );
+  });
+});
+
 test("verified invitations raise the policy used by AI requests and the usage meter", async () => {
   const seen = [];
   const user = { id: "owner", email: "owner@example.com" };

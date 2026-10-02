@@ -130,6 +130,21 @@ async function createWorkspace(seed = SEED, options = {}) {
       }
     }
     requests.push({ pathname, method, body });
+    if (pathname.startsWith("/api/auth/username-check")) {
+      const username = new URL(pathname, "http://localhost").searchParams.get(
+        "username",
+      );
+      if (options.usernameCheckUnavailable)
+        return jsonResponse(503, { error: "Check unavailable." });
+      return jsonResponse(200, {
+        username,
+        available:
+          !options.takenUsernames?.some(
+            (entry) => entry.toLowerCase() === username?.toLowerCase(),
+          ) ||
+          options.user?.username?.toLowerCase() === username?.toLowerCase(),
+      });
+    }
     if (pathname.startsWith("/api/auth/me"))
       return options.user
         ? jsonResponse(200, { user: options.user })
@@ -995,6 +1010,68 @@ test("creating an account asks for a username and sends it", async (t) => {
     signedIn.window.document.getElementById("settingsUsername").value,
     "KingJethro",
   );
+});
+
+test("signup and Settings explain invalid or taken usernames before saving", async (t) => {
+  const guest = await createWorkspace([], { takenUsernames: ["Claimed"] });
+  t.after(() => guest.window.close());
+  const doc = guest.window.document;
+  doc.querySelector('[data-auth-mode="register"]').click();
+  const input = doc.getElementById("authUsername");
+  input.value = "a!";
+  input.dispatchEvent(new guest.window.Event("input", { bubbles: true }));
+  assert.match(doc.getElementById("authUsernameFeedback").textContent, /3–24/);
+  assert.equal(doc.getElementById("authSubmit").disabled, true);
+  input.value = "Claimed";
+  input.dispatchEvent(new guest.window.Event("input", { bubbles: true }));
+  await waitFor(() =>
+    doc.getElementById("authUsernameFeedback").textContent.includes("taken"),
+  );
+  assert.equal(doc.getElementById("authSubmit").disabled, true);
+  input.value = "FreshName";
+  input.dispatchEvent(new guest.window.Event("input", { bubbles: true }));
+  await waitFor(() =>
+    doc
+      .getElementById("authUsernameFeedback")
+      .textContent.includes("available"),
+  );
+  assert.equal(doc.getElementById("authSubmit").disabled, false);
+
+  const account = await createWorkspace([], {
+    user: { id: "u1", email: "owner@example.com", username: "Owner" },
+    takenUsernames: ["Claimed"],
+  });
+  t.after(() => account.window.close());
+  const settings = account.window.document;
+  const settingsInput = settings.getElementById("settingsUsername");
+  settingsInput.value = "Claimed";
+  settingsInput.dispatchEvent(
+    new account.window.Event("input", { bubbles: true }),
+  );
+  await waitFor(() =>
+    settings
+      .getElementById("settingsUsernameAvailability")
+      .textContent.includes("taken"),
+  );
+  assert.equal(settings.getElementById("saveUsername").disabled, true);
+  settingsInput.value = "Owner";
+  settingsInput.dispatchEvent(
+    new account.window.Event("input", { bubbles: true }),
+  );
+  assert.match(
+    settings.getElementById("settingsUsernameAvailability").textContent,
+    /current/,
+  );
+  settingsInput.value = "NewOwner";
+  settingsInput.dispatchEvent(
+    new account.window.Event("input", { bubbles: true }),
+  );
+  await waitFor(() =>
+    settings
+      .getElementById("settingsUsernameAvailability")
+      .textContent.includes("available"),
+  );
+  assert.equal(settings.getElementById("saveUsername").disabled, false);
 });
 
 test("header favors usernames, while legacy accounts still show email", async (t) => {

@@ -156,6 +156,11 @@ let activeTag = "";
 let librarySort = "updated";
 let remoteTags = [];
 let authMode = "login";
+const usernamePattern = /^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/;
+const usernameChecks = {
+  authUsername: { sequence: 0 },
+  settingsUsername: { sequence: 0 },
+};
 let pendingSave = false;
 let pendingPaste = null;
 let resetToken = null;
@@ -187,6 +192,115 @@ async function readApiJson(response) {
   } catch {
     throw new Error("The site API returned an invalid response. Try again.");
   }
+}
+
+function usernameStatus(input, message, state) {
+  const status = $(
+    input.id === "authUsername"
+      ? "authUsernameFeedback"
+      : "settingsUsernameAvailability",
+  );
+  status.textContent = message;
+  status.dataset.state = state;
+  input.setAttribute("aria-invalid", String(state === "error"));
+}
+
+function cancelUsernameCheck(input) {
+  const check = usernameChecks[input.id];
+  check.sequence++;
+  clearTimeout(check.timer);
+}
+
+async function checkUsernameNow(input, button, preserveButton = false) {
+  cancelUsernameCheck(input);
+  const sequence = usernameChecks[input.id].sequence;
+  const username = input.value.trim();
+  if (!usernamePattern.test(username)) {
+    usernameStatus(
+      input,
+      "Use 3–24 letters, numbers, or underscores; start with a letter or number.",
+      "error",
+    );
+    if (!preserveButton) button.disabled = true;
+    return false;
+  }
+  if (
+    input.id === "settingsUsername" &&
+    currentUser?.username?.toLowerCase() === username.toLowerCase()
+  ) {
+    usernameStatus(input, "This is your current username.", "neutral");
+    if (!preserveButton) button.disabled = true;
+    return true;
+  }
+  usernameStatus(input, "Checking username…", "neutral");
+  if (!preserveButton) button.disabled = true;
+  try {
+    const response = await apiFetch(
+      `/api/auth/username-check?username=${encodeURIComponent(username)}`,
+    );
+    const result = await readApiJson(response);
+    if (!response.ok) throw new Error(result.error || "Check unavailable.");
+    if (
+      sequence !== usernameChecks[input.id].sequence ||
+      input.value.trim() !== username
+    )
+      return false;
+    const available = Boolean(result.available);
+    usernameStatus(
+      input,
+      available
+        ? "Username is available."
+        : "That username is taken. Try another.",
+      available ? "success" : "error",
+    );
+    if (!preserveButton) button.disabled = !available;
+    return available;
+  } catch {
+    if (
+      sequence !== usernameChecks[input.id].sequence ||
+      input.value.trim() !== username
+    )
+      return false;
+    usernameStatus(
+      input,
+      "Couldn’t check right now. You can still try saving it.",
+      "neutral",
+    );
+    if (!preserveButton) button.disabled = false;
+    return true;
+  }
+}
+
+function watchUsername(input, button) {
+  input.addEventListener("input", () => {
+    cancelUsernameCheck(input);
+    const username = input.value.trim();
+    if (!usernamePattern.test(username)) {
+      usernameStatus(
+        input,
+        username
+          ? "Use 3–24 letters, numbers, or underscores; start with a letter or number."
+          : "Choose a username to continue.",
+        username ? "error" : "neutral",
+      );
+      button.disabled = true;
+      return;
+    }
+    if (
+      input.id === "settingsUsername" &&
+      currentUser?.username?.toLowerCase() === username.toLowerCase()
+    ) {
+      usernameStatus(input, "This is your current username.", "neutral");
+      button.disabled = true;
+      return;
+    }
+    usernameStatus(input, "Checking username…", "neutral");
+    button.disabled = true;
+    usernameChecks[input.id].timer = setTimeout(
+      () => checkUsernameNow(input, button),
+      350,
+    );
+  });
 }
 
 function readJSON(key, fallback) {
@@ -1130,6 +1244,15 @@ function renderAccount() {
     : "Account";
   $("settingsEmail").textContent = currentUser?.email || "";
   $("settingsUsername").value = currentUser?.username || "";
+  cancelUsernameCheck($("settingsUsername"));
+  usernameStatus(
+    $("settingsUsername"),
+    currentUser?.username
+      ? "This is your current username."
+      : "Choose a username to show on your shares.",
+    "neutral",
+  );
+  $("saveUsername").disabled = true;
   $("privacyNote").textContent = currentUser
     ? "Library syncs with your account"
     : "Sign in to sync your library";
@@ -1213,6 +1336,13 @@ function openAuth(mode = "login") {
   $("authPassword").autocomplete =
     mode === "login" ? "current-password" : "new-password";
   $("authUsername").value = "";
+  cancelUsernameCheck($("authUsername"));
+  usernameStatus(
+    $("authUsername"),
+    usernameNeeded ? "Choose a username to continue." : "",
+    "neutral",
+  );
+  $("authSubmit").disabled = usernameNeeded;
   $("authPassword").value = "";
   $("authConfirm").value = "";
   $("authError").textContent = "";
@@ -1236,11 +1366,9 @@ async function submitAuth(event) {
       throw new Error("Passwords do not match.");
     if (
       authMode === "register" &&
-      !/^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/.test($("authUsername").value.trim())
+      !(await checkUsernameNow($("authUsername"), button, true))
     )
-      throw new Error(
-        "Username must be 3-24 letters, numbers, or underscores.",
-      );
+      throw new Error("Choose an available username to continue.");
     const route =
       { "pending-verify": "resend", "pending-reset": "forgot" }[authMode] ||
       authMode;
@@ -1329,8 +1457,12 @@ async function submitAuth(event) {
     }
   } catch (error) {
     $("authError").textContent = error.message || "Could not sign in.";
+    if (authMode === "register" && /username/i.test(error.message || ""))
+      usernameStatus($("authUsername"), error.message, "error");
   } finally {
-    button.disabled = false;
+    button.disabled =
+      authMode === "register" &&
+      $("authUsernameFeedback").dataset.state === "error";
   }
 }
 
@@ -3075,6 +3207,8 @@ $("saveForm").addEventListener("submit", async (event) => {
   $("saveDialog").close();
 });
 $("accountButton").addEventListener("click", () => switchView("settings"));
+watchUsername($("authUsername"), $("authSubmit"));
+watchUsername($("settingsUsername"), $("saveUsername"));
 $("authForm").addEventListener("submit", submitAuth);
 $("authToggle").addEventListener("click", () =>
   openAuth(authMode === "login" ? "register" : "login"),
@@ -3235,14 +3369,14 @@ $("removeByok").addEventListener("click", async () => {
 $("usernameForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const feedback = $("usernameFeedback");
+  const button = $("saveUsername");
+  button.disabled = true;
   feedback.textContent = "";
   feedback.classList.remove("error");
   try {
     const username = $("settingsUsername").value.trim();
-    if (!/^[A-Za-z0-9][A-Za-z0-9_]{2,23}$/.test(username))
-      throw new Error(
-        "Username must be 3-24 letters, numbers, or underscores.",
-      );
+    if (!(await checkUsernameNow($("settingsUsername"), button, true)))
+      throw new Error("Choose an available username to continue.");
     const response = await apiFetch("/api/auth/username", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -3257,6 +3391,13 @@ $("usernameForm").addEventListener("submit", async (event) => {
   } catch (error) {
     feedback.textContent = error.message || "Could not save your username.";
     feedback.classList.add("error");
+    if (/username/i.test(error.message || ""))
+      usernameStatus($("settingsUsername"), error.message, "error");
+  } finally {
+    button.disabled =
+      $("settingsUsernameAvailability").dataset.state === "error" ||
+      currentUser?.username?.toLowerCase() ===
+        $("settingsUsername").value.trim().toLowerCase();
   }
 });
 $("passwordForm").addEventListener("submit", async (event) => {

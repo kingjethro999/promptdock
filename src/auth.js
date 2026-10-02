@@ -63,6 +63,12 @@ async function usernameTaken(username, userId = null) {
   return Boolean(result.rows[0]);
 }
 
+async function checkUsername(value, userId = null) {
+  const username = usernameFrom(value);
+  await database.ensureSchema();
+  return { username, available: !(await usernameTaken(username, userId)) };
+}
+
 async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
   const hash = await scrypt(password, Buffer.from(salt, "hex"), 64);
@@ -486,6 +492,7 @@ module.exports = {
   consumeToken,
   changePassword,
   usernameFrom,
+  checkUsername,
   updateUsername,
   logoutAll,
   listSessions,

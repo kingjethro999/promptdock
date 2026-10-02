@@ -2062,6 +2062,20 @@ p {
   margin: 12px 0 0 !important;
   color: #aa3f34 !important;
 }
+.username-status {
+  display: block;
+  min-height: 16px;
+  margin-top: 7px;
+  color: #657769;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.username-status[data-state="success"] {
+  color: #2f7845;
+}
+.username-status[data-state="error"] {
+  color: #aa3f34;
+}
 #accountDialog {
   position: relative;
 }

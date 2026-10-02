@@ -1034,10 +1034,22 @@
                   maxlength="24"
                   pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}"
                   placeholder="e.g. kingjethro"
+                  aria-describedby="settingsUsernameAvailability"
+                  required
                 /><small
                   >Shown when you share a prompt. 3-24 letters, numbers, or
                   underscores.</small
-                ><button type="submit" class="secondary-button settings-submit">
+                ><span
+                  id="settingsUsernameAvailability"
+                  class="username-status"
+                  role="status"
+                  aria-live="polite"
+                ></span
+                ><button
+                  type="submit"
+                  class="secondary-button settings-submit"
+                  id="saveUsername"
+                >
                   Save username
                 </button>
               </form>
@@ -1166,7 +1178,14 @@
             pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}"
             autocomplete="username"
             placeholder="e.g. kingjethro"
+            aria-describedby="authUsernameFeedback"
           /><small>3-24 letters, numbers, or underscores.</small>
+          <span
+            id="authUsernameFeedback"
+            class="username-status"
+            role="status"
+            aria-live="polite"
+          ></span>
         </div>
         <div id="authPasswordWrap">
           <label for="authPassword">Password</label

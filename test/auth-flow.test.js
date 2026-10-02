@@ -255,6 +255,14 @@ test("usernames are unique, validated, and changeable", async () => {
     };
     const renamed = await auth.updateUsername(user, { username: "Jethro_K" });
     assert.equal(renamed.username, "Jethro_K");
+    assert.deepEqual(await auth.checkUsername("jethro_k", user.id), {
+      username: "jethro_k",
+      available: true,
+    });
+    assert.deepEqual(await auth.checkUsername("Jethro_K"), {
+      username: "Jethro_K",
+      available: false,
+    });
     assert.deepEqual(renames, [{ userId: user.id, username: "Jethro_K" }]);
     await auth.register({
       email: "second@example.com",

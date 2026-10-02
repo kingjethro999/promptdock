@@ -363,6 +363,35 @@ async function handleRequest(request, response) {
     }
     return;
   }
+  if (pathname === "/api/auth/username-check" && request.method === "GET") {
+    if (!database.configured) {
+      json(response, 503, { error: "Account service is unavailable." });
+      return;
+    }
+    try {
+      const limit = await rateLimit.consume(request, pathname);
+      if (!limit.allowed) {
+        json(
+          response,
+          429,
+          { error: "Too many username checks. Try again shortly." },
+          { "Retry-After": String(limit.retryAfter) },
+        );
+        return;
+      }
+      const user = await auth.currentUser(request);
+      json(
+        response,
+        200,
+        await auth.checkUsername(url.searchParams.get("username"), user?.id),
+      );
+    } catch (error) {
+      json(response, error.status || 503, {
+        error: error.status ? error.message : "Username check is unavailable.",
+      });
+    }
+    return;
+  }
   if (pathname === "/api/auth/username" && request.method === "PUT") {
     if (!validOrigin(request)) {
       json(response, 403, { error: "Invalid origin." });
