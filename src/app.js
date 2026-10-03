@@ -146,6 +146,7 @@ let voiceRequestId = 0;
 let voiceCancelReason = "";
 let databaseAvailable = false;
 let currentUser = null;
+let currentIsAdmin = false;
 let accountPrompts = [];
 let libraryTotal = 0;
 let searchResults = [];
@@ -1200,9 +1201,14 @@ async function generateIdeaPrompt() {
 async function loadAiStatus() {
   try {
     const accountResponse = await apiFetch("/api/auth/me");
-    if (accountResponse.ok) currentUser = (await accountResponse.json()).user;
+    if (accountResponse.ok) {
+      const account = await accountResponse.json();
+      currentUser = account.user;
+      currentIsAdmin = Boolean(account.admin);
+    }
   } catch {
     currentUser = null;
+    currentIsAdmin = false;
   }
   try {
     const response = await apiFetch("/api/status");
@@ -1244,6 +1250,7 @@ function renderAccount() {
     ? currentUser.username || currentUser.email
     : "Account";
   $("settingsEmail").textContent = currentUser?.email || "";
+  $("adminSettingsLink").classList.toggle("hidden", !currentIsAdmin);
   $("settingsUsername").value = currentUser?.username || "";
   cancelUsernameCheck($("settingsUsername"));
   usernameStatus(
@@ -1828,12 +1835,16 @@ function renderUsage(items) {
     const label = document.createElement("strong");
     label.textContent = usageLabels[item.route] || item.route;
     const count = document.createElement("span");
-    count.textContent = `${item.remaining} of ${item.capacity} left`;
+    count.textContent = item.unlimited
+      ? "Unlimited"
+      : `${item.remaining} of ${item.capacity} left`;
     head.append(label, count);
     const bar = document.createElement("div");
     bar.className = "usage-bar";
     const fill = document.createElement("span");
-    const percent = Math.round((item.remaining / item.capacity) * 100);
+    const percent = item.unlimited
+      ? 100
+      : Math.round((item.remaining / item.capacity) * 100);
     fill.style.width = `${percent}%`;
     if (percent <= 20) bar.classList.add("low");
     bar.append(fill);

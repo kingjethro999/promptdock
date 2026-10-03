@@ -9,6 +9,8 @@ const rateLimit = require("../src/rate-limit");
 const referrals = require("../src/referrals");
 const settings = require("../src/settings");
 const ai = require("../src/ai");
+const mailer = require("../src/mailer");
+const adminServer = require("../src/admin-server");
 
 async function withServer(stubs, run) {
   const originals = [];
@@ -45,6 +47,7 @@ test("feedback accepts guest and account reports, then enforces the limit", asyn
   const stubs = [
     [database, "configured", true],
     [auth, "currentUser", async () => user],
+    [mailer, "sendFeedbackEmail", async () => {}],
     [
       rateLimit,
       "consume",
@@ -70,7 +73,11 @@ test("feedback accepts guest and account reports, then enforces the limit", asyn
       contactEmail: "guest@example.com",
     });
     assert.equal(guest.status, 201);
-    assert.deepEqual(await guest.json(), { ok: true, id: "report-id" });
+    assert.deepEqual(await guest.json(), {
+      ok: true,
+      id: "report-id",
+      notified: true,
+    });
     user = { id: "user-id", email: "person@example.com" };
     const account = await send(base, "/api/feedback", "POST", {
       kind: "idea",
@@ -114,6 +121,46 @@ test("feedback accepts guest and account reports, then enforces the limit", asyn
     saved.map((entry) => entry[1]),
     [null, "user-id"],
   );
+});
+
+test("feedback answers before notification delivery finishes", async () => {
+  let deliveryFails = false;
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => null],
+    [
+      mailer,
+      "sendFeedbackEmail",
+      () =>
+        deliveryFails
+          ? Promise.reject(new Error("SMTP is down"))
+          : new Promise(() => {}),
+    ],
+    [rateLimit, "consume", async () => ({ allowed: true, retryAfter: 60 })],
+    [database, "createFeedback", async () => "report-id"],
+  ];
+  await withServer(stubs, async (base) => {
+    const response = await fetch(`${base}/api/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "bug", message: "Slow delivery" }),
+      signal: AbortSignal.timeout(2000),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      id: "report-id",
+      notified: true,
+    });
+    deliveryFails = true;
+    const failed = await fetch(`${base}/api/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "bug", message: "Failed delivery" }),
+      signal: AbortSignal.timeout(2000),
+    });
+    assert.equal(failed.status, 201);
+  });
 });
 
 test("account routes dispatch registration, login, verification, and reset with safe cookies", async () => {
@@ -973,4 +1020,201 @@ test("settings validation errors return their own status and message", async () 
     });
     assert.equal(missingOrigin.status, 403);
   });
+});
+
+test("admin access protects feedback and analytics while published updates join live feed", async () => {
+  let user = { id: "ordinary-user", email: "reader@example.com" };
+  const created = [];
+  const sent = [];
+  const published = {
+    id: "new-release",
+    version: "v0.7.4",
+    date: "Today",
+    title: "A new release",
+    summary: "New tools are ready.",
+    body: "A release for everyone.",
+  };
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => user],
+    [database, "listPublishedUpdates", async () => [published]],
+    [database, "listReadUpdates", async () => []],
+    [
+      database,
+      "listFeedback",
+      async () => [
+        { id: "feedback-1", kind: "bug", message: "Please fix this" },
+      ],
+    ],
+    [database, "analytics", async () => ({ users: 4, saved_prompts: 8 })],
+    [
+      database,
+      "createUpdate",
+      async (body) => {
+        created.push(body);
+        return body;
+      },
+    ],
+    [
+      database,
+      "markUpdateRead",
+      async (_id, updateId) => {
+        created.push(updateId);
+      },
+    ],
+    [database, "createFeedback", async () => "feedback-2"],
+    [
+      mailer,
+      "sendFeedbackEmail",
+      async (body) => {
+        sent.push(body);
+      },
+    ],
+    [
+      rateLimit,
+      "consume",
+      async () => {
+        throw new Error("Admin was rate limited");
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    assert.equal((await send(base, "/api/admin/feedback")).status, 403);
+    assert.equal((await send(base, "/api/admin/analytics")).status, 403);
+    user = {
+      id: "admin-user",
+      email: process.env.ADMIN_EMAIL || "king18jsquare@gmail.com",
+    };
+    assert.equal((await send(base, "/api/admin/me")).status, 200);
+    assert.equal(
+      (await (await send(base, "/api/admin/me")).json()).admin,
+      true,
+    );
+    const stats = await send(base, "/api/admin/analytics");
+    assert.deepEqual(await stats.json(), {
+      analytics: { users: 4, saved_prompts: 8 },
+    });
+    const inbox = await send(base, "/api/admin/feedback");
+    assert.equal((await inbox.json()).feedback[0].message, "Please fix this");
+    const post = await send(base, "/api/admin/updates", "POST", published);
+    assert.equal(post.status, 201);
+    const feed = await send(base, "/api/updates");
+    assert.equal((await feed.json()).updates[0].id, "new-release");
+    assert.equal(
+      (await send(base, "/api/updates/new-release/read", "POST")).status,
+      200,
+    );
+    const report = await send(base, "/api/feedback", "POST", {
+      kind: "bug",
+      message: "Admin report",
+    });
+    assert.equal(report.status, 201);
+    assert.equal(sent.length, 1);
+  });
+  assert.equal(created[0].id, "new-release");
+  assert.equal(created[1], "new-release");
+});
+
+test("admin pages, publishing, and rollback require an administrator", async () => {
+  const adminEmail = process.env.ADMIN_EMAIL || adminServer.DEFAULT_ADMIN_EMAIL;
+  let user = { id: "reader", email: "reader@example.com" };
+  const created = [];
+  const deleted = [];
+  let duplicate = false;
+  const update = {
+    id: "new-release",
+    version: "v0.7.4",
+    date: "Today",
+    title: "A new release",
+    summary: "New tools are ready.",
+    body: "A release for everyone.",
+  };
+  const pages = ["/admin", "/admin.html", "/admin.css", "/admin.js"];
+  const stubs = [
+    [database, "configured", true],
+    [auth, "currentUser", async () => user],
+    [database, "listPublishedUpdates", async () => []],
+    [database, "listReadUpdates", async () => []],
+    [
+      database,
+      "createUpdate",
+      async (body) => {
+        const values = database.validateUpdate(body);
+        if (duplicate)
+          throw Object.assign(new Error("duplicate key value"), {
+            code: "23505",
+          });
+        created.push(values);
+        return values;
+      },
+    ],
+    [
+      database,
+      "deleteUpdate",
+      async (id) => {
+        deleted.push(id);
+        return id === "new-release";
+      },
+    ],
+  ];
+  await withServer(stubs, async (base) => {
+    for (const page of [...pages, "/api/index?admin=/admin.html"])
+      assert.equal((await send(base, page)).status, 403, page);
+    assert.equal(
+      (await send(base, "/api/admin/updates", "POST", update)).status,
+      403,
+    );
+    assert.equal(
+      (await send(base, "/api/admin/updates/new-release", "DELETE")).status,
+      403,
+    );
+    assert.deepEqual(deleted, []);
+
+    user = { id: "admin-user", email: adminEmail };
+    for (const page of [...pages, "/api/index?admin=/admin.html"])
+      assert.equal((await send(base, page)).status, 200, page);
+    assert.match(
+      await (await send(base, "/admin.html")).text(),
+      /<title>Project admin — PromptDock<\/title>/,
+    );
+
+    const incomplete = await send(base, "/api/admin/updates", "POST", {
+      id: "only-an-id",
+    });
+    assert.equal(incomplete.status, 400);
+    const malformedId = await send(base, "/api/admin/updates", "POST", {
+      ...update,
+      id: "Not An Update ID",
+    });
+    assert.equal(malformedId.status, 400);
+
+    duplicate = true;
+    const clash = await send(base, "/api/admin/updates", "POST", update);
+    assert.equal(clash.status, 409);
+    assert.deepEqual(await clash.json(), {
+      error: "An update with this ID already exists.",
+    });
+
+    duplicate = false;
+    assert.equal(
+      (await send(base, "/api/admin/updates", "POST", update)).status,
+      201,
+    );
+    const removed = await send(
+      base,
+      "/api/admin/updates/new-release",
+      "DELETE",
+    );
+    assert.equal(removed.status, 200);
+    assert.deepEqual(await removed.json(), { ok: true, id: "new-release" });
+    assert.equal(
+      (await send(base, "/api/admin/updates/unknown", "DELETE")).status,
+      404,
+    );
+  });
+  assert.deepEqual(
+    created.map((item) => item.id),
+    ["new-release"],
+  );
+  assert.deepEqual(deleted, ["new-release", "unknown"]);
 });
