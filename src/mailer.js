@@ -56,4 +56,32 @@ async function sendAuthLink(email, purpose, token, env = process.env) {
   });
 }
 
-module.exports = { configured, appUrl, authLink, sendAuthLink };
+async function sendFeedbackEmail(feedback, env = process.env) {
+  if (!configured(env)) throw new Error("Email delivery is not configured.");
+  const recipient = env.ADMIN_EMAIL || "king18jsquare@gmail.com";
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user: sender(env), pass: env.GMAIL_APP_PASSWORD },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  });
+  await transporter.sendMail({
+    from: { name: "PromptDock feedback", address: sender(env) },
+    to: recipient,
+    subject: `[PromptDock feedback] ${feedback.kind}`,
+    text: `${feedback.message}\n\nReply email: ${feedback.contactEmail || "Not provided"}`,
+  });
+}
+
+module.exports = {
+  configured,
+  appUrl,
+  authLink,
+  sendAuthLink,
+  sendFeedbackEmail,
+};
