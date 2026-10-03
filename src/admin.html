@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8f3" />
+    <meta
+      name="description"
+      content="PromptDock administrator console for analytics, feedback, and release notes."
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Project admin — PromptDock</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body class="admin-page-body">
+    <div class="admin-shell">
+      <aside class="admin-rail" aria-label="Admin navigation">
+        <a href="/" class="admin-brand" aria-label="PromptDock home">
+          <span class="admin-brand-mark" aria-hidden="true">✳</span>
+          <span>prompt<em>dock</em><small>PROJECT STUDIO</small></span>
+        </a>
+        <div class="admin-rail-label">YOUR SPACE</div>
+        <nav class="admin-nav">
+          <a href="#overview"><span aria-hidden="true">▦</span> Overview</a>
+          <a href="#publish"
+            ><span aria-hidden="true">✳</span> Publish updates</a
+          >
+          <a href="#feedback"><span aria-hidden="true">✉</span> Feedback</a>
+        </nav>
+        <div class="admin-rail-bottom">
+          <p>
+            Only site-wide counts and submitted feedback appear here. Your
+            users' private ideas stay private.
+          </p>
+          <a href="/">← Back to workspace</a>
+        </div>
+      </aside>
+
+      <main class="admin-page">
+        <header class="admin-topbar">
+          <span class="admin-breadcrumb">Workspace <span>/</span> Admin</span>
+          <a href="/updates"
+            >View public updates <span aria-hidden="true">↗</span></a
+          >
+        </header>
+
+        <section id="adminDenied" class="admin-panel admin-denied hidden">
+          <span class="admin-eyebrow">PRIVATE AREA</span>
+          <h1>Admin access required.</h1>
+          <p>Sign in with the configured administrator account to continue.</p>
+          <a class="admin-action" href="/auth?mode=login"
+            >Sign in <span aria-hidden="true">↗</span></a
+          >
+        </section>
+
+        <div id="adminContent" class="hidden">
+          <section class="admin-hero" id="overview">
+            <div>
+              <span class="admin-eyebrow"
+                ><span class="admin-live-dot"></span> PROMPTDOCK CONTROL
+                ROOM</span
+              >
+              <h1>Shape what comes <em>next.</em></h1>
+              <p>
+                See the pulse of the project, listen to users, and share what
+                you've shipped.
+              </p>
+            </div>
+            <div class="admin-hero-art" aria-hidden="true">
+              <span>✳</span><span>✦</span><span>✳</span>
+            </div>
+          </section>
+
+          <section class="admin-section" aria-labelledby="adminOverviewHeading">
+            <div class="admin-section-head">
+              <div>
+                <span class="admin-eyebrow">AT A GLANCE</span>
+                <h2 id="adminOverviewHeading">Project overview</h2>
+              </div>
+              <span class="admin-section-note">Aggregate counts only</span>
+            </div>
+            <div class="admin-stats" id="adminStats" aria-live="polite"></div>
+          </section>
+
+          <div class="admin-grid">
+            <section
+              class="admin-panel admin-composer"
+              id="publish"
+              aria-labelledby="adminPublishHeading"
+            >
+              <div class="admin-panel-head">
+                <span class="admin-panel-icon" aria-hidden="true">✳</span>
+                <div>
+                  <span class="admin-eyebrow">TELL YOUR USERS</span>
+                  <h2 id="adminPublishHeading">Publish an update</h2>
+                </div>
+              </div>
+              <p class="admin-muted">
+                A published update appears on the Updates page and reaches
+                active users through live notifications.
+              </p>
+              <form id="updateForm">
+                <div class="admin-form-row">
+                  <div class="admin-field">
+                    <label for="updateId">Update ID</label
+                    ><input
+                      id="updateId"
+                      required
+                      placeholder="image-to-prompt"
+                      autocomplete="off"
+                    /><small>Use a unique lowercase slug.</small>
+                  </div>
+                  <div class="admin-field">
+                    <label for="updateVersion">Version</label
+                    ><input id="updateVersion" required placeholder="v0.7.5" />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <label for="updateDate">Date label</label
+                  ><input
+                    id="updateDate"
+                    required
+                    placeholder="October 3, 2026"
+                  />
+                </div>
+                <div class="admin-field">
+                  <label for="updateTitle">Headline</label
+                  ><input
+                    id="updateTitle"
+                    required
+                    maxlength="140"
+                    placeholder="What's new in PromptDock?"
+                  />
+                </div>
+                <div class="admin-field">
+                  <label for="updateSummary">Short summary</label
+                  ><textarea
+                    id="updateSummary"
+                    rows="3"
+                    maxlength="280"
+                    required
+                    placeholder="The message users see in their notification."
+                  ></textarea>
+                </div>
+                <div class="admin-field">
+                  <label for="updateBody">Full update</label
+                  ><textarea
+                    id="updateBody"
+                    rows="6"
+                    maxlength="10000"
+                    required
+                    placeholder="Share the details in your own words."
+                  ></textarea>
+                </div>
+                <div class="admin-form-footer">
+                  <p
+                    id="updateFeedback"
+                    class="admin-feedback"
+                    role="status"
+                    aria-live="polite"
+                  ></p>
+                  <button class="admin-action" type="submit">
+                    Publish update <span aria-hidden="true">↗</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <aside class="admin-side-stack">
+              <section
+                class="admin-preview"
+                aria-labelledby="adminPreviewHeading"
+              >
+                <span class="admin-eyebrow">LIVE PREVIEW</span>
+                <h2 id="adminPreviewHeading">How it will read</h2>
+                <div class="admin-preview-card">
+                  <span id="adminPreviewVersion">VERSION · DATE</span>
+                  <h3 id="adminPreviewTitle">Your update headline</h3>
+                  <p id="adminPreviewSummary">
+                    The short summary will appear here as you write.
+                  </p>
+                </div>
+              </section>
+              <section
+                class="admin-preview admin-managed"
+                aria-labelledby="adminManagedHeading"
+              >
+                <span class="admin-eyebrow">RELEASE LIBRARY</span>
+                <h2 id="adminManagedHeading">Published updates</h2>
+                <div id="adminPublishedList" class="admin-published-list"></div>
+              </section>
+              <section class="admin-privacy-note">
+                <span aria-hidden="true">◈</span>
+                <div>
+                  <strong>Built for trust</strong>
+                  <p>
+                    This console shows aggregate activity and messages users
+                    chose to send. It does not expose private prompts or idea
+                    inputs.
+                  </p>
+                </div>
+              </section>
+            </aside>
+          </div>
+
+          <section
+            class="admin-panel admin-inbox"
+            id="feedback"
+            aria-labelledby="adminFeedbackHeading"
+          >
+            <div class="admin-section-head">
+              <div>
+                <span class="admin-eyebrow">FROM THE COMMUNITY</span>
+                <h2 id="adminFeedbackHeading">Feedback inbox</h2>
+              </div>
+              <span id="adminFeedbackCount" class="admin-count">0 reports</span>
+            </div>
+            <p class="admin-muted">
+              Reports and ideas submitted by users. Reply to a contact email
+              when one was provided.
+            </p>
+            <div
+              id="feedbackList"
+              class="admin-feedback-list"
+              aria-live="polite"
+            ></div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="/admin.js" defer></script>
+  </body>
+</html>

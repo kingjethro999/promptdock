@@ -671,6 +671,51 @@
 .landing-outline-cta span {
   margin-left: 16px;
 }
+.landing-faq {
+  max-width: 1300px;
+  margin: auto;
+  padding: 88px 34px 98px;
+}
+.landing-faq .landing-section-intro {
+  margin-bottom: 28px;
+}
+.landing-faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.landing-faq-grid article {
+  padding: 25px 27px;
+  border: 1px solid #e3eadf;
+  border-radius: 15px;
+  background: #fff;
+}
+.landing-faq-grid h3 {
+  margin: 0 0 10px;
+  color: #254532;
+  font:
+    800 16px Manrope,
+    sans-serif;
+  letter-spacing: -0.4px;
+}
+.landing-faq-grid p {
+  margin: 0;
+  color: #718674;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.landing-faq-grid a {
+  color: #4a853d;
+  font-weight: 800;
+}
+@media (max-width: 600px) {
+  .landing-faq {
+    padding: 64px 18px 72px;
+  }
+  .landing-faq-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .landing-final {
   text-align: center;
   background: #1b3828;
@@ -1519,7 +1564,7 @@ select.search-select-native {
   }
   .landing-footer-legal {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     margin-top: 8px;
     padding-top: 12px;

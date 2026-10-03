@@ -162,7 +162,14 @@ test("idea generation passes the raw idea and returns a structured prompt", asyn
     idea: "I want a meal planning app",
     guidance: {},
   });
-  assert.match(submitted.messages[0].content, /build means build/);
+  assert.match(submitted.messages[0].content, /build means build/i);
+  assert.match(submitted.messages[0].content, /<response_contract>/);
+  assert.match(submitted.messages[0].content, /<examples>/);
+  assert.match(submitted.messages[0].content, /three bullets for beginners/);
+  assert.match(
+    submitted.messages[0].content,
+    /do not.*expose private reasoning/i,
+  );
   assert.equal(result.provider, "groq");
   assert.equal(result.data.depth, "Deep");
   assert.match(result.data.approach, /first release/);

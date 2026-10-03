@@ -14,6 +14,9 @@ const settings = require("./settings");
 const rateLimit = require("./rate-limit");
 const referrals = require("./referrals");
 const updates = require("./updates");
+const feed = require("./feed");
+const admin = require("./admin-server");
+const mailer = require("./mailer");
 const securityHeaders = require("./security");
 
 const root = path.join(__dirname, "dist");
@@ -24,6 +27,8 @@ const types = {
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
 };
 const publicFiles = new Set([
   "/index.html",
@@ -43,12 +48,30 @@ const publicFiles = new Set([
   "/config.js",
   "/favicon.svg",
   "/social-card.png",
+  "/social-card-v2.png",
+  "/llms.txt",
+  "/robots.txt",
+  "/sitemap.xml",
   "/auth.css",
   "/auth-page.js",
   "/updates.css",
   "/updates-data.js",
   "/updates-page.js",
 ]);
+const adminFiles = new Set(["/admin.html", "/admin.css", "/admin.js"]);
+const pageRedirects = {
+  "/index.html": "/",
+  "/privacy.html": "/privacy",
+  "/terms.html": "/terms",
+  "/copyright.html": "/copyright",
+  "/auth.html": "/auth",
+  "/updates.html": "/updates",
+};
+const adminAssetFiles = {
+  "/admin.html": path.join(__dirname, "admin.html"),
+  "/admin.css": path.join(__dirname, "admin.css"),
+  "/admin.js": path.join(__dirname, "admin.js"),
+};
 
 function json(response, status, body, headers = {}) {
   response.writeHead(status, {
@@ -114,6 +137,26 @@ function escapeHtml(value) {
   );
 }
 
+function stripSeoBlock(html) {
+  return html.replace(/<!--SEO_START-->[\s\S]*?<!--SEO_END-->/, "");
+}
+
+function serveNotFound(response) {
+  fs.readFile(path.join(root, "404.html"), (error, data) => {
+    if (error) {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    response.writeHead(404, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "X-Content-Type-Options": "nosniff",
+    });
+    response.end(data);
+  });
+}
+
 function publicOrigin(request) {
   const fallbackHost = process.env.VERCEL
     ? process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
@@ -128,8 +171,8 @@ function renderInviteHtml(template, inviter, code, canonical, image) {
   const title = `${name} invited you to PromptDock`;
   const description =
     "Turn rough ideas into prompts worth keeping. Create a free workspace, save what works, and share it with others.";
-  const meta = `<meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="PromptDock — Good ideas deserve a clearer prompt"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="canonical" href="${escapeHtml(canonical)}">`;
-  return template
+  const meta = `<meta name="robots" content="noindex,follow"><meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="PromptDock — Good ideas deserve a clearer prompt"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="canonical" href="${escapeHtml(canonical)}">`;
+  return stripSeoBlock(template)
     .replace(
       "<title>PromptDock — Your AI prompt workspace</title>",
       `<title>${escapeHtml(title)}</title>`,
@@ -187,7 +230,7 @@ function renderSharedHtml(template, prompt, canonical, image) {
     .trim()
     .slice(0, 180);
   const meta = `<meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="canonical" href="${escapeHtml(canonical)}">`;
-  return template
+  return stripSeoBlock(template)
     .replace(
       "<title>Shared prompt — PromptDock</title>",
       `<title>${escapeHtml(title)}</title>`,
@@ -234,6 +277,18 @@ async function serveSharedPage(request, response, publicId) {
   }
 }
 
+async function mergedUpdates() {
+  const databaseUpdates = database.configured
+    ? await database.listPublishedUpdates()
+    : [];
+  return [
+    ...databaseUpdates,
+    ...updates.filter(
+      (item) => !databaseUpdates.some((saved) => saved.id === item.id),
+    ),
+  ];
+}
+
 async function handleRequest(request, response) {
   for (const [name, value] of Object.entries(securityHeaders))
     response.setHeader(name, value);
@@ -243,6 +298,9 @@ async function handleRequest(request, response) {
     url = new URL(request.url, "http://localhost");
     const route = url.searchParams.get("route");
     pathname = route ? `/api/${route}` : decodeURIComponent(url.pathname);
+    const adminFile = url.searchParams.get("admin");
+    if (adminFiles.has(adminFile)) pathname = adminFile;
+    if (url.searchParams.get("feed") === "1") pathname = "/feed.xml";
   } catch {
     response.writeHead(400).end("Bad request");
     return;
@@ -338,9 +396,11 @@ async function handleRequest(request, response) {
       const body = await readBody(request, 32000);
       database.validateFeedback(body);
       const user = await auth.currentUser(request);
-      const limit = await rateLimit.consume(request, pathname, {
-        ...(user ? { subject: rateSubject(user) } : {}),
-      });
+      const limit = admin.isAdmin(user)
+        ? { allowed: true }
+        : await rateLimit.consume(request, pathname, {
+            ...(user ? { subject: rateSubject(user) } : {}),
+          });
       if (!limit.allowed) {
         json(
           response,
@@ -351,7 +411,12 @@ async function handleRequest(request, response) {
         return;
       }
       const id = await database.createFeedback(body, user?.id || null);
-      json(response, 201, { ok: true, id });
+      mailer
+        .sendFeedbackEmail(body)
+        .catch((error) =>
+          console.error("Feedback email delivery failed:", error.message),
+        );
+      json(response, 201, { ok: true, id, notified: true });
     } catch (error) {
       const invalid = [
         "Invalid JSON.",
@@ -369,7 +434,8 @@ async function handleRequest(request, response) {
   }
   if (pathname === "/api/auth/me" && request.method === "GET") {
     try {
-      json(response, 200, { user: await auth.currentUser(request) });
+      const user = await auth.currentUser(request);
+      json(response, 200, { user, admin: admin.isAdmin(user) });
     } catch {
       json(response, 503, { error: "Account service is unavailable." });
     }
@@ -378,15 +444,91 @@ async function handleRequest(request, response) {
   if (pathname === "/api/updates" && request.method === "GET") {
     try {
       const user = await auth.currentUser(request).catch(() => null);
+      const merged = await mergedUpdates();
       json(response, 200, {
-        updates,
+        updates: merged,
+        canMarkRead: Boolean(user && database.configured),
         readIds:
           user && database.configured
             ? await database.listReadUpdates(user.id)
             : [],
       });
     } catch {
-      json(response, 200, { updates, readIds: [] });
+      json(response, 200, { updates, readIds: [], canMarkRead: false });
+    }
+    return;
+  }
+  if (pathname === "/feed.xml" && request.method === "GET") {
+    let merged;
+    try {
+      merged = await mergedUpdates();
+    } catch {
+      merged = updates;
+    }
+    response.writeHead(200, {
+      "Content-Type": "application/rss+xml; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
+      "X-Content-Type-Options": "nosniff",
+    });
+    response.end(feed.renderFeedXml(merged, publicOrigin(request)));
+    return;
+  }
+  if (pathname === "/api/admin/me" && request.method === "GET") {
+    const user = await auth.currentUser(request).catch(() => null);
+    json(response, 200, { admin: admin.isAdmin(user) });
+    return;
+  }
+  if (
+    pathname.startsWith("/api/admin/") &&
+    ["GET", "POST", "DELETE"].includes(request.method)
+  ) {
+    if (!validOrigin(request))
+      return json(response, 403, { error: "Invalid origin." });
+    const user = await auth.currentUser(request).catch(() => null);
+    if (!admin.isAdmin(user))
+      return json(response, 403, { error: "Admin access required." });
+    if (!database.configured)
+      return json(response, 503, { error: "Admin data is unavailable." });
+    try {
+      if (pathname === "/api/admin/updates" && request.method === "POST") {
+        if (!request.headers["content-type"]?.startsWith("application/json"))
+          return json(response, 415, { error: "Send updates as JSON." });
+        const created = await database.createUpdate(await readBody(request));
+        json(response, 201, { update: created });
+      } else if (
+        pathname.startsWith("/api/admin/updates/") &&
+        request.method === "DELETE"
+      ) {
+        const id = decodeURIComponent(
+          pathname.slice("/api/admin/updates/".length),
+        );
+        const removed = await database.deleteUpdate(id);
+        if (!removed)
+          return json(response, 404, { error: "Update not found." });
+        json(response, 200, { ok: true, id });
+      } else if (
+        pathname === "/api/admin/feedback" &&
+        request.method === "GET"
+      ) {
+        json(response, 200, { feedback: await database.listFeedback() });
+      } else if (
+        pathname === "/api/admin/analytics" &&
+        request.method === "GET"
+      ) {
+        json(response, 200, { analytics: await database.analytics() });
+      } else json(response, 404, { error: "Admin route not found." });
+    } catch (error) {
+      const invalid = /invalid|Complete|Update ID|Invalid JSON|too large/i.test(
+        error.message,
+      );
+      json(response, error.code === "23505" ? 409 : invalid ? 400 : 503, {
+        error:
+          error.code === "23505"
+            ? "An update with this ID already exists."
+            : invalid
+              ? error.message
+              : "Admin data is unavailable.",
+      });
     }
     return;
   }
@@ -403,14 +545,21 @@ async function handleRequest(request, response) {
     if (!database.configured)
       return json(response, 503, { error: "Update state is unavailable." });
     try {
+      const databaseUpdates = await database.listPublishedUpdates();
+      const availableUpdates = [
+        ...databaseUpdates,
+        ...updates.filter(
+          (item) => !databaseUpdates.some((saved) => saved.id === item.id),
+        ),
+      ];
       if (updateRead) {
-        if (!updates.some((item) => item.id === updateRead[1]))
+        if (!availableUpdates.some((item) => item.id === updateRead[1]))
           return json(response, 404, { error: "Update not found." });
         await database.markUpdateRead(user.id, updateRead[1]);
       } else
         await database.markAllUpdatesRead(
           user.id,
-          updates.map((item) => item.id),
+          availableUpdates.map((item) => item.id),
         );
       json(response, 200, { ok: true });
     } catch {
@@ -424,7 +573,10 @@ async function handleRequest(request, response) {
       return;
     }
     try {
-      const limit = await rateLimit.consume(request, pathname);
+      const user = await auth.currentUser(request).catch(() => null);
+      const limit = admin.isAdmin(user)
+        ? { allowed: true }
+        : await rateLimit.consume(request, pathname);
       if (!limit.allowed) {
         json(
           response,
@@ -434,7 +586,6 @@ async function handleRequest(request, response) {
         );
         return;
       }
-      const user = await auth.currentUser(request);
       json(
         response,
         200,
@@ -527,7 +678,11 @@ async function handleRequest(request, response) {
       return;
     }
     try {
-      const limit = await rateLimit.consume(request, pathname);
+      const user = await auth.currentUser(request).catch(() => null);
+      const isAdmin = admin.isAdmin(user);
+      const limit = isAdmin
+        ? { allowed: true }
+        : await rateLimit.consume(request, pathname);
       if (!limit.allowed) {
         json(
           response,
@@ -537,7 +692,14 @@ async function handleRequest(request, response) {
         );
         return;
       }
-      const user = await auth.currentUser(request).catch(() => null);
+      if (isAdmin) {
+        json(response, 200, {
+          usage: ["/api/run", "/api/idea-to-prompt", "/api/transcribe"].map(
+            (route) => ({ route, unlimited: true }),
+          ),
+        });
+        return;
+      }
       const level = await referrals.rewardLevel(user);
       const usage = [];
       for (const route of [
@@ -586,7 +748,10 @@ async function handleRequest(request, response) {
     }
     if (rateLimit.policies[pathname]) {
       try {
-        const limit = await rateLimit.consume(request, pathname);
+        const user = await auth.currentUser(request).catch(() => null);
+        const limit = admin.isAdmin(user)
+          ? { allowed: true }
+          : await rateLimit.consume(request, pathname);
         if (!limit.allowed) {
           json(
             response,
@@ -971,13 +1136,15 @@ async function handleRequest(request, response) {
         });
         return;
       }
-      const limit = await rateLimit.consume(request, pathname, {
-        ...referrals.rateOptions(
-          pathname,
-          user,
-          await referrals.rewardLevel(user),
-        ),
-      });
+      const limit = admin.isAdmin(user)
+        ? { allowed: true }
+        : await rateLimit.consume(request, pathname, {
+            ...referrals.rateOptions(
+              pathname,
+              user,
+              await referrals.rewardLevel(user),
+            ),
+          });
       if (!limit.allowed) {
         json(
           response,
@@ -1033,13 +1200,15 @@ async function handleRequest(request, response) {
         ai.normalizeIdeaGuidance(body);
       } else if (pathname === "/api/enhance") ai.normalizeDraft(body);
       else ai.normalizeRunInput(body);
-      const limit = await rateLimit.consume(request, pathname, {
-        ...referrals.rateOptions(
-          pathname,
-          user,
-          await referrals.rewardLevel(user),
-        ),
-      });
+      const limit = admin.isAdmin(user)
+        ? { allowed: true }
+        : await rateLimit.consume(request, pathname, {
+            ...referrals.rateOptions(
+              pathname,
+              user,
+              await referrals.rewardLevel(user),
+            ),
+          });
       if (!limit.allowed) {
         json(
           response,
@@ -1086,25 +1255,46 @@ async function handleRequest(request, response) {
     response.writeHead(405, { Allow: "GET, HEAD" }).end("Method not allowed");
     return;
   }
+  if (pageRedirects[pathname]) {
+    response.writeHead(308, { Location: pageRedirects[pathname] });
+    response.end();
+    return;
+  }
   if (pathname === "/") pathname = "/index.html";
   if (pathname === "/auth") pathname = "/auth.html";
+  if (pathname === "/admin") pathname = "/admin.html";
   if (pathname === "/updates" || pathname.startsWith("/updates/"))
     pathname = "/updates.html";
   if (["/privacy", "/terms", "/copyright"].includes(pathname))
     pathname += ".html";
-  if (!publicFiles.has(pathname)) {
-    response.writeHead(404).end("Not found");
+  if (adminFiles.has(pathname)) {
+    const viewer = await auth.currentUser(request).catch(() => null);
+    if (!admin.isAdmin(viewer)) {
+      response.writeHead(403, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      });
+      response.end("Admin access required.");
+      return;
+    }
+  } else if (!publicFiles.has(pathname)) {
+    if (pathname.startsWith("/api/"))
+      json(response, 404, { error: "Not found." });
+    else serveNotFound(response);
     return;
   }
-  const file = path.join(root, pathname);
+  const file = adminFiles.has(pathname)
+    ? adminAssetFiles[pathname]
+    : path.join(root, pathname);
   fs.readFile(file, (error, data) => {
     if (error) {
-      response.writeHead(404).end("Not found");
+      serveNotFound(response);
       return;
     }
     response.writeHead(200, {
       "Content-Type": types[path.extname(file)],
-      "Cache-Control": "no-cache",
+      "Cache-Control": adminFiles.has(pathname) ? "no-store" : "no-cache",
       "X-Content-Type-Options": "nosniff",
     });
     response.end(data);

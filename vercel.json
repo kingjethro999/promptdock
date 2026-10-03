@@ -53,6 +53,10 @@
       "destination": "/api/index?invite=:code"
     },
     {
+      "source": "/feed.xml",
+      "destination": "/api/index?feed=1"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },
@@ -67,6 +71,22 @@
     {
       "source": "/auth",
       "destination": "/auth.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/api/index?admin=/admin.html"
+    },
+    {
+      "source": "/admin.html",
+      "destination": "/api/index?admin=/admin.html"
+    },
+    {
+      "source": "/admin.css",
+      "destination": "/api/index?admin=/admin.css"
+    },
+    {
+      "source": "/admin.js",
+      "destination": "/api/index?admin=/admin.js"
     },
     {
       "source": "/updates",

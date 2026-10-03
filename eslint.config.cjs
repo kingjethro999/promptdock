@@ -17,6 +17,7 @@ module.exports = [
     files: [
       "src/app.js",
       "src/auth-page.js",
+      "src/admin.js",
       "src/updates-data.js",
       "src/updates-page.js",
       "src/share.js",
@@ -28,6 +29,7 @@ module.exports = [
   {
     files: [
       "src/ai.js",
+      "src/prompt-policy.js",
       "src/auth.js",
       "src/database.js",
       "src/diff.js",
@@ -40,6 +42,8 @@ module.exports = [
       "src/settings.js",
       "src/speech.js",
       "src/updates.js",
+      "src/feed.js",
+      "src/admin-server.js",
       "api/**/*.js",
       "scripts/**/*.js",
       "test/**/*.js",

@@ -6,9 +6,92 @@
     <meta name="theme-color" content="#f7f8f3" />
     <meta
       name="description"
-      content="Build better prompts, save what works, and use them with your favorite AI platform."
+      content="Turn rough or spoken ideas into structured prompts you can save, reuse, and share with any AI tool."
     />
     <title>PromptDock — Your AI prompt workspace</title>
+    <!--SEO_START-->
+    <link rel="canonical" href="{{SITE_URL}}/" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="PromptDock updates"
+      href="{{SITE_URL}}/feed.xml"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PromptDock" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="PromptDock — Your AI prompt workspace" />
+    <meta
+      property="og:description"
+      content="Turn rough or spoken ideas into structured prompts you can save, reuse, and share with any AI tool."
+    />
+    <meta property="og:url" content="{{SITE_URL}}/" />
+    <meta property="og:image" content="{{SITE_URL}}/social-card-v2.png" />
+    <meta property="og:image:width" content="1730" />
+    <meta property="og:image:height" content="909" />
+    <meta
+      property="og:image:alt"
+      content="PromptDock — Turn rough ideas into better prompts"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="PromptDock — Your AI prompt workspace"
+    />
+    <meta
+      name="twitter:description"
+      content="Turn rough or spoken ideas into structured prompts you can save, reuse, and share with any AI tool."
+    />
+    <meta name="twitter:image" content="{{SITE_URL}}/social-card-v2.png" />
+    <meta
+      name="twitter:image:alt"
+      content="PromptDock turns rough ideas into better prompts"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "url": "{{SITE_URL}}/",
+            "name": "PromptDock",
+            "description": "Turn rough or spoken ideas into structured prompts you can save, reuse, and share with any AI tool.",
+            "inLanguage": "en",
+            "publisher": {
+              "@type": "Organization",
+              "name": "PromptDock",
+              "url": "{{SITE_URL}}/",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "{{SITE_URL}}/favicon.svg"
+              },
+              "founder": {
+                "@type": "Person",
+                "name": "King Jethro",
+                "url": "https://github.com/kingjethro999"
+              },
+              "sameAs": [
+                "https://github.com/kingjethro999/promptdock",
+                "https://www.tiktok.com/@thepromptdock"
+              ]
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "PromptDock",
+            "url": "{{SITE_URL}}/",
+            "applicationCategory": "ProductivityApplication",
+            "operatingSystem": "Web",
+            "browserRequirements": "Requires JavaScript",
+            "isAccessibleForFree": true,
+            "inLanguage": "en",
+            "description": "An idea-to-prompt workspace that turns rough ideas into clear prompts you can reuse on any AI platform.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+          }
+        ]
+      }
+    </script>
+    <!--SEO_END-->
     <!--INVITE_META-->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
@@ -23,7 +106,7 @@
     <div id="bootScreen" class="boot-screen">
       <span class="boot-mark">✳</span><span>Opening PromptDock…</span>
     </div>
-    <div id="landingPage" class="landing-page hidden">
+    <div id="landingPage" class="landing-page">
       <header class="landing-header">
         <a class="landing-logo" href="#top" aria-label="PromptDock home"
           ><span class="landing-logo-mark">✳</span> prompt<span>dock</span></a
@@ -254,6 +337,50 @@
             </button>
           </div>
         </section>
+        <section
+          class="landing-faq"
+          id="questions"
+          aria-labelledby="faqHeading"
+        >
+          <div class="landing-section-intro">
+            <span class="landing-kicker">GOOD TO KNOW</span>
+            <h2 id="faqHeading">A few quick answers.</h2>
+          </div>
+          <div class="landing-faq-grid">
+            <article>
+              <h3>What is PromptDock?</h3>
+              <p>
+                PromptDock is an open source workspace that turns rough ideas,
+                dictated thoughts, or existing drafts into clearer prompts for
+                AI tools.
+              </p>
+            </article>
+            <article>
+              <h3>Can I use the prompts with my own AI platform?</h3>
+              <p>
+                Yes. Copy a finished prompt into ChatGPT, Claude, Gemini, or
+                another AI tool. You can also add a supported provider key to
+                run prompts inside PromptDock.
+              </p>
+            </article>
+            <article>
+              <h3>Can I save and share my prompts?</h3>
+              <p>
+                Yes. Sign in to keep a synced library, then publish individual
+                prompts when you want anyone with the link to view and copy
+                them.
+              </p>
+            </article>
+            <article>
+              <h3>Who makes PromptDock?</h3>
+              <p>
+                PromptDock is an independent, open source project by
+                <a href="https://github.com/kingjethro999">King Jethro</a>. It
+                is not affiliated with the AI platforms mentioned here.
+              </p>
+            </article>
+          </div>
+        </section>
         <section class="landing-final">
           <span class="landing-kicker">THE NEXT GOOD PROMPT STARTS HERE</span>
           <h2>What have you been thinking about?</h2>
@@ -309,6 +436,12 @@
           <button type="button" data-auth-mode="login">Sign in ↗</button>
         </div>
         <nav class="landing-footer-legal" aria-label="Legal information">
+          <a
+            href="https://www.tiktok.com/@thepromptdock"
+            target="_blank"
+            rel="noopener noreferrer"
+            >TikTok ↗</a
+          >
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
           <a href="/copyright">Copyright</a>
@@ -1103,6 +1236,11 @@
               <span class="section-kicker">ACCOUNT</span>
               <h2>Sign-in &amp; security</h2>
               <p>Signed in as <strong id="settingsEmail"></strong></p>
+              <p>
+                <a id="adminSettingsLink" class="hidden" href="/admin"
+                  >Open admin console ↗</a
+                >
+              </p>
               <form id="usernameForm">
                 <label class="settings-label" for="settingsUsername"
                   >Username</label

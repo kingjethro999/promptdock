@@ -512,6 +512,105 @@ async function markAllUpdatesRead(userId, updateIds) {
   );
 }
 
+async function listPublishedUpdates() {
+  await ensureSchema();
+  const result = await pool.query(
+    `SELECT id, version, date_label AS date, title, summary, body, published_at AS "publishedAt"
+     FROM site_updates ORDER BY published_at DESC`,
+  );
+  return result.rows;
+}
+
+const updateIdPattern = /^[a-z0-9][a-z0-9-]{2,80}$/;
+
+function validateUpdate(input) {
+  const fields = ["id", "version", "date", "title", "summary", "body"];
+  if (!input || fields.some((field) => typeof input[field] !== "string"))
+    throw new Error("Complete every update field.");
+  const values = Object.fromEntries(
+    fields.map((field) => [field, input[field].trim()]),
+  );
+  if (!updateIdPattern.test(values.id))
+    throw new Error(
+      "Update ID must use lowercase letters, numbers, and hyphens.",
+    );
+  if (
+    !values.version ||
+    values.version.length > 32 ||
+    !values.date ||
+    values.date.length > 80
+  )
+    throw new Error("Update version or date is invalid.");
+  if (
+    !values.title ||
+    values.title.length > 140 ||
+    !values.summary ||
+    values.summary.length > 280 ||
+    !values.body ||
+    values.body.length > 10000
+  )
+    throw new Error("Update title, summary, or body is invalid.");
+  return values;
+}
+
+async function createUpdate(input) {
+  const values = validateUpdate(input);
+  await ensureSchema();
+  const result = await pool.query(
+    `INSERT INTO site_updates (id, version, date_label, title, summary, body)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, version, date_label AS date, title, summary, body`,
+    [
+      values.id,
+      values.version,
+      values.date,
+      values.title,
+      values.summary,
+      values.body,
+    ],
+  );
+  return result.rows[0];
+}
+
+async function deleteUpdate(id) {
+  const updateId = String(id || "").trim();
+  if (!updateIdPattern.test(updateId))
+    throw new Error(
+      "Update ID must use lowercase letters, numbers, and hyphens.",
+    );
+  await ensureSchema();
+  const result = await pool.query(
+    "DELETE FROM site_updates WHERE id = $1 RETURNING id",
+    [updateId],
+  );
+  if (result.rowCount === 0) return false;
+  await pool.query("DELETE FROM user_update_reads WHERE update_id = $1", [
+    updateId,
+  ]);
+  return true;
+}
+
+async function listFeedback(limit = 100) {
+  await ensureSchema();
+  const result = await pool.query(
+    `SELECT id, kind, message, contact_email AS "contactEmail", created_at AS "createdAt"
+     FROM feedback_reports ORDER BY created_at DESC LIMIT $1`,
+    [Math.min(100, Math.max(1, Number(limit) || 100))],
+  );
+  return result.rows;
+}
+
+async function analytics() {
+  await ensureSchema();
+  const result = await pool.query(`SELECT
+    (SELECT count(*)::integer FROM users) AS users,
+    (SELECT count(*)::integer FROM users WHERE email_verified_at IS NOT NULL) AS verified_users,
+    (SELECT count(*)::integer FROM prompts) AS saved_prompts,
+    (SELECT count(*)::integer FROM feedback_reports) AS feedback,
+    (SELECT count(*)::integer FROM site_updates) AS updates`);
+  return result.rows[0];
+}
+
 module.exports = {
   configured,
   pool,
@@ -540,4 +639,10 @@ module.exports = {
   listReadUpdates,
   markUpdateRead,
   markAllUpdatesRead,
+  listPublishedUpdates,
+  validateUpdate,
+  createUpdate,
+  deleteUpdate,
+  listFeedback,
+  analytics,
 };

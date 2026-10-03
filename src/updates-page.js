@@ -5,6 +5,7 @@
     window.location.pathname.match(/^\/updates\/([^/]+)/)?.[1] ||
     params.get("id");
   let read = new Set();
+  let canMarkRead = false;
   const list = document.getElementById("updatesList");
   const esc = (value) =>
     String(value).replace(
@@ -43,7 +44,7 @@
     list.innerHTML = items
       .map(
         (item) =>
-          `<article class="update-card ${read.has(item.id) ? "is-read" : ""}"><div><span class="update-meta">${esc(item.version)} · ${esc(item.date)}</span><h2>${esc(item.title)}</h2><p>${esc(requested ? item.body : item.summary)}</p></div><div class="update-card-actions"><button class="update-read-button ${read.has(item.id) ? "is-read" : ""}" type="button" data-read="${esc(item.id)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg><span>${read.has(item.id) ? "Read" : "Mark read"}</span></button>${!requested ? `<a class="update-card-link" href="/updates/${encodeURIComponent(item.id)}">Read update ↗</a>` : ""}</div></article>`,
+          `<article class="update-card ${read.has(item.id) ? "is-read" : ""}"><div><span class="update-meta">${esc(item.version)} · ${esc(item.date)}</span><h2>${esc(item.title)}</h2><p>${esc(requested ? item.body : item.summary)}</p></div><div class="update-card-actions">${canMarkRead ? `<button class="update-read-button ${read.has(item.id) ? "is-read" : ""}" type="button" data-read="${esc(item.id)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg><span>${read.has(item.id) ? "Read" : "Mark read"}</span></button>` : ""}${!requested ? `<a class="update-card-link" href="/updates/${encodeURIComponent(item.id)}">Read update ↗</a>` : ""}</div></article>`,
       )
       .join("");
     list.querySelectorAll("[data-read]").forEach((button) =>
@@ -65,6 +66,7 @@
       if (Array.isArray(payload.updates))
         updates.splice(0, updates.length, ...payload.updates);
       read = new Set(Array.isArray(payload.readIds) ? payload.readIds : []);
+      canMarkRead = payload.canMarkRead === true;
       render();
     })
     .catch(() => render());

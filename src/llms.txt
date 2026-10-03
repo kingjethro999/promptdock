@@ -1,0 +1,26 @@
+# PromptDock
+
+> PromptDock is an independent open source idea-to-prompt workspace by King Jethro. It helps people turn rough or spoken ideas into structured prompts, keep a synced prompt library, and share selected prompts publicly.
+
+Official site: {{SITE_URL}}/
+Source code: https://github.com/kingjethro999/promptdock
+TikTok: https://www.tiktok.com/@thepromptdock
+
+## What the product does
+
+- Idea to prompt: enter a rough thought or dictate it; PromptDock identifies the goal and useful focus areas, then drafts a prompt.
+- Optional fine-tuning: add details such as audience, tone, format, constraints, and priorities to the same idea-to-prompt flow.
+- Prompt library: signed-in users can save, search, tag, duplicate, export, and import prompts across devices.
+- Public sharing: a user can publish an individual prompt at a public link; private prompts and original idea inputs are not publicly exposed.
+- Provider choice: users may use PromptDock's configured AI or add their own supported provider key in Settings.
+
+## Public pages
+
+- Product overview: {{SITE_URL}}/
+- Product updates: {{SITE_URL}}/updates
+- RSS feed: {{SITE_URL}}/feed.xml
+- Privacy policy: {{SITE_URL}}/privacy
+- Terms of use: {{SITE_URL}}/terms
+- Copyright and independence: {{SITE_URL}}/copyright
+
+PromptDock is not affiliated with ChatGPT, Claude, Gemini, or the companies behind those AI platforms. User prompts are not open source merely because PromptDock's code is open source.

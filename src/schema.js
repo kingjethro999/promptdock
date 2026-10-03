@@ -121,6 +121,17 @@ module.exports = [
     PRIMARY KEY (user_id, update_id)
   )`,
   "CREATE INDEX IF NOT EXISTS user_update_reads_user_idx ON user_update_reads (user_id, read_at DESC)",
+  `CREATE TABLE IF NOT EXISTS site_updates (
+    id text PRIMARY KEY,
+    version text NOT NULL,
+    date_label text NOT NULL,
+    title text NOT NULL,
+    summary text NOT NULL,
+    body text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    published_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE INDEX IF NOT EXISTS site_updates_published_idx ON site_updates (published_at DESC)",
   `CREATE TABLE IF NOT EXISTS api_rate_limits (
     bucket_key char(64) PRIMARY KEY,
     tokens double precision NOT NULL,
