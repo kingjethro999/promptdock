@@ -5,13 +5,13 @@ const http = require("node:http");
 const path = require("node:path");
 const { once } = require("node:events");
 const { JSDOM } = require("jsdom");
-const handleRequest = require("../src/server");
+const handleRequest = require("../oldui/server");
 const { renderFeedXml } = require("../src/feed");
 const updates = require("../src/updates");
 const database = require("../src/database");
 const vercel = require("../vercel.json");
 
-const source = path.join(__dirname, "..", "src");
+const source = path.join(__dirname, "..", "oldui");
 const unitOrigin = "https://feed.test";
 const siteOrigin = process.env.APP_URL
   ? new URL(process.env.APP_URL).origin
@@ -200,9 +200,12 @@ test("the feed still publishes static updates when the database is down", async 
   });
 });
 
-test("vercel routes the feed to the function and pages advertise it", () => {
-  const rewrite = vercel.rewrites.find((entry) => entry.source === "/feed.xml");
-  assert.equal(rewrite && rewrite.destination, "/api/index?feed=1");
+test("deployed Next feed route and legacy pages advertise the feed", () => {
+  assert.equal(vercel.framework, "nextjs");
+  assert.equal(vercel.rewrites, undefined);
+  assert.ok(
+    fs.existsSync(path.join(__dirname, "../src/app/feed.xml/route.ts")),
+  );
   for (const file of ["index.html", "updates.html"]) {
     const html = fs.readFileSync(path.join(source, file), "utf8");
     assert.ok(html.includes('rel="alternate"'), file);

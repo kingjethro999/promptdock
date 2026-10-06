@@ -4,7 +4,7 @@ const { execFileSync } = require("node:child_process");
 const http = require("node:http");
 const path = require("node:path");
 const { once } = require("node:events");
-const handleRequest = require("../src/server");
+const handleRequest = require("../oldui/server");
 const vercel = require("../vercel.json");
 
 test("legal pages and their stylesheet are public on local and Vercel routes", async () => {
@@ -24,11 +24,10 @@ test("legal pages and their stylesheet are public on local and Vercel routes", a
       assert.match(html, /King Jethro/);
       assert.match(html, /https:\/\/thanks\.dev\/u\/gh\/kingjethro999/);
       assert.match(html, new RegExp(`href="/${name}" aria-current="page"`));
+      assert.equal(vercel.framework, "nextjs");
       assert.ok(
-        vercel.rewrites.some(
-          (rewrite) =>
-            rewrite.source === `/${name}` &&
-            rewrite.destination === `/${name}.html`,
+        require("node:fs").existsSync(
+          path.join(__dirname, "../src/app", name, "page.tsx"),
         ),
       );
     }

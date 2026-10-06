@@ -2,11 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { renderSharedHtml } = require("../src/server");
+const { renderSharedHtml } = require("../oldui/server");
 
 test("shared prompt HTML has crawlable metadata and escapes prompt text", () => {
   const template = fs.readFileSync(
-    path.join(__dirname, "../src/share.html"),
+    path.join(__dirname, "../oldui/share.html"),
     "utf8",
   );
   const html = renderSharedHtml(
@@ -39,7 +39,7 @@ test("shared prompt HTML has crawlable metadata and escapes prompt text", () => 
 
 test("shared links say who shared them", () => {
   const template = fs.readFileSync(
-    path.join(__dirname, "../src/share.html"),
+    path.join(__dirname, "../oldui/share.html"),
     "utf8",
   );
   const html = renderSharedHtml(

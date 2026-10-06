@@ -1,0 +1,44 @@
+@media (max-width: 900px) {
+  .react-workspace-page .work-grid,
+  .react-workspace-page .builder-grid,
+  .react-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .react-workspace-page .page-heading {
+    flex-direction: column;
+  }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .react-workspace-page .work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .react-workspace-page,
+  .react-library-page,
+  .react-settings-page {
+    padding: 28px 17px 50px;
+  }
+}
+@media (max-width: 560px) {
+  .react-field-grid {
+    grid-template-columns: 1fr;
+  }
+  .react-settings-card {
+    padding: 22px;
+  }
+  .react-library-heading {
+    flex-direction: column;
+  }
+  .react-modal {
+    padding: 24px;
+  }
+}
+@media (max-width: 380px) {
+  .react-workspace-page,
+  .react-library-page,
+  .react-settings-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

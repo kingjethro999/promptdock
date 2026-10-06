@@ -1,0 +1,13 @@
+.react-admin-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #dce6d9;
+}
+.react-admin-row button {
+  border: 0;
+  background: transparent;
+  color: #a34a3b;
+  cursor: pointer;
+}

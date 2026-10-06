@@ -5,7 +5,7 @@ const path = require("node:path");
 const { JSDOM } = require("jsdom");
 
 const script = fs.readFileSync(
-  path.join(__dirname, "..", "src", "updates-page.js"),
+  path.join(__dirname, "..", "oldui", "updates-page.js"),
   "utf8",
 );
 const update = {

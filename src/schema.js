@@ -57,6 +57,7 @@ module.exports = [
     provider text NOT NULL CHECK (provider IN ('groq', 'gemini', 'apmix', 'openai', 'anthropic')),
     base_url text NOT NULL DEFAULT '',
     model text NOT NULL,
+    vision_model text NOT NULL DEFAULT '',
     encrypted_key text NOT NULL,
     active boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -65,6 +66,7 @@ module.exports = [
   )`,
   "CREATE UNIQUE INDEX IF NOT EXISTS user_ai_providers_active_idx ON user_ai_providers (user_id) WHERE active",
   "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS base_url text NOT NULL DEFAULT ''",
+  "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS vision_model text NOT NULL DEFAULT ''",
   `INSERT INTO user_ai_providers (user_id, name, provider, base_url, model, encrypted_key, active)
     SELECT s.user_id,
       CASE s.provider WHEN 'groq' THEN 'Groq' WHEN 'gemini' THEN 'Gemini' ELSE 'APMIX' END,

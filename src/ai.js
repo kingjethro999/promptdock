@@ -37,6 +37,8 @@ const tones = [
   "Educational",
 ];
 const depths = ["Quick", "Balanced", "Deep"];
+const imageMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const maxImageBytes = 3000000;
 
 function configuredProviders(env = process.env) {
   const available = {
@@ -90,6 +92,8 @@ function parseSuggestion(content, original) {
 
 function normalizeIdea(input) {
   const idea = typeof input?.idea === "string" ? input.idea.trim() : "";
+  if (!idea && Array.isArray(input?.images) && input.images.length)
+    return "Turn the attached image into a detailed, reusable prompt.";
   if (idea.length < 4) throw new Error("Describe your idea in a few words.");
   if (idea.length > 100000) throw new Error("Idea is too long.");
   return idea;
@@ -118,7 +122,104 @@ function normalizeIdeaGuidance(input) {
   return guidance;
 }
 
-function parseIdeaSuggestion(content, idea, guidance = {}) {
+function normalizeClarifications(input) {
+  if (input?.clarifications == null) return [];
+  if (
+    !Array.isArray(input.clarifications) ||
+    input.clarifications.length < 1 ||
+    input.clarifications.length > 4
+  )
+    throw new Error("Invalid clarification answers.");
+  const seen = new Set();
+  return input.clarifications.map((item) => {
+    const question =
+      typeof item?.question === "string" ? item.question.trim() : "";
+    const answer = typeof item?.answer === "string" ? item.answer.trim() : "";
+    if (
+      !question ||
+      question.length > 240 ||
+      answer.length > 5000 ||
+      seen.has(question.toLowerCase())
+    )
+      throw new Error("Invalid clarification answers.");
+    seen.add(question.toLowerCase());
+    return { question, answer };
+  });
+}
+
+function normalizeImages(input) {
+  if (input?.images == null) return [];
+  if (!Array.isArray(input.images) || input.images.length > 3)
+    throw new Error("Attach up to three images.");
+  let total = 0;
+  return input.images.map((image) => {
+    const match = /^data:(image\/[a-z]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+      image,
+    );
+    if (!match || !imageMimeTypes.has(match[1]))
+      throw new Error("Use JPEG, PNG, or WebP images.");
+    const bytes = Buffer.from(match[2], "base64");
+    if (!bytes.length || bytes.toString("base64") !== match[2])
+      throw new Error("Invalid image data.");
+    total += bytes.length;
+    if (total > maxImageBytes)
+      throw new Error("Prepared images are too large for this request.");
+    const signature =
+      (match[1] === "image/jpeg" && bytes[0] === 0xff && bytes[1] === 0xd8) ||
+      (match[1] === "image/png" &&
+        bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"))) ||
+      (match[1] === "image/webp" &&
+        bytes.toString("ascii", 0, 4) === "RIFF" &&
+        bytes.toString("ascii", 8, 12) === "WEBP");
+    if (!signature) throw new Error("Invalid image data.");
+    return { mimeType: match[1], data: match[2], url: image };
+  });
+}
+
+function visionModel(provider, env) {
+  if (provider === "groq") return env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
+  if (provider === "gemini")
+    return env.GEMINI_VISION_MODEL || env.GEMINI_MODEL || "gemini-2.5-flash";
+  if (provider === "anthropic")
+    return env.ANTHROPIC_VISION_MODEL || env.ANTHROPIC_MODEL;
+  if (provider === "apmix") return env.APMIX_VISION_MODEL;
+  return env.OPENAI_VISION_MODEL;
+}
+
+function parseIdeaResponse(content, idea, guidance, clarified, imageCount = 0) {
+  if (!clarified && typeof content === "string") {
+    const start = content.indexOf("{");
+    const end = content.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      const parsed = JSON.parse(content.slice(start, end + 1));
+      if (Array.isArray(parsed.questions)) {
+        const seen = new Set();
+        const questions = parsed.questions
+          .filter((item) => typeof item === "string")
+          .map((item) => item.trim().slice(0, 240))
+          .filter((item) => {
+            const key = item.toLowerCase();
+            if (!item || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 4);
+        if (questions.length) return { idea, questions };
+      }
+    }
+  }
+  return parseIdeaSuggestion(content, idea, guidance, imageCount);
+}
+
+function selfContainedVisualText(value) {
+  return value.replace(
+    /\b(?:the|this)\s+(?:(?:attached|provided|uploaded|source|reference)\s+)?(image|images|screenshot|screenshots|photo|photos|picture|pictures|illustration|illustrations)\b(?:['’]s\s+(design|style|layout))?/gi,
+    (match, kind, feature) =>
+      `${match[0] === "T" ? "The" : "the"} ${feature || kind.toLowerCase()} described here`,
+  );
+}
+
+function parseIdeaSuggestion(content, idea, guidance = {}, imageCount = 0) {
   if (typeof content !== "string") throw new Error("Empty AI response");
   const start = content.indexOf("{");
   const end = content.lastIndexOf("}");
@@ -135,11 +236,16 @@ function parseIdeaSuggestion(content, idea, guidance = {}) {
   if (!formats.includes(data.format)) data.format = "";
   if (!tones.includes(data.tone)) data.tone = "";
   if (!depths.includes(data.depth)) data.depth = "Balanced";
+  if (imageCount && !data.context)
+    throw new Error("The image was not described in the AI response.");
   const buildArtifact =
     /\b(build|implement|develop|code)\b/i.test(idea) &&
     /\b(app|game|website|tool|platform|system|api|feature)\b/i.test(idea);
   if (buildArtifact && !/\b(quick|brief)\b/i.test(idea)) data.depth = "Deep";
   Object.assign(data, guidance);
+  if (imageCount)
+    for (const field of fieldNames)
+      data[field] = selfContainedVisualText(data[field]);
   if (!data.task || !data.focus) throw new Error("Incomplete AI response");
   const raw = parsed.interpretation || {};
   const list = (value, limit) =>
@@ -178,6 +284,12 @@ function parseIdeaSuggestion(content, idea, guidance = {}) {
       .slice(0, 4);
   if (guidance.depth)
     interpretation.whyThisDepth = `You chose ${guidance.depth.toLowerCase()} depth in fine-tune.`;
+  if (imageCount) {
+    interpretation.goal = selfContainedVisualText(interpretation.goal);
+    interpretation.focusAreas = interpretation.focusAreas.map(
+      selfContainedVisualText,
+    );
+  }
   return { idea, data, interpretation };
 }
 
@@ -218,7 +330,9 @@ function anthropicRequest(messages, env, options = {}) {
       "anthropic-version": "2023-06-01",
     },
     body: {
-      model: env.ANTHROPIC_MODEL,
+      model: options.images?.length
+        ? visionModel("anthropic", env)
+        : env.ANTHROPIC_MODEL,
       max_tokens: options.maxTokens || 2600,
       ...(system ? { system } : {}),
       messages: rest,
@@ -231,12 +345,45 @@ function anthropicRequest(messages, env, options = {}) {
 }
 
 function providerRequest(provider, messages, env, options = {}) {
-  if (provider === "anthropic") return anthropicRequest(messages, env, options);
+  if (provider === "anthropic") {
+    const prepared = options.images?.length
+      ? [
+          messages[0],
+          {
+            role: "user",
+            content: [
+              { type: "text", text: messages[1].content },
+              ...options.images.map((image) => ({
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: image.mimeType,
+                  data: image.data,
+                },
+              })),
+            ],
+          },
+        ]
+      : messages;
+    return anthropicRequest(prepared, env, options);
+  }
   if (provider === "gemini") {
-    const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = options.images?.length
+      ? visionModel("gemini", env)
+      : env.GEMINI_MODEL || "gemini-2.5-flash";
     const body = {
       systemInstruction: { parts: [{ text: messages[0].content }] },
-      contents: [{ role: "user", parts: [{ text: messages[1].content }] }],
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: messages[1].content },
+            ...(options.images || []).map((image) => ({
+              inlineData: { mimeType: image.mimeType, data: image.data },
+            })),
+          ],
+        },
+      ],
     };
     if (options.json !== false)
       body.generationConfig = { responseMimeType: "application/json" };
@@ -268,11 +415,13 @@ function providerRequest(provider, messages, env, options = {}) {
     : provider === "apmix"
       ? env.APMIX_API_KEY
       : env.GROQ_API_KEY;
-  const model = openai
-    ? env.OPENAI_MODEL
-    : provider === "apmix"
-      ? env.APMIX_MODEL
-      : env.GROQ_MODEL;
+  const model = options.images?.length
+    ? visionModel(provider, env)
+    : openai
+      ? env.OPENAI_MODEL
+      : provider === "apmix"
+        ? env.APMIX_MODEL
+        : env.GROQ_MODEL;
   return {
     url: endpoint,
     headers: {
@@ -281,7 +430,21 @@ function providerRequest(provider, messages, env, options = {}) {
     },
     body: {
       model,
-      messages,
+      messages: options.images?.length
+        ? [
+            messages[0],
+            {
+              role: "user",
+              content: [
+                { type: "text", text: messages[1].content },
+                ...options.images.map((image) => ({
+                  type: "image_url",
+                  image_url: { url: image.url },
+                })),
+              ],
+            },
+          ]
+        : messages,
       max_tokens: options.maxTokens || 2600,
     },
     extract: (json) => json.choices?.[0]?.message?.content,
@@ -295,11 +458,19 @@ async function generateWithProviders(
   request,
   options = {},
 ) {
-  const providers = configuredProviders(env);
+  const providers = configuredProviders(env).filter(
+    (provider) =>
+      !options.images?.length || Boolean(visionModel(provider, env)),
+  );
+  if (options.images?.length && !providers.length)
+    throw new Error(
+      "The selected provider needs a vision model in Settings before it can analyze images.",
+    );
   if (!providers.length) throw new Error("No AI provider is configured.");
   const timeout = Math.min(
     Math.max(
-      Number(env.AI_REQUEST_TIMEOUT_MS) || options.timeoutMs || 12000,
+      Number(env.AI_REQUEST_TIMEOUT_MS) || 12000,
+      options.timeoutMs || 0,
       1000,
     ),
     60000,
@@ -355,18 +526,42 @@ async function enhanceWithAI(input, env = process.env, request = fetch) {
 }
 
 async function ideaToPrompt(input, env = process.env, request = fetch) {
+  const images = normalizeImages(input);
   const idea = normalizeIdea(input);
   const guidance = normalizeIdeaGuidance(input);
-  const system = ideaSystemPrompt({ fields: fieldNames, formats, tones });
+  const clarifications = normalizeClarifications(input);
+  const system = ideaSystemPrompt({
+    fields: fieldNames,
+    formats,
+    tones,
+    clarified: clarifications.length > 0,
+    imageCount: images.length,
+  });
   const messages = [
     { role: "system", content: system },
-    { role: "user", content: JSON.stringify({ idea, guidance }) },
+    {
+      role: "user",
+      content: JSON.stringify({
+        idea,
+        guidance,
+        ...(images.length ? { attachmentCount: images.length } : {}),
+        ...(clarifications.length ? { clarifications } : {}),
+      }),
+    },
   ];
   return generateWithProviders(
     messages,
-    (content) => parseIdeaSuggestion(content, idea, guidance),
+    (content) =>
+      parseIdeaResponse(
+        content,
+        idea,
+        guidance,
+        clarifications.length > 0,
+        images.length,
+      ),
     env,
     request,
+    { images, ...(images.length ? { maxTokens: 4000, timeoutMs: 30000 } : {}) },
   );
 }
 
@@ -410,6 +605,8 @@ module.exports = {
   normalizeDraft,
   normalizeIdea,
   normalizeIdeaGuidance,
+  normalizeClarifications,
+  normalizeImages,
   normalizeRunInput,
   parseSuggestion,
   parseIdeaSuggestion,

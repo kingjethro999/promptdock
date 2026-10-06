@@ -1,0 +1,172 @@
+.react-library-page {
+  max-width: 1440px;
+  padding: 42px 44px 70px;
+}
+.sort-control .react-select {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: #8c9c8d;
+}
+.sort-control .search-select-trigger {
+  width: 160px;
+  min-height: 32px;
+  padding: 0 9px;
+  background: #fff;
+  font-size: 11px;
+}
+.react-import-button {
+  position: relative;
+  cursor: pointer;
+}
+.react-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.react-pagination button {
+  border: 1px solid #d8e1d4;
+  background: #fff;
+  color: #315a37;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+}
+.react-tag-filters {
+  margin-bottom: 24px;
+}
+.react-tag-filters .selected {
+  background: #e8f5d6;
+  border-color: #aacd85;
+}
+.react-prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 18px;
+}
+.react-prompt-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #dfe8db;
+  border-radius: 15px;
+  background: #fff;
+}
+.react-prompt-card-top,
+.react-prompt-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.react-prompt-card h3 {
+  margin: 20px 0 6px;
+  overflow-wrap: anywhere;
+}
+.react-prompt-card p {
+  color: #687a6d;
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.react-prompt-card-top button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.react-tag-list {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.react-tag-list span {
+  border-radius: 20px;
+  padding: 4px 8px;
+  background: #edf7e2;
+  font-size: 11px;
+}
+.react-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.react-card-links button,
+.react-prompt-card-bottom button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #467744;
+  font: inherit;
+  cursor: pointer;
+}
+.react-public-link {
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.react-prompt-card-bottom {
+  margin-top: auto;
+  border-top: 1px solid #e8eee3;
+  padding-top: 12px;
+  font-size: 12px;
+}
+.react-library-empty {
+  padding: 70px 20px;
+  text-align: center;
+  color: #708273;
+}
+.react-pagination {
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.react-revision {
+  padding: 14px 0;
+  border-bottom: 1px solid #e1eadc;
+}
+.react-revision span {
+  display: block;
+  font-size: 12px;
+  color: #728178;
+}
+.react-revision p {
+  max-height: 60px;
+  overflow: hidden;
+}
+.react-compare {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #dce6d9;
+  border-radius: 9px;
+  background: #f8fbf4;
+}
+.react-compare p {
+  display: grid;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid #e1eadc;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.react-compare p span {
+  text-transform: capitalize;
+  font-size: 11px;
+  font-weight: 800;
+  color: #56765b;
+}
+.react-compare del {
+  color: #955c54;
+}
+.react-compare ins {
+  color: #315c38;
+  text-decoration: none;
+}
+.confirm-dialog.is-danger .react-danger-accept {
+  background: #aa493b;
+  color: #fff;
+}

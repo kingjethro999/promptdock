@@ -5,11 +5,17 @@ const handleRequest = require("../src/server");
 const securityHeaders = require("../src/security");
 const vercel = require("../vercel.json");
 
-test("Vercel static and local API responses use the same security headers", async () => {
-  const configured = Object.fromEntries(
-    vercel.headers[0].headers.map(({ key, value }) => [key, value]),
+test("deployed pages and API retain security headers while Next has a nonce policy", async () => {
+  assert.equal(vercel.framework, "nextjs");
+  assert.equal(vercel.headers, undefined);
+  assert.equal(vercel.rewrites, undefined);
+  const fs = require("node:fs");
+  const proxy = fs.readFileSync(
+    require("node:path").join(__dirname, "../src/proxy.ts"),
+    "utf8",
   );
-  assert.deepEqual(configured, securityHeaders);
+  assert.match(proxy, /nonce-/);
+  assert.match(proxy, /img-src 'self' data: blob:/);
   assert.equal(
     securityHeaders["Strict-Transport-Security"],
     "max-age=31536000; includeSubDomains",

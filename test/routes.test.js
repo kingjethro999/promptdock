@@ -12,13 +12,13 @@ const ai = require("../src/ai");
 const mailer = require("../src/mailer");
 const adminServer = require("../src/admin-server");
 
-async function withServer(stubs, run) {
+async function withServer(stubs, run, handler = handleRequest) {
   const originals = [];
   for (const [target, name, replacement] of stubs) {
     originals.push([target, name, target[name]]);
     target[name] = replacement;
   }
-  const server = http.createServer(handleRequest);
+  const server = http.createServer(handler);
   try {
     server.listen(0, "127.0.0.1");
     await once(server, "listening");
@@ -820,6 +820,38 @@ test("idea route forwards optional guidance in the same request", async () => {
       guidance: { format: "Unsupported" },
     });
     assert.equal(invalid.status, 400);
+    const invalidAnswers = await send(base, "/api/idea-to-prompt", "POST", {
+      idea: "Build a game",
+      clarifications: [{ question: "", answer: "Anything" }],
+    });
+    assert.equal(invalidAnswers.status, 400);
+    const invalidImage = await send(base, "/api/idea-to-prompt", "POST", {
+      idea: "Make a prompt from this picture",
+      images: ["data:image/png;base64,AAAA"],
+    });
+    assert.equal(invalidImage.status, 400);
+  });
+});
+
+test("idea route accepts optimized image payloads above the old one MB cap", async () => {
+  const stubs = [
+    [database, "configured", false],
+    [rateLimit, "consume", async () => ({ allowed: true })],
+    [ai, "normalizeImages", () => []],
+    [ai, "ideaToPrompt", async () => ({ data: { task: "Describe image" } })],
+  ];
+  await withServer(stubs, async (base) => {
+    const accepted = await send(base, "/api/idea-to-prompt", "POST", {
+      idea: "Describe this image",
+      images: ["a".repeat(1500000)],
+    });
+    assert.equal(accepted.status, 200);
+    const rejected = await send(base, "/api/idea-to-prompt", "POST", {
+      idea: "Describe this image",
+      images: ["a".repeat(4300000)],
+    });
+    assert.equal(rejected.status, 413);
+    assert.match((await rejected.json()).error, /upload limit/);
   });
 });
 
@@ -1157,61 +1189,65 @@ test("admin pages, publishing, and rollback require an administrator", async () 
       },
     ],
   ];
-  await withServer(stubs, async (base) => {
-    for (const page of [...pages, "/api/index?admin=/admin.html"])
-      assert.equal((await send(base, page)).status, 403, page);
-    assert.equal(
-      (await send(base, "/api/admin/updates", "POST", update)).status,
-      403,
-    );
-    assert.equal(
-      (await send(base, "/api/admin/updates/new-release", "DELETE")).status,
-      403,
-    );
-    assert.deepEqual(deleted, []);
+  await withServer(
+    stubs,
+    async (base) => {
+      for (const page of [...pages, "/api/index?admin=/admin.html"])
+        assert.equal((await send(base, page)).status, 403, page);
+      assert.equal(
+        (await send(base, "/api/admin/updates", "POST", update)).status,
+        403,
+      );
+      assert.equal(
+        (await send(base, "/api/admin/updates/new-release", "DELETE")).status,
+        403,
+      );
+      assert.deepEqual(deleted, []);
 
-    user = { id: "admin-user", email: adminEmail };
-    for (const page of [...pages, "/api/index?admin=/admin.html"])
-      assert.equal((await send(base, page)).status, 200, page);
-    assert.match(
-      await (await send(base, "/admin.html")).text(),
-      /<title>Project admin — PromptDock<\/title>/,
-    );
+      user = { id: "admin-user", email: adminEmail };
+      for (const page of [...pages, "/api/index?admin=/admin.html"])
+        assert.equal((await send(base, page)).status, 200, page);
+      assert.match(
+        await (await send(base, "/admin.html")).text(),
+        /<title>Project admin — PromptDock<\/title>/,
+      );
 
-    const incomplete = await send(base, "/api/admin/updates", "POST", {
-      id: "only-an-id",
-    });
-    assert.equal(incomplete.status, 400);
-    const malformedId = await send(base, "/api/admin/updates", "POST", {
-      ...update,
-      id: "Not An Update ID",
-    });
-    assert.equal(malformedId.status, 400);
+      const incomplete = await send(base, "/api/admin/updates", "POST", {
+        id: "only-an-id",
+      });
+      assert.equal(incomplete.status, 400);
+      const malformedId = await send(base, "/api/admin/updates", "POST", {
+        ...update,
+        id: "Not An Update ID",
+      });
+      assert.equal(malformedId.status, 400);
 
-    duplicate = true;
-    const clash = await send(base, "/api/admin/updates", "POST", update);
-    assert.equal(clash.status, 409);
-    assert.deepEqual(await clash.json(), {
-      error: "An update with this ID already exists.",
-    });
+      duplicate = true;
+      const clash = await send(base, "/api/admin/updates", "POST", update);
+      assert.equal(clash.status, 409);
+      assert.deepEqual(await clash.json(), {
+        error: "An update with this ID already exists.",
+      });
 
-    duplicate = false;
-    assert.equal(
-      (await send(base, "/api/admin/updates", "POST", update)).status,
-      201,
-    );
-    const removed = await send(
-      base,
-      "/api/admin/updates/new-release",
-      "DELETE",
-    );
-    assert.equal(removed.status, 200);
-    assert.deepEqual(await removed.json(), { ok: true, id: "new-release" });
-    assert.equal(
-      (await send(base, "/api/admin/updates/unknown", "DELETE")).status,
-      404,
-    );
-  });
+      duplicate = false;
+      assert.equal(
+        (await send(base, "/api/admin/updates", "POST", update)).status,
+        201,
+      );
+      const removed = await send(
+        base,
+        "/api/admin/updates/new-release",
+        "DELETE",
+      );
+      assert.equal(removed.status, 200);
+      assert.deepEqual(await removed.json(), { ok: true, id: "new-release" });
+      assert.equal(
+        (await send(base, "/api/admin/updates/unknown", "DELETE")).status,
+        404,
+      );
+    },
+    require("../oldui/server"),
+  );
   assert.deepEqual(
     created.map((item) => item.id),
     ["new-release"],

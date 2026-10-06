@@ -32,6 +32,7 @@ const pool = configured
     })
   : null;
 let schemaReady;
+const schemaKey = `schema:${createHash("sha256").update(schema.join("\n")).digest("hex")}`;
 
 async function ensureSchema() {
   if (!pool) return;
@@ -41,7 +42,24 @@ async function ensureSchema() {
       try {
         await client.query("BEGIN");
         await client.query("SELECT pg_advisory_xact_lock(4736291)");
-        for (const statement of schema) await client.query(statement);
+        const table = await client.query(
+          "SELECT to_regclass('schema_migrations') AS name",
+        );
+        if (!table.rows[0].name)
+          await client.query(
+            "CREATE TABLE IF NOT EXISTS schema_migrations (key text PRIMARY KEY)",
+          );
+        const applied = await client.query(
+          "SELECT 1 FROM schema_migrations WHERE key = $1",
+          [schemaKey],
+        );
+        if (!applied.rowCount) {
+          for (const statement of schema) await client.query(statement);
+          await client.query(
+            "INSERT INTO schema_migrations (key) VALUES ($1) ON CONFLICT DO NOTHING",
+            [schemaKey],
+          );
+        }
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK").catch(() => {});

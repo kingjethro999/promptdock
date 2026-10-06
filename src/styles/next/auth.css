@@ -1,0 +1,14 @@
+.auth-page-actions a {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  text-decoration: none;
+}
+.auth-page .auth-page-link,
+.auth-page .auth-legal a {
+  text-decoration: none;
+}
+.auth-page .auth-page-link {
+  width: max-content;
+  margin-left: auto;
+}

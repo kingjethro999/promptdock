@@ -6,10 +6,12 @@ const { randomUUID, webcrypto } = require("node:crypto");
 const { JSDOM } = require("jsdom");
 
 const root = path.join(__dirname, "..");
-const read = (name) => fs.readFileSync(path.join(root, "src", name), "utf8");
+const read = (name) => fs.readFileSync(path.join(root, "oldui", name), "utf8");
+const readStyle = (name) => read(`styles/${name}`);
 const html = read("index.html");
-const sources = ["prompt-format.js", "diff.js", "app.js"].map(read);
+const sources = [read("prompt-format.js"), read("diff.js"), read("app.js")];
 const STORAGE_KEY = "promptdock.prompts.v1";
+const DRAFT_KEY = "promptdock.draft.v1";
 
 const SEED = [
   {
@@ -158,7 +160,9 @@ async function createWorkspace(seed = SEED, options = {}) {
     if (pathname === "/api/idea-to-prompt" && method === "POST")
       return jsonResponse(
         200,
-        options.ideaResponse || {
+        (typeof options.ideaResponse === "function"
+          ? options.ideaResponse(body)
+          : options.ideaResponse) || {
           provider: "test",
           data: {
             task: `Create a useful answer for: ${body.idea}`,
@@ -183,6 +187,7 @@ async function createWorkspace(seed = SEED, options = {}) {
         name: body.name,
         provider: body.provider,
         model: body.model,
+        visionModel: body.visionModel || "",
         baseUrl: body.baseUrl || "",
         active: true,
         updatedAt: new Date().toISOString(),
@@ -200,6 +205,7 @@ async function createWorkspace(seed = SEED, options = {}) {
       entry.name = body.name;
       entry.provider = body.provider;
       entry.model = body.model;
+      entry.visionModel = body.visionModel || "";
       entry.baseUrl = body.baseUrl || "";
       entry.updatedAt = new Date().toISOString();
       activate(state.settings, providerId);
@@ -261,6 +267,8 @@ async function createWorkspace(seed = SEED, options = {}) {
     this.dispatchEvent(new window.Event("close"));
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+  if (options.draft)
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(options.draft));
   for (const source of sources) window.eval(source);
   await waitFor(() => calls.some((pathname) => pathname === "/api/status"));
   await new Promise((resolve) => setTimeout(resolve, 25));
@@ -1191,7 +1199,7 @@ test("guest feedback opens from the landing page and shows a saved confirmation"
   });
 });
 
-test("one idea box previews raw text and sends optional guidance with generation", async (t) => {
+test("one idea box waits for generation and sends optional guidance", async (t) => {
   const { window, requests } = await createWorkspace([]);
   t.after(() => window.close());
   const doc = window.document;
@@ -1200,10 +1208,13 @@ test("one idea box previews raw text and sends optional guidance with generation
   idea.dispatchEvent(new window.Event("input", { bubbles: true }));
   assert.equal(
     doc.getElementById("promptOutput").textContent,
-    "Build a small browser game",
+    "Your prompt will appear here after PromptDock shapes your idea.",
   );
-  assert.equal(doc.getElementById("previewHeading").textContent, "Your draft");
-  assert.equal(doc.getElementById("saveButton").disabled, false);
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your prompt will appear here",
+  );
+  assert.equal(doc.getElementById("saveButton").disabled, true);
   assert.equal(
     doc.querySelectorAll("textarea#task").length,
     0,
@@ -1218,10 +1229,7 @@ test("one idea box previews raw text and sends optional guidance with generation
   doc
     .getElementById("audience")
     .dispatchEvent(new window.Event("input", { bubbles: true }));
-  assert.match(
-    doc.getElementById("promptOutput").textContent,
-    /Act as Game developer/,
-  );
+  assert.equal(doc.getElementById("copyButton").disabled, true);
   doc.getElementById("ideaGenerateButton").click();
   await waitFor(() =>
     doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
@@ -1264,10 +1272,11 @@ test("one idea box previews raw text and sends optional guidance with generation
   assert.equal(doc.getElementById("task").value, "");
   assert.equal(doc.getElementById("role").value, "Technical designer");
   assert.equal(doc.getElementById("audience").value, "New players");
-  assert.match(
-    doc.getElementById("promptOutput").textContent,
-    /Explain this code/,
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your prompt will appear here",
   );
+  assert.equal(doc.getElementById("saveButton").disabled, true);
   assert.doesNotMatch(
     doc.getElementById("promptOutput").textContent,
     /Build a small browser game/,
@@ -1301,4 +1310,346 @@ test("an idea with collapsed guidance sends no fine-tune details", async (t) => 
     (item) => item.pathname === "/api/idea-to-prompt",
   )[1];
   assert.deepEqual(again.body.guidance, {});
+});
+
+test("vague ideas ask once, then generate from the original idea and answers", async (t) => {
+  const { window, requests } = await createWorkspace([], {
+    ideaResponse: (body) =>
+      body.clarifications
+        ? {
+            provider: "test",
+            data: {
+              task: "Design an inventory assistant for a neighborhood bookshop",
+              focus: "Help the owner track stock",
+              depth: "Balanced",
+            },
+            interpretation: {
+              goal: "Track bookshop inventory",
+              focusAreas: ["Help the owner track stock"],
+              missingDetails: [],
+            },
+          }
+        : {
+            provider: "test",
+            questions: [
+              "What kind of shop is it?",
+              "What should the AI help with most?",
+            ],
+          },
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  const idea = doc.getElementById("ideaInput");
+  idea.value = "I want AI to help with my shop";
+  idea.dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc.getElementById("toggleComposer").click();
+  doc.getElementById("audience").value = "Shop owner";
+  doc
+    .getElementById("audience")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(
+    () => !doc.getElementById("clarificationCard").classList.contains("hidden"),
+  );
+  assert.equal(
+    doc.querySelectorAll("#clarificationQuestions textarea").length,
+    2,
+  );
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your prompt will appear here",
+  );
+  assert.equal(
+    requests.filter((entry) => entry.pathname === "/api/idea-to-prompt").length,
+    1,
+  );
+  const answers = doc.querySelectorAll("#clarificationQuestions textarea");
+  answers[0].value = "A neighborhood bookshop";
+  answers[0].dispatchEvent(new window.Event("input", { bubbles: true }));
+  answers[1].value = "Tracking inventory";
+  answers[1].dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc
+    .getElementById("clarificationForm")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const calls = requests.filter(
+    (entry) => entry.pathname === "/api/idea-to-prompt",
+  );
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[1].body, {
+    idea: "I want AI to help with my shop",
+    guidance: { audience: "Shop owner" },
+    clarifications: [
+      {
+        question: "What kind of shop is it?",
+        answer: "A neighborhood bookshop",
+      },
+      {
+        question: "What should the AI help with most?",
+        answer: "Tracking inventory",
+      },
+    ],
+  });
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your finished prompt",
+  );
+  assert.equal(doc.getElementById("saveButton").disabled, false);
+  assert.ok(
+    doc.getElementById("clarificationCard").classList.contains("hidden"),
+  );
+});
+
+test("an unfinished clarification restores as a draft with its answers", async (t) => {
+  const clarification = {
+    idea: "I want AI to help with my shop",
+    guidance: { audience: "Shop owner" },
+    questions: ["What kind of shop is it?"],
+    answers: ["A bookshop"],
+  };
+  const { window } = await createWorkspace([], {
+    draft: {
+      idea: clarification.idea,
+      data: { task: clarification.idea, audience: "Shop owner" },
+      clarification,
+    },
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  assert.ok(
+    !doc.getElementById("clarificationCard").classList.contains("hidden"),
+  );
+  assert.equal(
+    doc.querySelector("#clarificationQuestions textarea").value,
+    "A bookshop",
+  );
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your prompt will appear here",
+  );
+  assert.deepEqual(
+    JSON.parse(window.localStorage.getItem(DRAFT_KEY)).clarification,
+    clarification,
+  );
+});
+
+test("an image clarification can be skipped without losing the original idea or image", async (t) => {
+  const { window, requests } = await createWorkspace([], {
+    ideaResponse: (body) =>
+      body.clarifications
+        ? {
+            provider: "test",
+            data: {
+              task: "Create a flyer from the visual reference",
+              focus: "Use the visible colors",
+            },
+            interpretation: {
+              goal: "Create a flyer",
+              focusAreas: ["Use the visible colors"],
+            },
+          }
+        : { provider: "test", questions: ["What is the brand name?"] },
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const input = doc.getElementById("ideaImages");
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [new window.File([png], "reference.png", { type: "image/png" })],
+  });
+  input.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() => doc.querySelectorAll("#ideaImageTray img").length === 1);
+  doc.getElementById("ideaInput").value = "Create a flyer using this reference";
+  doc
+    .getElementById("ideaInput")
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(
+    () => !doc.getElementById("clarificationCard").classList.contains("hidden"),
+  );
+  doc.getElementById("clarificationSkip").click();
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const calls = requests.filter(
+    (entry) => entry.pathname === "/api/idea-to-prompt",
+  );
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].body.idea, "Create a flyer using this reference");
+  assert.deepEqual(calls[1].body.clarifications, [
+    { question: "What is the brand name?", answer: "" },
+  ]);
+  assert.equal(calls[1].body.images.length, 1);
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your finished prompt",
+  );
+});
+
+test("an attached image goes with the idea and can be removed", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  const image = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const input = doc.getElementById("ideaImages");
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [new window.File([image], "reference.png", { type: "image/png" })],
+  });
+  input.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() => doc.querySelectorAll("#ideaImageTray img").length === 1);
+  assert.match(doc.getElementById("ideaInput").value, /attached image/);
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const sent = requests.find(
+    (entry) => entry.pathname === "/api/idea-to-prompt",
+  );
+  assert.equal(sent.body.images.length, 1);
+  assert.match(sent.body.images[0], /^data:image\/png;base64,/);
+  doc.querySelector("#ideaImageTray button").click();
+  assert.equal(doc.querySelectorAll("#ideaImageTray img").length, 0);
+});
+
+test("removing an image before generation removes its automatic idea text", async (t) => {
+  const { window } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  const image = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const input = doc.getElementById("ideaImages");
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [new window.File([image], "reference.png", { type: "image/png" })],
+  });
+  input.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() => doc.querySelector("#ideaImageTray button"));
+  doc.querySelector("#ideaImageTray button").click();
+  assert.equal(doc.getElementById("ideaInput").value, "");
+  assert.equal(doc.getElementById("ideaGenerateButton").disabled, true);
+});
+
+test("large original images are prepared and sent without a small combined file cap", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  const tinyPng =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=";
+  window.createImageBitmap = async () => ({
+    width: 3000,
+    height: 2000,
+    close() {},
+  });
+  window.HTMLCanvasElement.prototype.getContext = () => ({
+    fillRect() {},
+    drawImage() {},
+  });
+  window.HTMLCanvasElement.prototype.toDataURL = () => tinyPng;
+  const input = doc.getElementById("ideaImages");
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [
+      new window.File([Buffer.alloc(3000000)], "large.png", {
+        type: "image/png",
+      }),
+      new window.File([Buffer.alloc(3000000)], "another-large.png", {
+        type: "image/png",
+      }),
+    ],
+  });
+  input.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() => doc.querySelectorAll("#ideaImageTray img").length === 2);
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const sent = requests.find(
+    (entry) => entry.pathname === "/api/idea-to-prompt",
+  );
+  assert.deepEqual(sent.body.images, [tinyPng, tinyPng]);
+});
+
+test("image requests resize prepared files to fit the complete JSON body", async (t) => {
+  const { window, requests } = await createWorkspace([]);
+  t.after(() => window.close());
+  const doc = window.document;
+  const tinyPng =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=";
+  window.createImageBitmap = async () => ({
+    width: 3000,
+    height: 2000,
+    close() {},
+  });
+  window.HTMLCanvasElement.prototype.getContext = () => ({
+    fillRect() {},
+    drawImage() {},
+  });
+  window.HTMLCanvasElement.prototype.toDataURL = () => tinyPng;
+  const input = doc.getElementById("ideaImages");
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: [
+      new window.File([Buffer.alloc(2700000)], "large.png", {
+        type: "image/png",
+      }),
+    ],
+  });
+  input.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await waitFor(() => doc.querySelectorAll("#ideaImageTray img").length === 1);
+  doc.getElementById("ideaGenerateButton").click();
+  await waitFor(() =>
+    doc.getElementById("ideaStatus").textContent.includes("Prompt ready"),
+  );
+  const sent = requests.find(
+    (entry) => entry.pathname === "/api/idea-to-prompt",
+  );
+  assert.deepEqual(sent.body.images, [tinyPng]);
+});
+
+test("restoring a raw idea does not call it a finished prompt", async (t) => {
+  const { window } = await createWorkspace([], {
+    draft: {
+      idea: "Build my thing",
+      data: { task: "Build my thing", raw: true },
+    },
+  });
+  t.after(() => window.close());
+  const doc = window.document;
+  assert.equal(
+    doc.getElementById("previewHeading").textContent,
+    "Your prompt will appear here",
+  );
+  assert.equal(doc.getElementById("copyButton").disabled, true);
+  assert.equal(doc.getElementById("saveButton").disabled, true);
+});
+
+test("the boot screen overlays the landing page and unlocks scrolling after load", async (t) => {
+  assert.match(
+    readStyle("landing.css"),
+    /\.boot-screen\s*\{[^}]*position:\s*fixed/s,
+  );
+  const { window } = await createWorkspace([]);
+  t.after(() => window.close());
+  assert.ok(
+    window.document.getElementById("bootScreen").classList.contains("hidden"),
+  );
+  assert.equal(window.document.body.classList.contains("booting"), false);
+  assert.equal(
+    window.document.documentElement.classList.contains("booting"),
+    false,
+  );
 });

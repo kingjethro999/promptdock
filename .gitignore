@@ -1,6 +1,8 @@
 .env
 node_modules/
-src/dist/
+oldui/dist/
+.next/
+tsconfig.tsbuildinfo
 post/
 *.log
 branch_structure.json

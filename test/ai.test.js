@@ -7,6 +7,8 @@ const {
   normalizeDraft,
   normalizeIdea,
   normalizeIdeaGuidance,
+  normalizeClarifications,
+  normalizeImages,
   normalizeRunInput,
   parseIdeaSuggestion,
   runPrompt,
@@ -82,6 +84,288 @@ test("fine-tune guidance is optional and validates only supported details", () =
     () => normalizeIdeaGuidance({ guidance: { format: "Unknown" } }),
     /Invalid fine-tune/,
   );
+});
+
+test("clarification answers are bounded and keep unanswered questions visible", () => {
+  assert.deepEqual(normalizeClarifications({}), []);
+  assert.deepEqual(
+    normalizeClarifications({
+      clarifications: [{ question: "What should AI create?", answer: "  " }],
+    }),
+    [{ question: "What should AI create?", answer: "" }],
+  );
+  assert.throws(
+    () =>
+      normalizeClarifications({
+        clarifications: Array(5).fill({ question: "x", answer: "y" }),
+      }),
+    /Invalid clarification/,
+  );
+});
+
+const tinyPng =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Xi2wAAAAASUVORK5CYII=";
+
+test("image input is validated before it reaches a provider", () => {
+  assert.equal(normalizeImages({ images: [tinyPng] }).length, 1);
+  assert.throws(
+    () => normalizeImages({ images: ["data:image/png;base64,AAAA"] }),
+    /Invalid image/,
+  );
+  assert.throws(
+    () => normalizeImages({ images: Array(4).fill(tinyPng) }),
+    /three images/,
+  );
+});
+
+test("Groq switches from its text model to vision and receives image parts", async () => {
+  let sent;
+  const result = await ideaToPrompt(
+    { idea: "Make a prompt from this screenshot", images: [tinyPng] },
+    {
+      AI_PROVIDER_ORDER: "groq",
+      GROQ_API_KEY: "test",
+      GROQ_MODEL: "openai/gpt-oss-120b",
+    },
+    async (_url, options) => {
+      sent = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: ["What should the result be used for?"],
+                }),
+              },
+            },
+          ],
+        }),
+      };
+    },
+  );
+  assert.equal(sent.model, "qwen/qwen3.8-27b");
+  assert.match(sent.messages[0].content, /exactly 1 image/);
+  assert.match(sent.messages[0].content, /create this with code/);
+  assert.deepEqual(JSON.parse(sent.messages[1].content[0].text), {
+    idea: "Make a prompt from this screenshot",
+    guidance: {},
+    attachmentCount: 1,
+  });
+  assert.equal(sent.messages[1].content[1].type, "image_url");
+  assert.equal(sent.messages[1].content[1].image_url.url, tinyPng);
+  assert.equal(result.questions.length, 1);
+});
+
+test("Gemini and Anthropic receive native image parts", async () => {
+  for (const provider of ["gemini", "anthropic"]) {
+    let sent;
+    const env =
+      provider === "gemini"
+        ? {
+            AI_PROVIDER_ORDER: "gemini",
+            GEMINI_API_KEY: "test",
+            GEMINI_MODEL: "gemini-2.5-flash",
+          }
+        : {
+            AI_PROVIDER_ORDER: "anthropic",
+            ANTHROPIC_API_KEY: "test",
+            ANTHROPIC_MODEL: "claude-sonnet-4-5",
+            ANTHROPIC_BASE_URL: "https://api.anthropic.com",
+          };
+    await ideaToPrompt(
+      { idea: "Describe the attached image", images: [tinyPng] },
+      env,
+      async (_url, options) => {
+        sent = JSON.parse(options.body);
+        const content = JSON.stringify({
+          questions: ["What is your intended output?"],
+        });
+        return provider === "gemini"
+          ? {
+              ok: true,
+              json: async () => ({
+                candidates: [{ content: { parts: [{ text: content }] } }],
+              }),
+            }
+          : { ok: true, json: async () => ({ content: [{ text: content }] }) };
+      },
+    );
+    if (provider === "gemini")
+      assert.equal(sent.contents[0].parts[1].inlineData.mimeType, "image/png");
+    else
+      assert.equal(sent.messages[0].content[1].source.media_type, "image/png");
+  }
+});
+
+test("custom OpenAI-compatible endpoints need an image model", async () => {
+  await assert.rejects(
+    ideaToPrompt(
+      { idea: "Explain this image", images: [tinyPng] },
+      {
+        AI_PROVIDER_ORDER: "openai",
+        OPENAI_API_KEY: "test",
+        OPENAI_BASE_URL: "https://example.com/v1",
+        OPENAI_MODEL: "text-only",
+      },
+      async () => {
+        throw new Error("should not call provider");
+      },
+    ),
+    /vision model in Settings/,
+  );
+});
+
+test("image prompts keep visual facts while removing references to unseen attachments", async () => {
+  const result = await ideaToPrompt(
+    {
+      idea: "Create this with code",
+      images: [tinyPng],
+    },
+    {
+      AI_PROVIDER_ORDER: "groq",
+      GROQ_API_KEY: "test",
+      GROQ_MODEL: "text-model",
+    },
+    async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                data: {
+                  task: "Implement the UI in the attached screenshot",
+                  context:
+                    "The provided screenshot shows a green navigation bar and a white card.",
+                  focus: "Match the screenshot's design and layout",
+                },
+                interpretation: {
+                  goal: "Recreate the attached screenshot",
+                  focusAreas: ["Match the provided screenshot"],
+                },
+              }),
+            },
+          },
+        ],
+      }),
+    }),
+  );
+  assert.match(result.data.context, /green navigation bar and a white card/);
+  assert.doesNotMatch(
+    JSON.stringify(result.data),
+    /(?:attached|provided) screenshot|the screenshot(?! described here)/i,
+  );
+  assert.match(result.data.task, /screenshot described here/);
+  assert.match(result.data.focus, /design described here and layout/);
+  assert.match(result.interpretation.goal, /screenshot described here/);
+});
+
+test("an image response without visual context cannot pass as a finished prompt", () => {
+  assert.throws(
+    () =>
+      parseIdeaSuggestion(
+        JSON.stringify({
+          data: { task: "Build a page", focus: "Make it usable" },
+        }),
+        "Build this page from the image",
+        {},
+        1,
+      ),
+    /image was not described/i,
+  );
+});
+
+test("material ambiguity yields one compact question group before a prompt", async () => {
+  let submitted;
+  const result = await ideaToPrompt(
+    { idea: "I want AI to help with my shop" },
+    { AI_PROVIDER_ORDER: "groq", GROQ_API_KEY: "test", GROQ_MODEL: "test" },
+    async (_url, options) => {
+      submitted = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    "What kind of shop is it?",
+                    "What should AI mainly help with?",
+                    "Are you building a new tool or improving an existing one?",
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+      };
+    },
+  );
+  assert.equal(result.data, undefined);
+  assert.equal(result.questions.length, 3);
+  assert.match(
+    submitted.messages[0].content,
+    /unresolved choice would materially change/i,
+  );
+  assert.deepEqual(JSON.parse(submitted.messages[1].content), {
+    idea: "I want AI to help with my shop",
+    guidance: {},
+  });
+});
+
+test("final generation receives the original idea, fine-tuning, and every answer", async () => {
+  let submitted;
+  const clarifications = [
+    { question: "What kind of shop is it?", answer: "A local bakery" },
+    { question: "What should AI mainly help with?", answer: "Inventory" },
+    { question: "Are you building a new tool?", answer: "" },
+  ];
+  const result = await ideaToPrompt(
+    {
+      idea: "I want AI to help with my shop",
+      guidance: { tone: "Friendly" },
+      clarifications,
+    },
+    { AI_PROVIDER_ORDER: "groq", GROQ_API_KEY: "test", GROQ_MODEL: "test" },
+    async (_url, options) => {
+      submitted = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  data: {
+                    task: "Build an inventory helper for a local bakery",
+                    focus: "Track stock first",
+                  },
+                  interpretation: { goal: "Track bakery inventory" },
+                }),
+              },
+            },
+          ],
+        }),
+      };
+    },
+  );
+  assert.deepEqual(JSON.parse(submitted.messages[1].content), {
+    idea: "I want AI to help with my shop",
+    guidance: { tone: "Friendly" },
+    clarifications,
+  });
+  assert.match(
+    submitted.messages[0].content,
+    /original idea as the primary source/i,
+  );
+  assert.equal(
+    result.data.task,
+    "Build an inventory helper for a local bakery",
+  );
+  assert.equal(result.data.tone, "Friendly");
 });
 
 test("idea response keeps ranked focus and flags missing details", () => {

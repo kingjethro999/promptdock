@@ -1,31 +1,48 @@
 {
   "name": "promptdock",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
   "scripts": {
-    "start": "npm run build:frontend && node src/server.js",
+    "start": "next start",
+    "dev": "next dev",
+    "build": "next build",
+    "next:dev": "next dev",
+    "next:start": "next start",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check 'src/app/**/*.{ts,tsx,css}' 'src/components/**/*.tsx' 'src/hooks/**/*.ts' 'src/lib/**/*.ts' 'src/stores/**/*.ts' 'src/styles/next/**/*.css' src/proxy.ts next.config.ts",
+    "legacy:dev": "node scripts/dev.js",
+    "legacy:start": "npm run build:frontend && node oldui/server.js",
     "start:api": "node src/server.js",
     "build:frontend": "node scripts/build-frontend.js",
     "test": "node --test",
     "version:bump": "node scripts/bump-version.js",
     "setup:hooks": "git config core.hooksPath .githooks",
-    "headers:sync": "node scripts/sync-vercel-headers.js",
-    "headers:check": "node scripts/sync-vercel-headers.js --check",
-    "lint": "eslint src api scripts test eslint.config.cjs"
+    "headers:check": "node scripts/check-next-deployment.js",
+    "lint": "eslint src oldui scripts test eslint.config.cjs"
   },
   "engines": {
     "node": ">=20.19"
   },
   "dependencies": {
+    "next": "^16.3.8",
     "nodemailer": "^10.0.12",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "eslint": "^10.11.0",
     "globals": "^16.5.0",
-    "jsdom": "^30.1.1"
+    "jsdom": "^30.1.1",
+    "prettier": "^3.9.9",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.0"
   }
 }
