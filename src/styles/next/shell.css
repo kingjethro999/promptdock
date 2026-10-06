@@ -1,0 +1,57 @@
+.react-app-shell .sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.react-app-shell .main-content {
+  min-width: 0;
+}
+.react-app-shell .brand,
+.react-app-shell .nav-item,
+.react-app-shell .sidebar-feedback,
+.react-app-shell .sidebar-sponsor a {
+  text-decoration: none;
+}
+.react-app-shell .nav-item {
+  cursor: pointer;
+}
+.react-app-shell .sidebar-bottom {
+  padding-top: 32px;
+}
+.react-invite-stats {
+  display: flex;
+  gap: 12px;
+  margin: 22px 0;
+}
+.react-invite-stats span {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #dce6d9;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #69806d;
+}
+.react-invite-stats strong {
+  display: block;
+  color: #193b2a;
+  font-size: 22px;
+}
+.help-backdrop {
+  background: rgba(12, 27, 17, 0.43);
+  padding: 14px;
+}
+.help-backdrop .app-dialog {
+  background: #fff;
+}
+.help-backdrop .help-go {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 12px;
+}
+.react-app-shell .account-trigger,
+.react-app-shell .brand,
+.react-app-shell .sidebar-legal a {
+  text-decoration: none;
+}
+.react-app-shell .account-trigger {
+  flex-shrink: 0;
+}

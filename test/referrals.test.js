@@ -4,11 +4,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const database = require("../src/database");
 const referrals = require("../src/referrals");
-const { renderInviteHtml } = require("../src/server");
+const { renderInviteHtml } = require("../oldui/server");
 
 test("invite links reveal a username but never an email, with crawlable previews", () => {
   const template = fs.readFileSync(
-    path.join(__dirname, "../src/index.html"),
+    path.join(__dirname, "../oldui/index.html"),
     "utf8",
   );
   const html = renderInviteHtml(

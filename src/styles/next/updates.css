@@ -1,0 +1,50 @@
+.react-update-card {
+  padding: 24px;
+  border: 1px solid #dce6d9;
+  border-radius: 14px;
+  background: #fff;
+  margin: 14px 0;
+}
+.react-update-card h2 {
+  margin: 12px 0;
+}
+.react-update-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.react-update-card p {
+  color: #6e806f;
+}
+.react-update-actions {
+  display: flex;
+  gap: 20px;
+}
+.react-update-actions button {
+  border: 0;
+  color: #456d48;
+  background: none;
+  cursor: pointer;
+}
+.react-unread-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 10px;
+  background: #80c966;
+  border-radius: 50%;
+}
+.react-update-detail {
+  max-width: 760px;
+  margin: 70px auto;
+}
+.react-update-detail h1 {
+  font-size: clamp(36px, 5vw, 62px);
+}
+.react-update-detail p {
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+.react-update-summary {
+  font-size: 20px;
+  color: #6d806f;
+}

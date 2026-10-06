@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const source = path.join(root, "src");
+const source = path.join(root, "oldui");
 const output = path.join(source, "dist");
 const envPath = path.join(root, ".env");
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function")
@@ -23,22 +23,23 @@ const pages = [
   "llms.txt",
 ];
 const assets = [
-  "app.js",
   "share.js",
   "prompt-format.js",
   "diff.js",
+  "favicon.svg",
+  "social-card.png",
+  "social-card-v2.png",
+  "auth-page.js",
+  "updates-data.js",
+  "updates-page.js",
+];
+const sharedStyles = [
   "styles.css",
   "landing.css",
   "share.css",
   "legal.css",
-  "favicon.svg",
-  "social-card.png",
-  "social-card-v2.png",
   "auth.css",
-  "auth-page.js",
   "updates.css",
-  "updates-data.js",
-  "updates-page.js",
 ];
 
 function siteUrl(env = process.env) {
@@ -71,6 +72,9 @@ function build() {
   for (const file of pages) copyPage(file, origin);
   for (const file of assets)
     fs.copyFileSync(path.join(source, file), path.join(output, file));
+  fs.copyFileSync(path.join(source, "app.js"), path.join(output, "app.js"));
+  for (const file of sharedStyles)
+    fs.copyFileSync(path.join(source, "styles", file), path.join(output, file));
   for (const file of [
     "openai.png",
     "anthropic.png",

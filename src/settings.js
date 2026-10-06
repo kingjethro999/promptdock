@@ -18,7 +18,7 @@ const maxProviders = 10;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const rowColumns =
-  "provider_id, name, provider, base_url, model, active, updated_at";
+  "provider_id, name, provider, base_url, model, vision_model, active, updated_at";
 
 function fail(message, status = 400) {
   const error = new Error(message);
@@ -96,14 +96,18 @@ function normalizeBaseUrl(provider, value) {
 function validateSetting(input) {
   const provider = input?.provider;
   const model = typeof input?.model === "string" ? input.model.trim() : "";
+  const visionModel =
+    typeof input?.visionModel === "string" ? input.visionModel.trim() : "";
   const apiKey = typeof input?.apiKey === "string" ? input.apiKey.trim() : "";
   if (!["groq", "gemini", "apmix"].includes(provider))
     throw fail("Choose Groq, Gemini, or APMIX.");
   if (!/^[A-Za-z0-9._:/-]{2,120}$/.test(model))
     throw fail("Enter a valid model ID.");
+  if (visionModel && !/^[A-Za-z0-9._:/-]{2,120}$/.test(visionModel))
+    throw fail("Enter a valid image model ID.");
   if (apiKey && (apiKey.length < 8 || apiKey.length > 500 || /\s/.test(apiKey)))
     throw fail("Enter a valid API key.");
-  return { provider, model, apiKey };
+  return { provider, model, visionModel, apiKey };
 }
 
 function validateProvider(input) {
@@ -113,6 +117,8 @@ function validateProvider(input) {
       ? input.name.trim().replace(/\s+/g, " ")
       : "";
   const model = typeof input?.model === "string" ? input.model.trim() : "";
+  const visionModel =
+    typeof input?.visionModel === "string" ? input.visionModel.trim() : "";
   const apiKey = typeof input?.apiKey === "string" ? input.apiKey.trim() : "";
   if (!providerTypes.includes(provider))
     throw fail("Choose a supported provider.");
@@ -120,6 +126,8 @@ function validateProvider(input) {
     throw fail("Give this provider a name of 1 to 40 characters.");
   if (!/^[A-Za-z0-9._:/-]{2,120}$/.test(model))
     throw fail("Enter a valid model ID.");
+  if (visionModel && !/^[A-Za-z0-9._:/-]{2,120}$/.test(visionModel))
+    throw fail("Enter a valid image model ID.");
   if (apiKey && (apiKey.length < 8 || apiKey.length > 500 || /\s/.test(apiKey)))
     throw fail("Enter a valid API key.");
   const baseUrl = normalizeBaseUrl(provider, input?.baseUrl);
@@ -130,6 +138,7 @@ function validateProvider(input) {
     provider,
     baseUrl: customTypes.has(provider) ? baseUrl : "",
     model,
+    visionModel,
     apiKey,
   };
 }
@@ -140,6 +149,7 @@ function providerFromRow(row) {
     name: row.name,
     provider: row.provider,
     model: row.model,
+    visionModel: row.vision_model || "",
     baseUrl: row.base_url || "",
     active: Boolean(row.active),
     updatedAt: row.updated_at || null,
@@ -209,7 +219,7 @@ async function saveProvider(userId, input) {
         )
         UPDATE user_ai_providers
         SET name = $3, provider = $4, base_url = $5, model = $6,
-          encrypted_key = $7, active = true, updated_at = now()
+          encrypted_key = $7, vision_model = $8, active = true, updated_at = now()
         WHERE user_id = $1 AND provider_id = $2::uuid
         RETURNING ${rowColumns}`,
         [
@@ -220,6 +230,7 @@ async function saveProvider(userId, input) {
           fields.baseUrl,
           fields.model,
           encrypted,
+          fields.visionModel,
         ],
       )
     : await database.pool.query(
@@ -228,8 +239,8 @@ async function saveProvider(userId, input) {
           WHERE user_id = $1 AND active RETURNING 1
         )
         INSERT INTO user_ai_providers
-          (user_id, name, provider, base_url, model, encrypted_key, active)
-        VALUES ($1, $2, $3, $4, $5, $6, true)
+          (user_id, name, provider, base_url, model, encrypted_key, vision_model, active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true)
         RETURNING ${rowColumns}`,
         [
           userId,
@@ -238,6 +249,7 @@ async function saveProvider(userId, input) {
           fields.baseUrl,
           fields.model,
           encrypted,
+          fields.visionModel,
         ],
       );
   if (!saved.rows[0]) throw fail("Provider not found.", 404);
@@ -286,7 +298,7 @@ async function removeProvider(userId, providerId) {
 }
 
 async function saveSettings(userId, input) {
-  const { provider, model, apiKey } = validateSetting(input);
+  const { provider, model, visionModel, apiKey } = validateSetting(input);
   const name = defaultNames[provider];
   const rows = await existingRows(userId);
   const match =
@@ -295,6 +307,7 @@ async function saveSettings(userId, input) {
   return saveProvider(userId, {
     provider,
     model,
+    visionModel,
     apiKey,
     name,
     providerId: match ? match.provider_id : "",
@@ -314,7 +327,7 @@ async function effectiveEnv(userId, env = process.env) {
   if (!userId) return env;
   await database.ensureSchema();
   const result = await database.pool.query(
-    "SELECT provider, model, base_url, encrypted_key FROM user_ai_providers WHERE user_id = $1 AND active",
+    "SELECT provider, model, vision_model, base_url, encrypted_key FROM user_ai_providers WHERE user_id = $1 AND active",
     [userId],
   );
   const setting = result.rows[0];
@@ -328,25 +341,31 @@ async function effectiveEnv(userId, env = process.env) {
   if (setting.provider === "groq") {
     next.GROQ_API_KEY = apiKey;
     next.GROQ_MODEL = setting.model;
+    next.GROQ_VISION_MODEL =
+      setting.vision_model || env.GROQ_VISION_MODEL || "";
   }
   if (setting.provider === "gemini") {
     next.GEMINI_API_KEY = apiKey;
     next.GEMINI_MODEL = setting.model;
+    next.GEMINI_VISION_MODEL = setting.vision_model || "";
   }
   if (setting.provider === "apmix") {
     next.APMIX_API_KEY = apiKey;
     next.APMIX_MODEL = setting.model;
+    next.APMIX_VISION_MODEL = setting.vision_model || "";
     next.APMIX_BASE_URL =
       setting.base_url || env.APMIX_BASE_URL || "https://api.apmix.ai/v1";
   }
   if (setting.provider === "openai") {
     next.OPENAI_API_KEY = apiKey;
     next.OPENAI_MODEL = setting.model;
+    next.OPENAI_VISION_MODEL = setting.vision_model || "";
     next.OPENAI_BASE_URL = setting.base_url;
   }
   if (setting.provider === "anthropic") {
     next.ANTHROPIC_API_KEY = apiKey;
     next.ANTHROPIC_MODEL = setting.model;
+    next.ANTHROPIC_VISION_MODEL = setting.vision_model || "";
     next.ANTHROPIC_BASE_URL = setting.base_url;
   }
   return next;

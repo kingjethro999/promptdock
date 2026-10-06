@@ -1,0 +1,37 @@
+.landing-page .landing-small-cta,
+.landing-page .landing-primary-cta,
+.landing-page .landing-outline-cta,
+.landing-page .sponsor-card-link,
+.landing-page .landing-footer-actions a,
+.landing-page .landing-signin {
+  text-decoration: none;
+}
+.landing-page .landing-primary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 202px;
+}
+.landing-page .landing-small-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.landing-page .landing-outline-cta {
+  display: inline-flex;
+  align-items: center;
+}
+.landing-page .landing-signin {
+  display: inline-flex;
+  align-items: center;
+}
+.landing-page .landing-final .landing-primary-cta {
+  min-width: 170px;
+  height: 46px;
+}
+.landing-page .landing-footer-actions a {
+  color: #d4f37e;
+  font-size: 12px;
+  font-weight: 800;
+}

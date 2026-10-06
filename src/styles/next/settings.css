@@ -1,0 +1,151 @@
+.react-settings-stack {
+  display: grid;
+  gap: 20px;
+}
+.react-settings-card {
+  min-width: 0;
+}
+.settings-admin-link {
+  display: inline-block;
+  margin: 0 0 11px;
+  color: #377a49;
+  font-size: 12px;
+  text-decoration: none;
+}
+.react-settings-card h3 {
+  margin: 32px 0 8px;
+}
+.react-settings-card > .react-provider-status {
+  margin: 12px 0 18px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  background: #f0f7e8;
+  color: #518258;
+  font-size: 12px;
+}
+.react-provider-list {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.react-provider-list button {
+  border: 1px solid #d8e1d4;
+  border-radius: 7px;
+  background: #fff;
+  padding: 8px;
+  cursor: pointer;
+}
+.react-provider-list button.selected {
+  background: #e9f7d8;
+}
+.react-settings-card .react-select {
+  margin: 20px 0 0;
+}
+.react-settings-card .react-select-label,
+.react-settings-card .react-field > span:first-child {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3c5941;
+}
+.react-settings-card .search-select-trigger,
+.react-settings-card .react-field input {
+  min-height: 44px;
+  background: #fafcf8;
+  font-size: 12px;
+}
+.react-settings-card .react-field {
+  margin: 20px 0 0;
+}
+.react-settings-card .react-field > span:first-child {
+  margin-bottom: 0;
+}
+.react-settings-card .react-field small {
+  font-weight: 400;
+}
+.react-field-optional {
+  color: #8da18c;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+}
+.react-settings-card
+  form
+  > .secondary-button:not(.react-provider-actions button) {
+  margin-top: 22px;
+}
+.react-provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 20px;
+}
+.react-profile-username-form .react-field {
+  margin-top: 9px;
+}
+.react-profile-username-form .react-field small {
+  margin-top: 1px;
+}
+.react-profile-username-form .react-field small + small {
+  margin-top: 0;
+}
+.react-profile-username-form .secondary-button {
+  margin-top: 15px;
+}
+.react-settings-card .react-modal-actions {
+  margin-bottom: 18px;
+}
+.react-usage-meter {
+  margin: 16px 0;
+}
+.react-usage-meter > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.react-usage-meter > div:first-child span {
+  color: #789082;
+}
+.react-usage-track {
+  height: 7px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #e5ebe2;
+}
+.react-usage-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #8ac367;
+}
+.react-usage-meter small {
+  color: #8a9c8d;
+}
+.react-password-field {
+  display: block;
+  position: relative;
+}
+.react-password-field input {
+  padding-right: 68px;
+}
+.react-password-field button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #3c5941;
+  font-size: 11px;
+  font-weight: 800;
+}
+.react-settings-card .settings-session {
+  margin-top: 56px;
+}
+.react-settings-card .settings-danger {
+  margin-top: 30px;
+}

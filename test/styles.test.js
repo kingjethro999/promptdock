@@ -3,7 +3,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const css = fs.readFileSync(path.join(__dirname, "../src/styles.css"), "utf8");
+const css = fs.readFileSync(
+  path.join(__dirname, "../oldui/styles/styles.css"),
+  "utf8",
+);
 
 function ruleBody(selector) {
   const start = css.indexOf(`${selector} {`);

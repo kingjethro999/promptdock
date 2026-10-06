@@ -21,7 +21,12 @@ test("personal provider settings require a supported provider and model", () => 
       model: "openai/gpt-oss-120b",
       apiKey: "example-key",
     }),
-    { provider: "groq", model: "openai/gpt-oss-120b", apiKey: "example-key" },
+    {
+      provider: "groq",
+      model: "openai/gpt-oss-120b",
+      visionModel: "",
+      apiKey: "example-key",
+    },
   );
   assert.deepEqual(
     settings.validateSetting({
@@ -29,7 +34,12 @@ test("personal provider settings require a supported provider and model", () => 
       model: "provider/model",
       apiKey: "example-key",
     }),
-    { provider: "apmix", model: "provider/model", apiKey: "example-key" },
+    {
+      provider: "apmix",
+      model: "provider/model",
+      visionModel: "",
+      apiKey: "example-key",
+    },
   );
   assert.throws(() =>
     settings.validateSetting({
@@ -71,6 +81,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
       name: "  Work   Groq  ",
       provider: "groq",
       model: "openai/gpt-oss-120b",
+      visionModel: "",
       apiKey: "personal-key",
     }),
     {
@@ -78,6 +89,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
       provider: "groq",
       baseUrl: "",
       model: "openai/gpt-oss-120b",
+      visionModel: "",
       apiKey: "personal-key",
     },
   );
@@ -231,6 +243,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
               provider: "openai",
               base_url: "https://openrouter.ai/api/v1",
               model: "llama-3.3-70b-instruct",
+              vision_model: "qwen/qwen3-vl",
               active: true,
               updated_at: "2026-09-30T00:00:00Z",
             },
@@ -244,6 +257,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
               provider: "openai",
               base_url: "https://openrouter.ai/api/v1",
               model: "llama-3.3-70b-instruct",
+              vision_model: "qwen/qwen3-vl",
               active: true,
               updated_at: "2026-09-30T00:00:00Z",
             },
@@ -258,6 +272,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
         provider: "openai",
         baseUrl: "https://openrouter.ai/api/v1/chat/completions",
         model: "llama-3.3-70b-instruct",
+        visionModel: "qwen/qwen3-vl",
         apiKey: "personal-key",
       });
       assert.equal(calls.length, 3);
@@ -271,12 +286,14 @@ test("saving a provider encrypts the key and marks only it active", async () => 
         "https://openrouter.ai/api/v1",
         "llama-3.3-70b-instruct",
         calls[1].params[5],
+        "qwen/qwen3-vl",
       ]);
       assert.ok(calls[1].params[5].includes("."));
       assert.ok(!calls[1].params[5].includes("personal-key"));
       assert.equal(result.activeProviderId, "row-2");
       assert.equal(result.available, true);
       assert.equal(result.hasKey, true);
+      assert.equal(result.providers[0].visionModel, "qwen/qwen3-vl");
     });
   });
 });
@@ -432,6 +449,7 @@ test("the active provider decides the environment sent to the AI layer", async (
           {
             provider: "openai",
             model: "llama-3.3-70b-instruct",
+            vision_model: "qwen/qwen3-vl",
             base_url: "http://localhost:11434/v1",
             encrypted_key: secret("local-secret"),
           },
@@ -446,6 +464,7 @@ test("the active provider decides the environment sent to the AI layer", async (
     });
     assert.equal(env.OPENAI_API_KEY, "local-secret");
     assert.equal(env.OPENAI_MODEL, "llama-3.3-70b-instruct");
+    assert.equal(env.OPENAI_VISION_MODEL, "qwen/qwen3-vl");
     assert.equal(env.OPENAI_BASE_URL, "http://localhost:11434/v1");
     assert.equal(env.AI_PROVIDER_ORDER, "openai");
   });

@@ -16,18 +16,18 @@ Use Node.js 24 for the full test suite. Clone the repository, then run:
 npm ci
 npm run setup:hooks
 cp .env.example .env
-npm start
+npm run dev
 ```
 
 Open <http://localhost:3000>. The manual prompt builder works without provider keys or PostgreSQL. To work on account, sync, or AI features, add your own development credentials to the ignored `.env` file. Use a development database and account; do not connect tests or local experiments to the production database.
 
-The browser UI and API live in `src/`. `api/index.js` is the Vercel entry point, and `src/schema.js` contains additive database setup. Keep secrets in server environment variables, never in browser code or committed files.
+The deployed UI uses the Next.js App Router in `src/app/`. The shared authenticated backend is in `src/backend.js`; `src/schema.js` contains additive database setup. The previous browser UI is preserved in `oldui/` for reference and runs through `npm run legacy:dev`. Keep secrets in server environment variables, never in browser code or committed files.
 
 ## Make a change
 
 1. Create a branch from `main` and make a focused change.
 2. Add or update tests when behavior changes. Keep tests independent of live providers, email delivery, and the production database.
-3. If you change security headers, edit `src/security.js` and run `npm run headers:sync` to update `vercel.json`.
+3. If you change security headers, edit `src/security.js` and `src/proxy.ts`, then run `npm run headers:check`.
 4. If you change the database, make the schema update safe for existing installations and describe any migration or deployment impact in the pull request.
 5. Run the checks below before opening a pull request:
 
@@ -35,7 +35,8 @@ The browser UI and API live in `src/`. `api/index.js` is the Vercel entry point,
 npm run lint
 npm test
 npm run headers:check
-npm run build:frontend
+npm run typecheck
+npm run build
 ```
 
 The pre-commit hook runs lint and bumps the project version on each commit. Let the hook update `VERSION`, `package.json`, and `package-lock.json`; do not set those versions by hand. The version sequence is explained in [README.md](README.md#versioning).

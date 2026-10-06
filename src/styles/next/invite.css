@@ -1,0 +1,24 @@
+.react-invite-page {
+  min-height: 100dvh;
+  padding: clamp(24px, 6vw, 80px);
+  background: #f6f8ef;
+}
+.react-invite-page header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.react-invite-page main {
+  max-width: 770px;
+  margin: min(14vh, 130px) auto;
+  text-align: center;
+}
+.react-invite-page h1 {
+  font-size: clamp(42px, 7vw, 78px);
+  line-height: 1.05;
+}
+.react-invite-page p {
+  color: #728178;
+  font-size: 18px;
+  line-height: 1.6;
+}

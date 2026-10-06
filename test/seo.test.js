@@ -4,11 +4,11 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { once } = require("node:events");
-const handleRequest = require("../src/server");
+const handleRequest = require("../oldui/server");
 const { renderInviteHtml, renderSharedHtml } = handleRequest;
 const { siteUrl, build } = require("../scripts/build-frontend");
 
-const source = path.join(__dirname, "..", "src");
+const source = path.join(__dirname, "..", "oldui");
 const dist = path.join(source, "dist");
 const origin = siteUrl();
 const indexable = {
@@ -39,7 +39,7 @@ function structuredData(html) {
 test("every indexable page declares one canonical and a full social preview", () => {
   for (const [file, route] of Object.entries(indexable)) {
     const html = read(source, file).split("{{SITE_URL}}").join(origin);
-    assert.match(html, /<html lang="en">/, file);
+    assert.match(html, /<html lang="en"(?: class="booting")?>/, file);
     assert.equal(count(html, /<title>/g), 1, file);
     assert.ok(html.includes('name="description"'), file);
     assert.equal(count(html, /rel="canonical"/g), 1, file);
