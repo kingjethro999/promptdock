@@ -2,20 +2,14 @@
 
 import { useState } from "react";
 import { json } from "@/lib/client/api";
-import type { PromptInterpretation } from "@/lib/prompt/types";
 import Button from "@/components/ui/Button";
 
 type Props = {
   prompt: string;
-  interpretation?: PromptInterpretation;
   onSave(): void;
 };
 
-export default function PromptPreview({
-  prompt,
-  interpretation,
-  onSave,
-}: Props) {
+export default function PromptPreview({ prompt, onSave }: Props) {
   const [message, setMessage] = useState("");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
@@ -64,90 +58,77 @@ export default function PromptPreview({
   }
 
   return (
-    <>
-      <section className="preview-card" aria-labelledby="previewHeading">
-        <div className="preview-top">
-          <div className="section-kicker">PROMPT OUTPUT</div>
-          <span
-            className="ready-badge"
-            style={{ visibility: prompt ? "visible" : "hidden" }}
-          >
-            <span className="status-dot" /> Ready to copy
-          </span>
-        </div>
-        <h2 id="previewHeading">
-          {prompt ? "Your finished prompt" : "Your prompt will appear here"}
-        </h2>
-        <p className="preview-subtitle">
-          {prompt
-            ? "Review and refine it before using it with any AI platform."
-            : "Share your idea, then let PromptDock shape it."}
-        </p>
-        <div
-          className={`prompt-output${prompt ? "" : " is-empty"}`}
-          tabIndex={0}
-          aria-live="polite"
+    <section className="preview-card" aria-labelledby="previewHeading">
+      <div className="preview-top">
+        <div className="section-kicker">PROMPT OUTPUT</div>
+        <span
+          className="ready-badge"
+          style={{ visibility: prompt ? "visible" : "hidden" }}
         >
-          {prompt ||
-            "Your prompt will appear here after PromptDock shapes your idea."}
-        </div>
-        <div className="preview-actions">
-          <Button variant="primary" disabled={!prompt} onClick={copy}>
-            <span>▣</span> Copy prompt <span className="button-arrow">↗</span>
-          </Button>
-          <Button disabled={!prompt} onClick={onSave}>
-            ♡ &nbsp; Save
-          </Button>
-        </div>
-        <div className="export-row">
-          <button
-            type="button"
-            className="quiet-button"
-            disabled={!prompt}
-            onClick={download}
-          >
-            ↓ Download .md
-          </button>
-          <span className="word-count">
-            {prompt ? `${prompt.trim().split(/\s+/).length} words` : "0 words"}
-          </span>
-        </div>
-        <div className="run-row">
-          <button
-            type="button"
-            className="ai-button run-button"
-            disabled={!prompt || running}
-            onClick={testPrompt}
-          >
-            <span>▶</span> Run prompt
-          </button>
-          <span className="run-note">
-            Tests this prompt on your configured AI
-          </span>
-        </div>
-        {message && (
-          <p className="settings-feedback" role="status">
-            {message}
-          </p>
-        )}
-        {runOutput && (
-          <div className="run-card">
-            <div className="section-kicker">TEST RESULT</div>
-            <p>{runOutput}</p>
-          </div>
-        )}
-      </section>
-      {interpretation && (
-        <section className="quality-card">
-          <div className="section-kicker">HOW PROMPTDOCK READ YOUR IDEA</div>
-          <h3>{interpretation.goal}</h3>
-          <ul>
-            {interpretation.focusAreas?.map((area) => (
-              <li key={area}>{area}</li>
-            ))}
-          </ul>
-        </section>
+          <span className="status-dot" /> Ready to copy
+        </span>
+      </div>
+      <h2 id="previewHeading">
+        {prompt ? "Your finished prompt" : "Your prompt will appear here"}
+      </h2>
+      <p className="preview-subtitle">
+        {prompt
+          ? "Review and refine it before using it with any AI platform."
+          : "Share your idea, then let PromptDock shape it."}
+      </p>
+      <div
+        className={`prompt-output${prompt ? "" : " is-empty"}`}
+        tabIndex={0}
+        aria-live="polite"
+      >
+        {prompt ||
+          "Your prompt will appear here after PromptDock shapes your idea."}
+      </div>
+      <div className="preview-actions">
+        <Button variant="primary" disabled={!prompt} onClick={copy}>
+          <span>▣</span> Copy prompt <span className="button-arrow">↗</span>
+        </Button>
+        <Button disabled={!prompt} onClick={onSave}>
+          ♡ &nbsp; Save
+        </Button>
+      </div>
+      <div className="export-row">
+        <button
+          type="button"
+          className="quiet-button"
+          disabled={!prompt}
+          onClick={download}
+        >
+          ↓ Download .md
+        </button>
+        <span className="word-count">
+          {prompt ? `${prompt.trim().split(/\s+/).length} words` : "0 words"}
+        </span>
+      </div>
+      <div className="run-row">
+        <button
+          type="button"
+          className="ai-button run-button"
+          disabled={!prompt || running}
+          onClick={testPrompt}
+        >
+          <span>▶</span> Run prompt
+        </button>
+        <span className="run-note">
+          Tests this prompt on your configured AI
+        </span>
+      </div>
+      {message && (
+        <p className="settings-feedback" role="status">
+          {message}
+        </p>
       )}
-    </>
+      {runOutput && (
+        <div className="run-card">
+          <div className="section-kicker">TEST RESULT</div>
+          <p>{runOutput}</p>
+        </div>
+      )}
+    </section>
   );
 }

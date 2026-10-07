@@ -1,5 +1,16 @@
-.react-workspace-page .preview-column {
+.react-builder-masonry:not(.is-measured) {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+.react-composer-flow {
+  display: grid;
+  gap: 17px;
   min-width: 0;
+}
+.react-composer-flow > .composer-card {
+  margin-top: -17px;
+  border-color: #dcebc9;
+  border-radius: 0 0 17px 17px;
+  box-shadow: 0 4px 18px rgba(32, 55, 34, 0.025);
 }
 .react-workspace-page .react-finetune {
   margin-top: -17px;
@@ -61,14 +72,8 @@
   margin: 0;
   color: #728178;
 }
-.react-workspace-page .builder-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
-  gap: 20px;
-  align-items: start;
-}
-.react-workspace-page .builder-column {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
+@media (max-width: 1100px) {
+  .react-builder-masonry:not(.is-measured) {
+    grid-template-columns: 1fr;
+  }
 }

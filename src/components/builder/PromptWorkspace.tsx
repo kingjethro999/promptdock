@@ -6,13 +6,17 @@ import IdeaCard from "./IdeaCard";
 import FineTunePanel from "./FineTunePanel";
 import ClarificationPanel from "./ClarificationPanel";
 import PromptPreview from "./PromptPreview";
+import InterpretationCard from "./InterpretationCard";
 import PromptCheck from "./PromptCheck";
 import PlatformLinks from "./PlatformLinks";
 import PromptEditor from "./PromptEditor";
 import Button from "@/components/ui/Button";
+import Masonry from "@/components/ui/Masonry";
 import { usePromptBuilder } from "@/hooks/usePromptBuilder";
 import { json } from "@/lib/client/api";
 import type { SavedPrompt } from "@/lib/prompt/types";
+
+const builderColumnWeights = [1.1, 0.9] as const;
 
 export default function PromptWorkspace() {
   const builder = usePromptBuilder();
@@ -99,8 +103,13 @@ export default function PromptWorkspace() {
           <b>03</b> Take it anywhere
         </span>
       </div>
-      <div className="work-grid">
-        <div className="creation-column">
+      <Masonry
+        className="react-builder-masonry"
+        minColumnWidth={460}
+        rowGap={17}
+        columnWeights={builderColumnWeights}
+      >
+        <div className="react-composer-flow">
           <IdeaCard
             idea={builder.idea}
             busy={builder.busy}
@@ -133,26 +142,26 @@ export default function PromptWorkspace() {
             clear={builder.clear}
           />
         </div>
-        <div className="preview-column">
-          <PromptPreview
-            prompt={builder.prompt}
-            interpretation={builder.result?.interpretation}
-            onSave={() => {
-              setSaveError("");
-              setName(builder.sourcePrompt?.name || "");
-              setTags(builder.sourcePrompt?.tags.join(", ") || "");
-              setSaveOpen(true);
-            }}
+        <PromptPreview
+          prompt={builder.prompt}
+          onSave={() => {
+            setSaveError("");
+            setName(builder.sourcePrompt?.name || "");
+            setTags(builder.sourcePrompt?.tags.join(", ") || "");
+            setSaveOpen(true);
+          }}
+        />
+        {builder.result?.interpretation && (
+          <InterpretationCard interpretation={builder.result.interpretation} />
+        )}
+        {builder.ready && builder.data && (
+          <PromptEditor
+            data={builder.data}
+            onChange={builder.editPromptField}
           />
-          {builder.ready && builder.data && (
-            <PromptEditor
-              data={builder.data}
-              onChange={builder.editPromptField}
-            />
-          )}
-          <PromptCheck data={builder.data} />
-        </div>
-      </div>
+        )}
+        <PromptCheck data={builder.data} />
+      </Masonry>
       <PlatformLinks />
       {saveOpen && (
         <div
