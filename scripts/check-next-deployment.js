@@ -8,9 +8,13 @@ const vercel = JSON.parse(
   fs.readFileSync(path.join(root, "vercel.json"), "utf8"),
 );
 assert.equal(vercel.framework, "nextjs");
+assert.equal(
+  vercel.outputDirectory,
+  ".next",
+  "Vercel must use the Next.js output instead of the old src/dist dashboard setting",
+);
 for (const key of [
   "buildCommand",
-  "outputDirectory",
   "rewrites",
   "routes",
   "headers",

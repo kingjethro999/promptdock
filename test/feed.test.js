@@ -13,9 +13,6 @@ const vercel = require("../vercel.json");
 
 const source = path.join(__dirname, "..", "oldui");
 const unitOrigin = "https://feed.test";
-const siteOrigin = process.env.APP_URL
-  ? new URL(process.env.APP_URL).origin
-  : "http://feed.test";
 
 function parse(xml) {
   return new JSDOM(xml, { contentType: "application/xml" }).window.document;
@@ -144,6 +141,9 @@ test("the server serves the merged feed on both hosting paths", async () => {
     ],
   ];
   await withServer(stubs, async (base) => {
+    const siteOrigin = process.env.APP_URL
+      ? new URL(process.env.APP_URL).origin
+      : base;
     for (const route of ["/feed.xml", "/api/index?feed=1"]) {
       const response = await fetch(`${base}${route}`);
       assert.equal(response.status, 200, route);
