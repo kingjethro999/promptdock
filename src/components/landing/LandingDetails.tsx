@@ -17,6 +17,7 @@ export function LandingProof() {
               height={17}
               alt=""
             />
+            {" "}
             ChatGPT
           </strong>
           <strong>
@@ -27,6 +28,7 @@ export function LandingProof() {
               height={17}
               alt=""
             />
+            {" "}
             Claude
           </strong>
           <strong>
@@ -37,6 +39,7 @@ export function LandingProof() {
               height={17}
               alt=""
             />
+            {" "}
             Gemini
           </strong>
           <strong>+ wherever you prompt</strong>
