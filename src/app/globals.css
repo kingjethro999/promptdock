@@ -10,3 +10,26 @@ body {
   margin: 0;
   min-width: 320px;
 }
+
+.react-masonry {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 20px;
+}
+.react-masonry.is-measured {
+  position: relative;
+  display: block;
+}
+.react-masonry.is-measured > .react-masonry-item {
+  position: absolute;
+}
+.react-masonry-item {
+  min-width: 0;
+}
+.react-masonry-item > * {
+  width: 100%;
+}
+.react-library-masonry:not(.is-measured) {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr));
+  gap: 15px;
+}

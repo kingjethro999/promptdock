@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { randomBytes } = require("node:crypto");
 const database = require("../src/database");
 const settings = require("../src/settings");
+const { supportsImages } = require("../src/image-models.cjs");
 const mailer = require("../src/mailer");
 
 test("personal provider keys encrypt, decrypt, and stay bound to one user", () => {
@@ -89,14 +90,13 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
       provider: "groq",
       baseUrl: "",
       model: "openai/gpt-oss-120b",
-      visionModel: "",
       apiKey: "personal-key",
     },
   );
   assert.equal(
     settings.validateProvider({
       name: "OpenRouter",
-      provider: "openai",
+      provider: "openai_compatible",
       baseUrl: "https://openrouter.ai/api/v1/chat/completions",
       model: "llama-3.3-70b-instruct",
       apiKey: "personal-key",
@@ -106,7 +106,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
   assert.equal(
     settings.validateProvider({
       name: "Anthropic",
-      provider: "anthropic",
+      provider: "anthropic_compatible",
       baseUrl: "https://api.anthropic.com/v1/messages",
       model: "claude-sonnet-4-5",
       apiKey: "personal-key",
@@ -116,7 +116,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
   assert.equal(
     settings.validateProvider({
       name: "Local model",
-      provider: "openai",
+      provider: "openai_compatible",
       baseUrl: "http://localhost:11434/v1",
       model: "llama3",
       apiKey: "personal-key",
@@ -127,7 +127,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
     () =>
       settings.validateProvider({
         name: "OpenRouter",
-        provider: "openai",
+        provider: "openai_compatible",
         model: "llama-3.3-70b",
         apiKey: "personal-key",
       }),
@@ -137,7 +137,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
     () =>
       settings.validateProvider({
         name: "OpenRouter",
-        provider: "openai",
+        provider: "openai_compatible",
         baseUrl: "http://api.example.com/v1",
         model: "llama-3.3-70b",
         apiKey: "personal-key",
@@ -148,7 +148,7 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
     () =>
       settings.validateProvider({
         name: "OpenRouter",
-        provider: "openai",
+        provider: "openai_compatible",
         baseUrl: "https://user:pass@api.example.com/v1",
         model: "llama-3.3-70b",
         apiKey: "personal-key",
@@ -185,6 +185,47 @@ test("custom endpoints need a name, a model, and an HTTPS base URL", () => {
       }),
     /supported provider/,
   );
+});
+
+test("official and compatible providers have distinct URL requirements", () => {
+  assert.equal(
+    settings.validateProvider({
+      name: "OpenAI",
+      provider: "openai",
+      model: "gpt-4o",
+      apiKey: "personal-key",
+    }).baseUrl,
+    "",
+  );
+  assert.equal(
+    settings.validateProvider({
+      name: "Anthropic",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5",
+      apiKey: "personal-key",
+    }).baseUrl,
+    "",
+  );
+  assert.throws(
+    () =>
+      settings.validateProvider({
+        name: "Custom Anthropic",
+        provider: "anthropic_compatible",
+        model: "claude-sonnet-4-5",
+        apiKey: "personal-key",
+      }),
+    /base URL/,
+  );
+});
+
+test("image capability marks known vision models and routes text models to default vision", () => {
+  assert.equal(supportsImages("groq", "openai/gpt-oss-120b"), false);
+  assert.equal(supportsImages("groq", "qwen/qwen3.8-27b"), true);
+  assert.equal(supportsImages("openai", "gpt-4o"), true);
+  assert.equal(supportsImages("openai_compatible", "llama3"), false);
+  assert.equal(supportsImages("anthropic", "claude-sonnet-4-5"), true);
+  assert.equal(supportsImages("apmix", "unknown-model"), false);
+  assert.equal(supportsImages("apmix", "openai/gpt-4o"), true);
 });
 
 function queuePool(responses, calls) {
@@ -240,7 +281,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
             {
               provider_id: "row-2",
               name: "OpenRouter",
-              provider: "openai",
+              provider: "openai_compatible",
               base_url: "https://openrouter.ai/api/v1",
               model: "llama-3.3-70b-instruct",
               vision_model: "qwen/qwen3-vl",
@@ -254,7 +295,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
             {
               provider_id: "row-2",
               name: "OpenRouter",
-              provider: "openai",
+              provider: "openai_compatible",
               base_url: "https://openrouter.ai/api/v1",
               model: "llama-3.3-70b-instruct",
               vision_model: "qwen/qwen3-vl",
@@ -269,7 +310,7 @@ test("saving a provider encrypts the key and marks only it active", async () => 
     await withPool(pool, async () => {
       const result = await settings.saveProvider("user-1", {
         name: "  OpenRouter ",
-        provider: "openai",
+        provider: "openai_compatible",
         baseUrl: "https://openrouter.ai/api/v1/chat/completions",
         model: "llama-3.3-70b-instruct",
         visionModel: "qwen/qwen3-vl",
@@ -282,18 +323,17 @@ test("saving a provider encrypts the key and marks only it active", async () => 
       assert.deepEqual(calls[1].params, [
         "user-1",
         "OpenRouter",
-        "openai",
+        "openai_compatible",
         "https://openrouter.ai/api/v1",
         "llama-3.3-70b-instruct",
         calls[1].params[5],
-        "qwen/qwen3-vl",
       ]);
       assert.ok(calls[1].params[5].includes("."));
       assert.ok(!calls[1].params[5].includes("personal-key"));
       assert.equal(result.activeProviderId, "row-2");
       assert.equal(result.available, true);
       assert.equal(result.hasKey, true);
-      assert.equal(result.providers[0].visionModel, "qwen/qwen3-vl");
+      assert.equal(result.providers[0].imageSupported, false);
     });
   });
 });
@@ -418,7 +458,7 @@ test("the active provider decides the environment sent to the AI layer", async (
       {
         rows: [
           {
-            provider: "anthropic",
+            provider: "anthropic_compatible",
             model: "claude-sonnet-4-5",
             base_url: "https://api.anthropic.com",
             encrypted_key: secret("anthropic-secret"),
@@ -447,7 +487,7 @@ test("the active provider decides the environment sent to the AI layer", async (
       {
         rows: [
           {
-            provider: "openai",
+            provider: "openai_compatible",
             model: "llama-3.3-70b-instruct",
             vision_model: "qwen/qwen3-vl",
             base_url: "http://localhost:11434/v1",
@@ -464,7 +504,7 @@ test("the active provider decides the environment sent to the AI layer", async (
     });
     assert.equal(env.OPENAI_API_KEY, "local-secret");
     assert.equal(env.OPENAI_MODEL, "llama-3.3-70b-instruct");
-    assert.equal(env.OPENAI_VISION_MODEL, "qwen/qwen3-vl");
+    assert.equal(env.OPENAI_VISION_MODEL, "");
     assert.equal(env.OPENAI_BASE_URL, "http://localhost:11434/v1");
     assert.equal(env.AI_PROVIDER_ORDER, "openai");
   });

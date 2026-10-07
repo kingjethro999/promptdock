@@ -67,6 +67,11 @@ module.exports = [
   "CREATE UNIQUE INDEX IF NOT EXISTS user_ai_providers_active_idx ON user_ai_providers (user_id) WHERE active",
   "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS base_url text NOT NULL DEFAULT ''",
   "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS vision_model text NOT NULL DEFAULT ''",
+  "ALTER TABLE user_ai_providers DROP CONSTRAINT IF EXISTS user_ai_providers_provider_check",
+  `ALTER TABLE user_ai_providers ADD CONSTRAINT user_ai_providers_provider_check
+    CHECK (provider IN ('groq', 'gemini', 'apmix', 'openai', 'anthropic', 'openai_compatible', 'anthropic_compatible'))`,
+  `UPDATE user_ai_providers SET provider = provider || '_compatible'
+    WHERE provider IN ('openai', 'anthropic') AND base_url <> ''`,
   `INSERT INTO user_ai_providers (user_id, name, provider, base_url, model, encrypted_key, active)
     SELECT s.user_id,
       CASE s.provider WHEN 'groq' THEN 'Groq' WHEN 'gemini' THEN 'Gemini' ELSE 'APMIX' END,

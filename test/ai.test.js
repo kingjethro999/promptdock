@@ -13,6 +13,48 @@ const {
   parseIdeaSuggestion,
   runPrompt,
 } = require("../src/ai");
+const {
+  freeModelIds,
+  chooseFreeModel,
+  siteFreeModel,
+} = require("../src/apmix-models.cjs");
+
+test("APMIX site routing chooses an available free model from the key's catalog", async () => {
+  const payload = {
+    data: [
+      { id: "deepseek/deepseek-v4-flash" },
+      { id: "anthropic/claude-sonnet-4-6-free" },
+      { id: "openai/gpt-6-luna-free" },
+    ],
+  };
+  const ids = freeModelIds(payload);
+  assert.deepEqual(ids, [
+    "anthropic/claude-sonnet-4-6-free",
+    "openai/gpt-6-luna-free",
+  ]);
+  assert.equal(
+    chooseFreeModel(ids, "gpt-6-luna-free"),
+    "openai/gpt-6-luna-free",
+  );
+  assert.equal(
+    chooseFreeModel(ids, "deepseek-v4-flash-free"),
+    "anthropic/claude-sonnet-4-6-free",
+  );
+  let target;
+  const model = await siteFreeModel(
+    {
+      APMIX_API_KEY: "catalog-test-key",
+      APMIX_BASE_URL: "https://api.apmix.ai/v1",
+      APMIX_MODEL: "deepseek-v4-flash-free",
+    },
+    async (url) => {
+      target = url;
+      return { ok: true, json: async () => payload };
+    },
+  );
+  assert.equal(target, "https://api.apmix.ai/v1/models");
+  assert.equal(model, "anthropic/claude-sonnet-4-6-free");
+});
 
 test("configured providers follow environment order", () => {
   assert.deepEqual(
@@ -199,7 +241,7 @@ test("Gemini and Anthropic receive native image parts", async () => {
   }
 });
 
-test("custom OpenAI-compatible endpoints need an image model", async () => {
+test("image requests without a configured vision provider fail clearly", async () => {
   await assert.rejects(
     ideaToPrompt(
       { idea: "Explain this image", images: [tinyPng] },
@@ -213,8 +255,113 @@ test("custom OpenAI-compatible endpoints need an image model", async () => {
         throw new Error("should not call provider");
       },
     ),
-    /vision model in Settings/,
+    /image provider is unavailable/,
   );
+});
+
+test("a text-only personal model sends attached images through PromptDock vision", async () => {
+  let destination;
+  let auth;
+  let model;
+  const result = await ideaToPrompt(
+    { idea: "Describe this image", images: [tinyPng] },
+    {
+      AI_PERSONAL_PROVIDER: "1",
+      AI_PROVIDER_ORDER: "openai",
+      OPENAI_API_KEY: "personal-key",
+      OPENAI_MODEL: "text-only",
+      OPENAI_BASE_URL: "https://custom.example/v1",
+      PROMPTDOCK_VISION_ENV: {
+        AI_PROVIDER_ORDER: "groq",
+        GROQ_API_KEY: "site-key",
+        GROQ_MODEL: "openai/gpt-oss-120b",
+      },
+    },
+    async (url, options) => {
+      destination = url;
+      auth = options.headers.Authorization;
+      model = JSON.parse(options.body).model;
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ questions: ["What is the goal?"] }),
+              },
+            },
+          ],
+        }),
+      };
+    },
+  );
+  assert.equal(destination, "https://api.groq.com/openai/v1/chat/completions");
+  assert.equal(auth, "Bearer site-key");
+  assert.equal(model, "qwen/qwen3.8-27b");
+  assert.equal(result.questions.length, 1);
+});
+
+test("an image rejection from a personal model retries through PromptDock vision", async () => {
+  const targets = [];
+  const result = await ideaToPrompt(
+    { idea: "Describe this image", images: [tinyPng] },
+    {
+      AI_PERSONAL_PROVIDER: "1",
+      AI_PROVIDER_ORDER: "openai",
+      OPENAI_API_KEY: "personal-key",
+      OPENAI_MODEL: "gpt-4o",
+      OPENAI_VISION_MODEL: "gpt-4o",
+      OPENAI_BASE_URL: "https://custom.example/v1",
+      PROMPTDOCK_VISION_ENV: {
+        AI_PROVIDER_ORDER: "groq",
+        GROQ_API_KEY: "site-key",
+        GROQ_MODEL: "openai/gpt-oss-120b",
+      },
+    },
+    async (url) => {
+      targets.push(url);
+      return url.includes("custom.example")
+        ? { ok: false, status: 400 }
+        : {
+            ok: true,
+            json: async () => ({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      questions: ["What is the goal?"],
+                    }),
+                  },
+                },
+              ],
+            }),
+          };
+    },
+  );
+  assert.equal(targets.length, 2);
+  assert.match(targets[1], /api\.groq\.com/);
+  assert.equal(result.questions.length, 1);
+});
+
+test("official OpenAI keys use the official endpoint without a custom URL", async () => {
+  let url;
+  const result = await runPrompt(
+    { prompt: "Write a short greeting" },
+    {
+      AI_PROVIDER_ORDER: "openai",
+      OPENAI_API_KEY: "test-key",
+      OPENAI_MODEL: "gpt-4o",
+    },
+    async (target) => {
+      url = target;
+      return {
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: "Hello!" } }] }),
+      };
+    },
+  );
+  assert.equal(url, "https://api.openai.com/v1/chat/completions");
+  assert.equal(result.text, "Hello!");
 });
 
 test("image prompts keep visual facts while removing references to unseen attachments", async () => {

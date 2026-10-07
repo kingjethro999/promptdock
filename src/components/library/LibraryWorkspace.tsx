@@ -6,6 +6,7 @@ import PromptCard from "./PromptCard";
 import LibraryDialogs from "./LibraryDialogs";
 import SearchSelect from "@/components/ui/SearchSelect";
 import Button from "@/components/ui/Button";
+import Masonry from "@/components/ui/Masonry";
 import { useLibrary } from "@/hooks/useLibrary";
 import { usePromptBuilderStore } from "@/stores/prompt-builder";
 import type { SavedPrompt } from "@/lib/prompt/types";
@@ -178,7 +179,12 @@ export default function LibraryWorkspace({
           {notice}
         </p>
       )}
-      <div className="library-grid">
+      <Masonry
+        className="library-grid react-library-masonry"
+        minColumnWidth={255}
+        maxColumns={5}
+        gap={15}
+      >
         {prompts.map((prompt) => (
           <PromptCard
             key={prompt.id}
@@ -233,7 +239,7 @@ export default function LibraryWorkspace({
             )}
           </div>
         )}
-      </div>
+      </Masonry>
       {total > 100 && (
         <div className="react-pagination">
           <span>
