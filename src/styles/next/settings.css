@@ -23,6 +23,12 @@
   color: #518258;
   font-size: 12px;
 }
+.react-settings-card > .react-provider-image-warning {
+  margin: 8px 0 0;
+  color: #bf3329;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .react-provider-list {
   display: flex;
   gap: 7px;

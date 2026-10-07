@@ -9,6 +9,7 @@ type Props = {
   onChange(value: string): void;
   searchable?: boolean;
   placeholder?: string;
+  describedBy?: string;
 };
 
 export default function SearchSelect({
@@ -18,6 +19,7 @@ export default function SearchSelect({
   onChange,
   searchable,
   placeholder = "Choose an option",
+  describedBy,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -61,6 +63,7 @@ export default function SearchSelect({
           type="button"
           className="search-select-trigger"
           aria-label={label}
+          aria-describedby={describedBy}
           aria-expanded={open}
           aria-haspopup="listbox"
           onClick={() => setOpen(!open)}

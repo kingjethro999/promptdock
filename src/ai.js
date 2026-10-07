@@ -1,6 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { ideaSystemPrompt, enhanceSystemPrompt } = require("./prompt-policy");
+const { supportsImages } = require("./image-models.cjs");
+const { siteFreeModel } = require("./apmix-models.cjs");
 
 const envPath = path.join(__dirname, "..", ".env");
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function")
@@ -45,12 +47,8 @@ function configuredProviders(env = process.env) {
     apmix: Boolean(env.APMIX_API_KEY && env.APMIX_BASE_URL && env.APMIX_MODEL),
     groq: Boolean(env.GROQ_API_KEY && env.GROQ_MODEL),
     gemini: Boolean(env.GEMINI_API_KEY),
-    openai: Boolean(
-      env.OPENAI_API_KEY && env.OPENAI_BASE_URL && env.OPENAI_MODEL,
-    ),
-    anthropic: Boolean(
-      env.ANTHROPIC_API_KEY && env.ANTHROPIC_BASE_URL && env.ANTHROPIC_MODEL,
-    ),
+    openai: Boolean(env.OPENAI_API_KEY && env.OPENAI_MODEL),
+    anthropic: Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_MODEL),
   };
   const order = (env.AI_PROVIDER_ORDER || "apmix,groq,gemini,openai,anthropic")
     .split(",")
@@ -402,7 +400,7 @@ function providerRequest(provider, messages, env, options = {}) {
   }
   const openai = provider === "openai";
   const base = openai
-    ? env.OPENAI_BASE_URL
+    ? env.OPENAI_BASE_URL || "https://api.openai.com/v1"
     : provider === "apmix"
       ? env.APMIX_BASE_URL
       : "https://api.groq.com/openai/v1";
@@ -458,18 +456,26 @@ async function generateWithProviders(
   request,
   options = {},
 ) {
-  const providers = configuredProviders(env).filter(
+  const selected = configuredProviders(env)[0];
+  const personalModel = selected && env[`${selected.toUpperCase()}_MODEL`];
+  const useDefaultVision = Boolean(
+    options.images?.length &&
+    env.AI_PERSONAL_PROVIDER &&
+    !supportsImages(selected, personalModel),
+  );
+  const runEnv = useDefaultVision ? env.PROMPTDOCK_VISION_ENV || env : env;
+  const providers = configuredProviders(runEnv).filter(
     (provider) =>
-      !options.images?.length || Boolean(visionModel(provider, env)),
+      !options.images?.length || Boolean(visionModel(provider, runEnv)),
   );
   if (options.images?.length && !providers.length)
     throw new Error(
-      "The selected provider needs a vision model in Settings before it can analyze images.",
+      "PromptDock's image provider is unavailable. Please try again later.",
     );
   if (!providers.length) throw new Error("No AI provider is configured.");
   const timeout = Math.min(
     Math.max(
-      Number(env.AI_REQUEST_TIMEOUT_MS) || 12000,
+      Number(runEnv.AI_REQUEST_TIMEOUT_MS) || 12000,
       options.timeoutMs || 0,
       1000,
     ),
@@ -477,12 +483,21 @@ async function generateWithProviders(
   );
   const maxAttempts = Math.min(
     providers.length,
-    Math.max(1, (Number(env.AI_MAX_FALLBACKS) || 0) + 1),
+    Math.max(1, (Number(runEnv.AI_MAX_FALLBACKS) || 0) + 1),
   );
   for (const provider of providers.slice(0, maxAttempts)) {
+    const providerEnv =
+      provider === "apmix" && runEnv === process.env
+        ? { ...runEnv, APMIX_MODEL: await siteFreeModel(runEnv) }
+        : runEnv;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const config = providerRequest(provider, messages, env, options);
+        const config = providerRequest(
+          provider,
+          messages,
+          providerEnv,
+          options,
+        );
         const response = await request(config.url, {
           method: "POST",
           headers: config.headers,
@@ -504,6 +519,19 @@ async function generateWithProviders(
       }
     }
   }
+  if (
+    options.images?.length &&
+    env.AI_PERSONAL_PROVIDER &&
+    !useDefaultVision &&
+    env.PROMPTDOCK_VISION_ENV
+  )
+    return generateWithProviders(
+      messages,
+      parse,
+      env.PROMPTDOCK_VISION_ENV,
+      request,
+      options,
+    );
   throw new Error(
     options.errorMessage ||
       "AI suggestions are temporarily unavailable. Please try again.",

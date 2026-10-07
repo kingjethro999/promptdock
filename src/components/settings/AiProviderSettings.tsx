@@ -10,7 +10,7 @@ type Provider = {
   name: string;
   provider: string;
   model: string;
-  visionModel: string;
+  imageSupported: boolean;
   baseUrl: string;
   active: boolean;
 };
@@ -20,11 +20,13 @@ type Settings = {
   activeProviderId: string | null;
 };
 const providerTypes = [
+  { value: "anthropic", label: "Anthropic" },
+  { value: "openai", label: "OpenAI" },
   { value: "groq", label: "Groq" },
-  { value: "gemini", label: "Gemini" },
   { value: "apmix", label: "APMIX" },
-  { value: "openai", label: "OpenAI compatible" },
-  { value: "anthropic", label: "Anthropic compatible" },
+  { value: "anthropic_compatible", label: "Anthropic Compatible" },
+  { value: "openai_compatible", label: "OpenAI Compatible" },
+  { value: "gemini", label: "Gemini" },
 ];
 
 export default function AiProviderSettings() {
@@ -35,7 +37,6 @@ export default function AiProviderSettings() {
   const [type, setType] = useState("groq");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
-  const [visionModel, setVisionModel] = useState("");
   const [key, setKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [notice, setNotice] = useState("");
@@ -56,7 +57,6 @@ export default function AiProviderSettings() {
     setType(provider?.provider || "groq");
     setBaseUrl(provider?.baseUrl || "");
     setModel(provider?.model || "");
-    setVisionModel(provider?.visionModel || "");
     setKey("");
     setNotice("");
   }
@@ -92,7 +92,7 @@ export default function AiProviderSettings() {
           ? `/api/settings/providers/${editing}`
           : "/api/settings/providers",
         editing ? "PUT" : "POST",
-        { name, provider: type, baseUrl, model, visionModel, apiKey: key },
+        { name, provider: type, baseUrl, model, apiKey: key },
       );
       setSettings(result);
       setSelected(result.activeProviderId || "");
@@ -134,10 +134,9 @@ export default function AiProviderSettings() {
       <span className="section-kicker">AI PROVIDER</span>
       <h2>Bring your own key</h2>
       <p>
-        Save as many providers as you like — Groq, Gemini, APMIX, or a custom
-        OpenAI- or Anthropic-compatible endpoint — then pick which one is
-        active. Keys stay encrypted on the server and are never returned to your
-        browser.
+        Save Anthropic, OpenAI, Groq, APMIX, Gemini, or a compatible custom
+        endpoint, then choose which one is active. Keys stay encrypted on the
+        server and are never returned to your browser.
       </p>
       {settings?.available && (
         <p className="react-provider-status">
@@ -157,6 +156,14 @@ export default function AiProviderSettings() {
       )}
       <SearchSelect
         label="Active provider"
+        describedBy={
+          selected &&
+          !settings?.providers.find(
+            (provider) => provider.providerId === selected,
+          )?.imageSupported
+            ? "provider-image-warning"
+            : undefined
+        }
         value={selected}
         options={[
           { value: "", label: "PromptDock default" },
@@ -168,6 +175,18 @@ export default function AiProviderSettings() {
         searchable
         onChange={activate}
       />
+      {selected &&
+        settings?.providers.find((provider) => provider.providerId === selected)
+          ?.imageSupported === false && (
+          <p
+            id="provider-image-warning"
+            role="status"
+            className="react-provider-image-warning"
+          >
+            This model doesn’t support images. PromptDock’s default vision
+            provider will handle attached images.
+          </p>
+        )}
       {Boolean(settings?.providers.length) && (
         <div className="react-provider-list">
           {settings?.providers.map((provider) => (
@@ -194,7 +213,7 @@ export default function AiProviderSettings() {
           Use PromptDock default
         </button>
       </div>
-      <form onSubmit={save}>
+      <form onSubmit={save} autoComplete="off">
         <label className="react-field">
           <span>Name</span>
           <input
@@ -212,7 +231,7 @@ export default function AiProviderSettings() {
           searchable
           onChange={setType}
         />
-        {(type === "openai" || type === "anthropic") && (
+        {(type === "openai_compatible" || type === "anthropic_compatible") && (
           <label className="react-field">
             <span>Base URL</span>
             <input
@@ -234,21 +253,6 @@ export default function AiProviderSettings() {
           />
         </label>
         <label className="react-field">
-          <span>
-            Image model ID <em className="react-field-optional">optional</em>
-          </span>
-          <input
-            value={visionModel}
-            onChange={(event) => setVisionModel(event.target.value)}
-            placeholder="Used automatically when images are attached"
-          />
-          <small>
-            Groq switches to a vision model automatically. For APMIX or a custom
-            OpenAI endpoint, enter a vision-capable model here, even if it is
-            the same as the text model.
-          </small>
-        </label>
-        <label className="react-field">
           <span>API key {editing && "(leave blank to keep saved key)"}</span>
           <span className="react-password-field">
             <input
@@ -256,7 +260,8 @@ export default function AiProviderSettings() {
               type={showKey ? "text" : "password"}
               value={key}
               onChange={(event) => setKey(event.target.value)}
-              autoComplete="off"
+              autoComplete="new-password"
+              name="provider-secret-key"
             />
             <button type="button" onClick={() => setShowKey(!showKey)}>
               {showKey ? "Hide" : "Show"}

@@ -4,21 +4,32 @@ const {
   randomBytes,
 } = require("node:crypto");
 const database = require("./database");
+const { supportsImages } = require("./image-models.cjs");
 
-const providerTypes = ["groq", "gemini", "apmix", "openai", "anthropic"];
-const customTypes = new Set(["openai", "anthropic"]);
+const providerTypes = [
+  "anthropic",
+  "openai",
+  "groq",
+  "apmix",
+  "anthropic_compatible",
+  "openai_compatible",
+  "gemini",
+];
+const customTypes = new Set(["openai_compatible", "anthropic_compatible"]);
 const defaultNames = {
   groq: "Groq",
   gemini: "Gemini",
   apmix: "APMIX",
-  openai: "Custom OpenAI",
-  anthropic: "Custom Anthropic",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  openai_compatible: "OpenAI compatible",
+  anthropic_compatible: "Anthropic compatible",
 };
 const maxProviders = 10;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const rowColumns =
-  "provider_id, name, provider, base_url, model, vision_model, active, updated_at";
+  "provider_id, name, provider, base_url, model, active, updated_at";
 
 function fail(message, status = 400) {
   const error = new Error(message);
@@ -83,9 +94,9 @@ function normalizeBaseUrl(provider, value) {
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
     throw fail("Base URL must use HTTPS.");
   let pathname = url.pathname.replace(/\/+$/, "");
-  if (provider === "anthropic")
+  if (provider === "anthropic_compatible")
     pathname = pathname.replace(/\/v1\/messages$/, "").replace(/\/v1$/, "");
-  if (provider === "openai")
+  if (provider === "openai_compatible")
     pathname = pathname.replace(/\/chat\/completions$/, "");
   const base = `${url.origin}${pathname}`;
   if (base.length > 200)
@@ -117,8 +128,6 @@ function validateProvider(input) {
       ? input.name.trim().replace(/\s+/g, " ")
       : "";
   const model = typeof input?.model === "string" ? input.model.trim() : "";
-  const visionModel =
-    typeof input?.visionModel === "string" ? input.visionModel.trim() : "";
   const apiKey = typeof input?.apiKey === "string" ? input.apiKey.trim() : "";
   if (!providerTypes.includes(provider))
     throw fail("Choose a supported provider.");
@@ -126,8 +135,6 @@ function validateProvider(input) {
     throw fail("Give this provider a name of 1 to 40 characters.");
   if (!/^[A-Za-z0-9._:/-]{2,120}$/.test(model))
     throw fail("Enter a valid model ID.");
-  if (visionModel && !/^[A-Za-z0-9._:/-]{2,120}$/.test(visionModel))
-    throw fail("Enter a valid image model ID.");
   if (apiKey && (apiKey.length < 8 || apiKey.length > 500 || /\s/.test(apiKey)))
     throw fail("Enter a valid API key.");
   const baseUrl = normalizeBaseUrl(provider, input?.baseUrl);
@@ -138,7 +145,6 @@ function validateProvider(input) {
     provider,
     baseUrl: customTypes.has(provider) ? baseUrl : "",
     model,
-    visionModel,
     apiKey,
   };
 }
@@ -149,10 +155,10 @@ function providerFromRow(row) {
     name: row.name,
     provider: row.provider,
     model: row.model,
-    visionModel: row.vision_model || "",
     baseUrl: row.base_url || "",
     active: Boolean(row.active),
     updatedAt: row.updated_at || null,
+    imageSupported: supportsImages(row.provider, row.model),
   };
 }
 
@@ -219,7 +225,7 @@ async function saveProvider(userId, input) {
         )
         UPDATE user_ai_providers
         SET name = $3, provider = $4, base_url = $5, model = $6,
-          encrypted_key = $7, vision_model = $8, active = true, updated_at = now()
+          encrypted_key = $7, active = true, updated_at = now()
         WHERE user_id = $1 AND provider_id = $2::uuid
         RETURNING ${rowColumns}`,
         [
@@ -230,7 +236,6 @@ async function saveProvider(userId, input) {
           fields.baseUrl,
           fields.model,
           encrypted,
-          fields.visionModel,
         ],
       )
     : await database.pool.query(
@@ -239,8 +244,8 @@ async function saveProvider(userId, input) {
           WHERE user_id = $1 AND active RETURNING 1
         )
         INSERT INTO user_ai_providers
-          (user_id, name, provider, base_url, model, encrypted_key, vision_model, active)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+          (user_id, name, provider, base_url, model, encrypted_key, active)
+        VALUES ($1, $2, $3, $4, $5, $6, true)
         RETURNING ${rowColumns}`,
         [
           userId,
@@ -249,7 +254,6 @@ async function saveProvider(userId, input) {
           fields.baseUrl,
           fields.model,
           encrypted,
-          fields.visionModel,
         ],
       );
   if (!saved.rows[0]) throw fail("Provider not found.", 404);
@@ -327,7 +331,7 @@ async function effectiveEnv(userId, env = process.env) {
   if (!userId) return env;
   await database.ensureSchema();
   const result = await database.pool.query(
-    "SELECT provider, model, vision_model, base_url, encrypted_key FROM user_ai_providers WHERE user_id = $1 AND active",
+    "SELECT provider, model, base_url, encrypted_key FROM user_ai_providers WHERE user_id = $1 AND active",
     [userId],
   );
   const setting = result.rows[0];
@@ -335,38 +339,64 @@ async function effectiveEnv(userId, env = process.env) {
   const apiKey = decryptKey(userId, setting.encrypted_key, env);
   const next = {
     ...env,
-    AI_PROVIDER_ORDER: setting.provider,
+    AI_PROVIDER_ORDER: setting.provider.replace(/_compatible$/, ""),
     AI_MAX_FALLBACKS: "0",
+    PROMPTDOCK_VISION_ENV: env,
+    AI_PERSONAL_PROVIDER: "1",
   };
   if (setting.provider === "groq") {
     next.GROQ_API_KEY = apiKey;
     next.GROQ_MODEL = setting.model;
-    next.GROQ_VISION_MODEL =
-      setting.vision_model || env.GROQ_VISION_MODEL || "";
+    next.GROQ_VISION_MODEL = supportsImages(setting.provider, setting.model)
+      ? setting.model
+      : "";
   }
   if (setting.provider === "gemini") {
     next.GEMINI_API_KEY = apiKey;
     next.GEMINI_MODEL = setting.model;
-    next.GEMINI_VISION_MODEL = setting.vision_model || "";
+    next.GEMINI_VISION_MODEL = supportsImages(setting.provider, setting.model)
+      ? setting.model
+      : "";
   }
   if (setting.provider === "apmix") {
     next.APMIX_API_KEY = apiKey;
     next.APMIX_MODEL = setting.model;
-    next.APMIX_VISION_MODEL = setting.vision_model || "";
+    next.APMIX_VISION_MODEL = supportsImages(setting.provider, setting.model)
+      ? setting.model
+      : "";
     next.APMIX_BASE_URL =
       setting.base_url || env.APMIX_BASE_URL || "https://api.apmix.ai/v1";
   }
-  if (setting.provider === "openai") {
+  if (
+    setting.provider === "openai" ||
+    setting.provider === "openai_compatible"
+  ) {
     next.OPENAI_API_KEY = apiKey;
     next.OPENAI_MODEL = setting.model;
-    next.OPENAI_VISION_MODEL = setting.vision_model || "";
-    next.OPENAI_BASE_URL = setting.base_url;
+    next.OPENAI_VISION_MODEL = supportsImages(setting.provider, setting.model)
+      ? setting.model
+      : "";
+    next.OPENAI_BASE_URL =
+      setting.provider === "openai"
+        ? "https://api.openai.com/v1"
+        : setting.base_url;
   }
-  if (setting.provider === "anthropic") {
+  if (
+    setting.provider === "anthropic" ||
+    setting.provider === "anthropic_compatible"
+  ) {
     next.ANTHROPIC_API_KEY = apiKey;
     next.ANTHROPIC_MODEL = setting.model;
-    next.ANTHROPIC_VISION_MODEL = setting.vision_model || "";
-    next.ANTHROPIC_BASE_URL = setting.base_url;
+    next.ANTHROPIC_VISION_MODEL = supportsImages(
+      setting.provider,
+      setting.model,
+    )
+      ? setting.model
+      : "";
+    next.ANTHROPIC_BASE_URL =
+      setting.provider === "anthropic"
+        ? "https://api.anthropic.com"
+        : setting.base_url;
   }
   return next;
 }

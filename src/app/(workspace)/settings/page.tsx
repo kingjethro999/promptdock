@@ -4,6 +4,7 @@ import { session } from "@/lib/server/session";
 import AiProviderSettings from "@/components/settings/AiProviderSettings";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import UsageSettings from "@/components/settings/UsageSettings";
+import Masonry from "@/components/ui/Masonry";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -27,11 +28,14 @@ export default async function SettingsPage() {
           <p>Choose the AI behind your prompts and keep your account secure.</p>
         </div>
       </div>
-      <div className="settings-grid react-settings-grid">
+      <Masonry
+        className="settings-grid react-settings-grid"
+        minColumnWidth={420}
+      >
         <AiProviderSettings />
         <ProfileSettings user={account.user} admin={account.admin} />
         <UsageSettings />
-      </div>
+      </Masonry>
     </div>
   );
 }
