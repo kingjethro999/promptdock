@@ -21,7 +21,7 @@ npm run dev
 
 Open <http://localhost:3000>. The manual prompt builder works without provider keys or PostgreSQL. To work on account, sync, or AI features, add your own development credentials to the ignored `.env` file. Use a development database and account; do not connect tests or local experiments to the production database.
 
-The deployed UI uses the Next.js App Router in `src/app/`. The shared authenticated backend is in `src/backend.js`; `src/schema.js` contains additive database setup. The previous browser UI is preserved in `oldui/` for reference and runs through `npm run legacy:dev`. Keep secrets in server environment variables, never in browser code or committed files.
+The deployed UI uses the Next.js App Router in `src/app/`. The shared authenticated backend is in `src/backend.js`; `src/schema.js` contains additive database setup. The previous browser UI is preserved in `oldui/` for reference and runs through `npm run legacy:dev`. **Do not modify tracked files in `oldui/`**; follow its [read-only contribution rule](oldui/README.md#contribution-rule-keep-this-directory-unchanged). Keep secrets in server environment variables, never in browser code or committed files.
 
 ## Make a change
 

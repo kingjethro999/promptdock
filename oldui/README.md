@@ -1,6 +1,10 @@
 # Preserved PromptDock UI
 
-This directory contains the browser UI that ran on port 3000 before the Next.js migration. It is kept in the repository as a working reference. Do not delete it when changing the main site: its copy, layouts, interactions, and assets help us compare future UI changes with the original product.
+This directory contains the browser UI that ran on port 3000 before the Next.js migration. It is kept in the repository as a working reference: its copy, layouts, interactions, and assets help us compare future UI changes with the original product.
+
+## Contribution rule: keep this directory unchanged
+
+Treat `oldui/` as a read-only snapshot. Do not edit, delete, reformat, move, or regenerate its tracked files. Make UI changes in `src/app/`, `src/components/`, and `src/styles/next/`; make shared backend changes in `src/backend.js` and its supporting modules. Use this directory only to compare behavior and visual design with the pre-migration site. Record any issue you find in the snapshot elsewhere; leave the snapshot intact.
 
 The main site now uses the Next.js App Router in `src/app/`. Route files, focused React modules, reusable controls, `src/app/globals.css`, and `public/` make the current frontend easier for contributors to find, review, and maintain. Next.js also owns page metadata, social previews, sitemap, and robots output. The deployed entry point is Next.js, not this static host.
 
