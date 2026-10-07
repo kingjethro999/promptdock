@@ -73,7 +73,7 @@ The Next.js proxy sets a nonce-based content security policy, frame protection, 
 
 ## Deploy
 
-1. Import this repository into Vercel. Keep **Root Directory** as `./` and use the **Next.js** framework preset. The repository's `vercel.json` declares `nextjs`; use the default Next.js build and output settings. Set **Install Command** to `npm ci` if you override Vercel's default.
+1. Import this repository into Vercel. Keep **Root Directory** as `./` and use the **Next.js** framework preset. The repository's `vercel.json` declares `nextjs` and pins the output directory to `.next`, overriding any old `src/dist` project setting. Use the default Next.js build command. Set **Install Command** to `npm ci` if you override Vercel's default.
 2. Add server-side environment variables in Vercel: `DATABASE_URL` (your Render database's **External URL**), `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `ADMIN_EMAIL` (the administrator's account email), and `BYOK_ENCRYPTION_KEY` (64 hex characters). Add `GROQ_API_KEY` and `GROQ_MODEL=openai/gpt-oss-120b` for PromptDock's default AI and voice, or configure another provider from `.env.example`. Keep all secret values out of Git and the browser build.
 3. Deploy. The server uses verified TLS for Render external URLs and creates or migrates account, session, token, settings, and prompt tables on first database access. Open `/api/health` on the Vercel domain and expect `{"ok":true}`.
 4. Once the permanent Vercel or custom domain is known, set `APP_URL` to that full HTTPS origin and redeploy. Verification and reset emails, canonical URLs, social previews, `robots.txt`, and the sitemap all use that address. Without `APP_URL`, they use Vercel's production URL when available, then its deployment URL.
