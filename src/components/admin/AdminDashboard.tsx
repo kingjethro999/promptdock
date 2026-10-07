@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ReleaseForm } from "./AdminUpdateComposer";
+import Masonry from "@/components/ui/Masonry";
+
+const adminColumnWeights = [1.5, 0.8] as const;
 
 export type Analytics = {
   users: number;
@@ -125,75 +128,78 @@ export default function AdminDashboard({
               ))}
             </div>
           </section>
-          <div className="admin-grid">
+          <Masonry
+            className="react-admin-masonry"
+            minColumnWidth={380}
+            gap={16}
+            rowGap={14}
+            columnWeights={adminColumnWeights}
+          >
             {children}
-            <aside className="admin-side-stack">
-              <section
-                className="admin-preview"
-                aria-labelledby="adminPreviewHeading"
-              >
-                <span className="admin-eyebrow">LIVE PREVIEW</span>
-                <h2 id="adminPreviewHeading">How it will read</h2>
-                <div className="admin-preview-card">
-                  <span>
-                    {form.version || "VERSION"} · {form.date || "DATE"}
-                  </span>
-                  <h3>{form.title || "Your update headline"}</h3>
-                  <p>
-                    {form.summary ||
-                      "The short summary will appear here as you write."}
-                  </p>
-                </div>
-              </section>
-              <section className="admin-preview admin-managed">
-                <span className="admin-eyebrow">RELEASE LIBRARY</span>
-                <h2>Published updates</h2>
-                <div className="admin-published-list">
-                  {updates.some((item) => item.publishedAt) ? (
-                    updates
-                      .filter((item) => item.publishedAt)
-                      .map((item) => (
-                        <div className="admin-published-item" key={item.id}>
-                          <div>
-                            <strong>{item.title}</strong>
-                            <small>{item.version}</small>
-                          </div>
-                          <button
-                            type="button"
-                            className={
-                              confirmingRemoveId === item.id
-                                ? "is-confirming"
-                                : undefined
-                            }
-                            aria-label={`Remove ${item.title}`}
-                            onClick={() => onRemove(item.id)}
-                          >
-                            {confirmingRemoveId === item.id
-                              ? "Confirm?"
-                              : "Remove"}
-                          </button>
+            <section
+              className="admin-preview"
+              aria-labelledby="adminPreviewHeading"
+            >
+              <span className="admin-eyebrow">LIVE PREVIEW</span>
+              <h2 id="adminPreviewHeading">How it will read</h2>
+              <div className="admin-preview-card">
+                <span>
+                  {form.version || "VERSION"} · {form.date || "DATE"}
+                </span>
+                <h3>{form.title || "Your update headline"}</h3>
+                <p>
+                  {form.summary ||
+                    "The short summary will appear here as you write."}
+                </p>
+              </div>
+            </section>
+            <section className="admin-preview admin-managed">
+              <span className="admin-eyebrow">RELEASE LIBRARY</span>
+              <h2>Published updates</h2>
+              <div className="admin-published-list">
+                {updates.some((item) => item.publishedAt) ? (
+                  updates
+                    .filter((item) => item.publishedAt)
+                    .map((item) => (
+                      <div className="admin-published-item" key={item.id}>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <small>{item.version}</small>
                         </div>
-                      ))
-                  ) : (
-                    <p className="admin-muted">
-                      Updates you publish will appear here.
-                    </p>
-                  )}
-                </div>
-              </section>
-              <section className="admin-privacy-note">
-                <span aria-hidden="true">◈</span>
-                <div>
-                  <strong>Built for trust</strong>
-                  <p>
-                    This console shows aggregate activity and messages users
-                    chose to send. It does not expose private prompts or idea
-                    inputs.
+                        <button
+                          type="button"
+                          className={
+                            confirmingRemoveId === item.id
+                              ? "is-confirming"
+                              : undefined
+                          }
+                          aria-label={`Remove ${item.title}`}
+                          onClick={() => onRemove(item.id)}
+                        >
+                          {confirmingRemoveId === item.id
+                            ? "Confirm?"
+                            : "Remove"}
+                        </button>
+                      </div>
+                    ))
+                ) : (
+                  <p className="admin-muted">
+                    Updates you publish will appear here.
                   </p>
-                </div>
-              </section>
-            </aside>
-          </div>
+                )}
+              </div>
+            </section>
+            <section className="admin-privacy-note">
+              <span aria-hidden="true">◈</span>
+              <div>
+                <strong>Built for trust</strong>
+                <p>
+                  This console shows aggregate activity and messages users chose
+                  to send. It does not expose private prompts or idea inputs.
+                </p>
+              </div>
+            </section>
+          </Masonry>
           <section
             className="admin-panel admin-inbox"
             id="feedback"
