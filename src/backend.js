@@ -513,6 +513,33 @@ async function handleBackendRequest(request, response) {
     return;
   }
   if (
+    pathname === "/api/auth/firebase/identities" &&
+    request.method === "GET"
+  ) {
+    if (!validOrigin(request)) {
+      json(response, 403, { error: "Invalid origin." });
+      return;
+    }
+    if (!database.configured) {
+      json(response, 503, { error: "Database is not configured." });
+      return;
+    }
+    try {
+      const user = await auth.currentUser(request);
+      if (!user) {
+        json(response, 401, { error: "Sign in first." });
+        return;
+      }
+      json(response, 200, await auth.firebaseIdentities(user));
+    } catch (error) {
+      json(response, error.status || 503, {
+        error: error.status ? error.message : "Provider accounts are unavailable.",
+        code: error.code || undefined,
+      });
+    }
+    return;
+  }
+  if (
     [
       "/api/auth/register",
       "/api/auth/login",
@@ -525,6 +552,9 @@ async function handleBackendRequest(request, response) {
       "/api/auth/change-password",
       "/api/auth/delete-account",
       "/api/auth/logout-all",
+      "/api/auth/firebase",
+      "/api/auth/firebase/link/start",
+      "/api/auth/firebase/link/complete",
     ].includes(pathname) &&
     request.method === "POST"
   ) {
@@ -557,6 +587,17 @@ async function handleBackendRequest(request, response) {
       }
     }
     try {
+      let body;
+      if (
+        pathname === "/api/auth/firebase" ||
+        pathname === "/api/auth/firebase/link/complete"
+      ) {
+        if (!request.headers["content-type"]?.startsWith("application/json")) {
+          json(response, 415, { error: "Use JSON." });
+          return;
+        }
+        body = await readBody(request);
+      }
       if (pathname === "/api/auth/logout") {
         await auth.logout(request);
         json(
@@ -578,6 +619,28 @@ async function handleBackendRequest(request, response) {
           { ok: true },
           { "Set-Cookie": auth.clearCookie(request) },
         );
+      } else if (pathname === "/api/auth/firebase") {
+        const result = await auth.firebaseLogin(body, request);
+        json(
+          response,
+          200,
+          { user: result.user },
+          { "Set-Cookie": result.cookie },
+        );
+      } else if (pathname === "/api/auth/firebase/link/start") {
+        const user = await auth.currentUser(request);
+        if (!user) {
+          json(response, 401, { error: "Sign in first." });
+          return;
+        }
+        json(response, 200, await auth.firebaseLinkStart(user));
+      } else if (pathname === "/api/auth/firebase/link/complete") {
+        const user = await auth.currentUser(request);
+        if (!user) {
+          json(response, 401, { error: "Sign in first." });
+          return;
+        }
+        json(response, 200, await auth.firebaseLinkComplete(user, body));
       } else if (pathname === "/api/auth/import-legacy") {
         const user = await auth.currentUser(request);
         if (!user) {
@@ -594,7 +657,7 @@ async function handleBackendRequest(request, response) {
           json(response, 415, { error: "Use JSON." });
           return;
         }
-        const body = await readBody(request);
+        body = await readBody(request);
         if (pathname === "/api/auth/register")
           json(response, 200, await auth.register(body));
         else if (pathname === "/api/auth/login") {

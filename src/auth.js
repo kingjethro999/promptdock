@@ -9,6 +9,7 @@ const { promisify } = require("node:util");
 const database = require("./database");
 const mailer = require("./mailer");
 const referrals = require("./referrals");
+const firebaseAdmin = require("./firebase-admin");
 
 const scrypt = promisify(callbackScrypt);
 const COOKIE = "promptdock_session";
@@ -130,6 +131,173 @@ async function issueSession(user, request) {
     user: { id: user.id, email: user.email, username: user.username || null },
     cookie: cookieHeader(token, request),
   };
+}
+
+function firebaseProvider(value) {
+  if (value === "google" || value === "google.com") return "google";
+  if (value === "github" || value === "github.com") return "github";
+  return null;
+}
+
+function providerLabel(provider) {
+  return provider === "google" ? "Google" : "GitHub";
+}
+
+async function syncFirebaseUser(user, providers = []) {
+  if (!firebaseAdmin.configured()) return;
+  try {
+    await firebaseAdmin.getFirestore().collection("users").doc(user.id).set(
+      {
+        email: user.email,
+        username: user.username || null,
+        authProviders: providers,
+        updatedAt: firebaseAdmin.admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch {
+    // Firestore is a mirror for Firebase identity metadata. App auth must not
+    // fail when the optional mirror is unavailable.
+  }
+}
+
+async function firebaseProvidersFor(userId) {
+  const result = await database.pool.query(
+    "SELECT provider FROM auth_identities WHERE user_id = $1 ORDER BY provider",
+    [userId],
+  );
+  return result.rows.map((row) => row.provider);
+}
+
+async function firebaseIdentity(body, allowBodyProvider = false) {
+  if (!body?.idToken || typeof body.idToken !== "string")
+    throw new AuthError("The provider sign-in token is missing.", 400);
+  try {
+    const decoded = await firebaseAdmin.getAuth().verifyIdToken(body.idToken);
+    const provider = firebaseProvider(
+      allowBodyProvider ? body.provider || decoded.firebase?.sign_in_provider : decoded.firebase?.sign_in_provider,
+    );
+    if (!provider) throw new AuthError("That sign-in provider is not supported.", 400);
+    const email = typeof decoded.email === "string" ? decoded.email.trim().toLowerCase() : "";
+    if (!email || decoded.email_verified === false)
+      throw new AuthError(`${providerLabel(provider)} did not provide a verified email address.`, 400);
+    return { decoded, provider, email };
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
+    throw new AuthError("The provider sign-in could not be verified.", 401, "provider_verification_failed");
+  }
+}
+
+async function firebaseLogin(body, request) {
+  await database.ensureSchema();
+  const { decoded, provider, email } = await firebaseIdentity(body);
+  const linked = await database.pool.query(
+    `SELECT users.id, users.email, users.username
+     FROM auth_identities identities JOIN users ON users.id = identities.user_id
+     WHERE identities.provider = $1 AND identities.provider_uid = $2`,
+    [provider, decoded.uid],
+  );
+  if (linked.rows[0]) {
+    const user = linked.rows[0];
+    await syncFirebaseUser(user, await firebaseProvidersFor(user.id));
+    return issueSession(user, request);
+  }
+
+  const existing = await database.pool.query(
+    "SELECT id FROM users WHERE email = $1",
+    [email],
+  );
+  if (existing.rows[0]) {
+    const label = providerLabel(provider);
+    throw new AuthError(
+      `An account already exists with this email, but ${label} is not connected. Sign in with your email and password, then connect ${label} from Settings.`,
+      409,
+      "provider_not_linked",
+    );
+  }
+
+  const usernameBase = (email.split("@")[0].replace(/[^A-Za-z0-9_]/g, "") || "member").slice(0, 20);
+  let username = usernameBase.length >= 3 ? usernameBase : `${usernameBase}user`;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const taken = await usernameTaken(username);
+    if (!taken) break;
+    username = `${usernameBase.slice(0, 19)}${attempt + 1}`.slice(0, 24);
+  }
+  const user = { id: randomUUID(), email, username };
+  try {
+    await database.pool.query(
+      `INSERT INTO users (id, email, username, password_hash, email_verified_at, referred_by)
+       VALUES ($1, $2, $3, NULL, now(), $4)`,
+      [user.id, user.email, user.username, (await referrals.inviterFor(body?.referralCode, email))?.id || null],
+    );
+    await database.pool.query(
+      `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
+       VALUES ($1, $2, $3, $4)`,
+      [user.id, provider, decoded.uid, email],
+    );
+  } catch (error) {
+    if (error.code === "23505")
+      throw new AuthError("This provider account is already connected to another account.", 409, "provider_already_linked");
+    throw error;
+  }
+  await syncFirebaseUser(user, [provider]);
+  return issueSession(user, request);
+}
+
+async function firebaseIdentities(user) {
+  await database.ensureSchema();
+  const providers = await firebaseProvidersFor(user.id);
+  await syncFirebaseUser(user, providers);
+  return { providers };
+}
+
+async function firebaseLinkStart(user) {
+  if (!firebaseAdmin.configured())
+    throw new AuthError("Firebase provider linking is not configured.", 503);
+  try {
+    return { customToken: await firebaseAdmin.getAuth().createCustomToken(user.id) };
+  } catch {
+    throw new AuthError("Could not start provider linking.", 503);
+  }
+}
+
+async function firebaseLinkComplete(user, body) {
+  await database.ensureSchema();
+  const { decoded, provider, email } = await firebaseIdentity(body, true);
+  if (decoded.uid !== user.id)
+    throw new AuthError("This provider session is not authorized for your account.", 403);
+  try {
+    const firebaseUser = await firebaseAdmin.getAuth().getUser(decoded.uid);
+    const hasProvider = firebaseUser.providerData.some(
+      (item) => item.providerId === `${provider}.com`,
+    );
+    if (!hasProvider)
+      throw new AuthError("Complete the provider connection before continuing.", 400);
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
+    throw new AuthError("Could not verify the provider connection.", 401);
+  }
+  const conflict = await database.pool.query(
+    "SELECT user_id FROM auth_identities WHERE provider = $1 AND provider_uid = $2",
+    [provider, decoded.uid],
+  );
+  if (conflict.rows[0] && conflict.rows[0].user_id !== user.id)
+    throw new AuthError(`This ${providerLabel(provider)} account is already connected to another account.`, 409, "provider_already_linked");
+  try {
+    await database.pool.query(
+      `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, provider) DO UPDATE SET provider_uid = EXCLUDED.provider_uid, provider_email = EXCLUDED.provider_email`,
+      [user.id, provider, decoded.uid, email],
+    );
+  } catch (error) {
+    if (error.code === "23505")
+      throw new AuthError(`This ${providerLabel(provider)} account is already connected to another account.`, 409, "provider_already_linked");
+    throw error;
+  }
+  const providers = await firebaseProvidersFor(user.id);
+  await syncFirebaseUser(user, providers);
+  return { providers };
 }
 
 function rawToken(value) {
@@ -485,6 +653,7 @@ module.exports = {
   tokenFrom,
   cookieHeader,
   clearCookie,
+  issueSession,
   register,
   login,
   resendVerification,
@@ -500,4 +669,8 @@ module.exports = {
   deleteAccount,
   currentUser,
   logout,
+  firebaseLogin,
+  firebaseIdentities,
+  firebaseLinkStart,
+  firebaseLinkComplete,
 };

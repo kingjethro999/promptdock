@@ -3,12 +3,13 @@ module.exports = [
     id uuid PRIMARY KEY,
     email text NOT NULL UNIQUE,
     username text,
-    password_hash text NOT NULL,
+    password_hash text,
     failed_logins integer NOT NULL DEFAULT 0,
     locked_until timestamptz,
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz",
+  "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS username text",
   "CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users (lower(username))",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code text",
@@ -29,6 +30,16 @@ module.exports = [
     user_agent text
   )`,
   "CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id)",
+  `CREATE TABLE IF NOT EXISTS auth_identities (
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider text NOT NULL CHECK (provider IN ('google', 'github')),
+    provider_uid text NOT NULL,
+    provider_email text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (provider, provider_uid),
+    UNIQUE (user_id, provider)
+  )`,
+  "CREATE INDEX IF NOT EXISTS auth_identities_user_idx ON auth_identities (user_id)",
   "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS session_id uuid NOT NULL DEFAULT gen_random_uuid()",
   "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()",
   "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_agent text",

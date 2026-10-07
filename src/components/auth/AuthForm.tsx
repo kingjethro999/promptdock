@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, json } from "@/lib/client/api";
+import {
+  signInWithProvider,
+  type FirebaseProvider,
+} from "@/lib/client/firebase";
 import Button from "@/components/ui/Button";
 import ActionLink from "@/components/ui/ActionLink";
 
@@ -36,6 +40,62 @@ export default function AuthForm() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [usernameStatus, setUsernameStatus] = useState("");
+  const [oauthBusy, setOauthBusy] = useState<FirebaseProvider | null>(null);
+
+  function generatePassword() {
+    const groups = [
+      "ABCDEFGHJKLMNPQRSTUVWXYZ",
+      "abcdefghijkmnopqrstuvwxyz",
+      "23456789",
+      "!@#$%^&*_-+=",
+    ];
+    const all = groups.join("");
+    const values = new Uint32Array(18);
+    crypto.getRandomValues(values);
+    const chars = groups.map(
+      (group, index) => group[values[index] % group.length],
+    );
+    for (let index = chars.length; index < values.length; index += 1)
+      chars.push(all[values[index] % all.length]);
+    for (let index = chars.length - 1; index > 0; index -= 1) {
+      const swap = values[index] % (index + 1);
+      [chars[index], chars[swap]] = [chars[swap], chars[index]];
+    }
+    const generated = chars.join("");
+    setPassword(generated);
+    setConfirm(generated);
+    setVisible(true);
+  }
+
+  async function continueWith(provider: FirebaseProvider) {
+    if (busy || oauthBusy) return;
+    setOauthBusy(provider);
+    setError("");
+    setNotice("");
+    try {
+      const result = await signInWithProvider(provider);
+      const idToken = await result.user.getIdToken();
+      await json(`/api/auth/firebase`, "POST", {
+        idToken,
+        provider,
+        referralCode:
+          params.get("ref") ||
+          sessionStorage.getItem("promptdock.referral") ||
+          undefined,
+      });
+      router.replace(nextPage);
+      router.refresh();
+    } catch (issue) {
+      const code = issue instanceof Error ? issue.message : "";
+      setError(
+        code.includes("popup-closed") || code.includes("cancelled")
+          ? "Provider sign-in was cancelled."
+          : code || "Could not continue with that provider.",
+      );
+    } finally {
+      setOauthBusy(null);
+    }
+  }
 
   useEffect(() => {
     if (mode !== "register" || !username.trim()) {
@@ -178,6 +238,36 @@ export default function AuthForm() {
             </p>
             {mode !== "verify" && (
               <form onSubmit={submit} noValidate>
+                {(mode === "login" || mode === "register") && (
+                  <>
+                    <div className="auth-provider-actions">
+                      {(["google", "github"] as FirebaseProvider[]).map(
+                        (provider) => (
+                          <Button
+                            key={provider}
+                            type="button"
+                            className="auth-provider-button"
+                            disabled={busy || Boolean(oauthBusy)}
+                            onClick={() => continueWith(provider)}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`auth-provider-icon ${provider}`}
+                            >
+                              {provider === "google" ? "G" : "◆"}
+                            </span>
+                            {oauthBusy === provider
+                              ? "Connecting…"
+                              : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
+                          </Button>
+                        ),
+                      )}
+                    </div>
+                    <div className="auth-provider-divider">
+                      <span>or continue with email</span>
+                    </div>
+                  </>
+                )}
                 {mode !== "reset" && (
                   <div className="auth-form-field">
                     <label htmlFor="authEmail">Email</label>
@@ -244,6 +334,15 @@ export default function AuthForm() {
                         {visible ? "Hide" : "Show"}
                       </button>
                     </div>
+                    {mode === "register" && (
+                      <button
+                        className="auth-generate-password"
+                        type="button"
+                        onClick={generatePassword}
+                      >
+                        Generate password
+                      </button>
+                    )}
                   </div>
                 )}
                 {(mode === "register" || mode === "reset") && (

@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
@@ -26,6 +26,8 @@
     "node": ">=20.19"
   },
   "dependencies": {
+    "firebase": "^12.19.0",
+    "firebase-admin": "^14.5.0",
     "next": "^16.3.8",
     "nodemailer": "^10.0.12",
     "pg": "^8.23.0",

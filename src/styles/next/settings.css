@@ -155,3 +155,31 @@
 .react-settings-card .settings-danger {
   margin-top: 30px;
 }
+
+.settings-connected-accounts {
+  margin: 24px 0;
+  padding-top: 22px;
+  border-top: 1px solid #e1e9de;
+}
+.settings-connected-accounts > p {
+  margin: 6px 0 14px;
+  color: #788b7d;
+  font-size: 12px;
+}
+.settings-connected-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf2ea;
+}
+.settings-connected-row > span {
+  color: #274330;
+  font-weight: 800;
+}
+.settings-error {
+  margin: 12px 0 0;
+  color: #b33f32;
+  font-size: 12px;
+}
