@@ -47,7 +47,9 @@ export default function UpdatesList({ updates }: { updates: SiteUpdate[] }) {
             </h2>
             <p>{item.summary}</p>
             <div className="react-update-actions">
-              <Link href={`/updates/${item.id}`}>Read update ↗</Link>
+              <Link className="update-card-link" href={`/updates/${item.id}`}>
+                Read update ↗
+              </Link>
               {canMarkRead && !read.includes(item.id) && (
                 <button type="button" onClick={() => mark(item.id)}>
                   Mark as read ✓
