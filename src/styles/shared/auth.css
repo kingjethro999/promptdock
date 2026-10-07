@@ -1,9 +1,10 @@
 .auth-page-body {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: #f7f8f3;
 }
 .auth-page {
-  min-height: 100vh;
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(420px, 560px);
 }
@@ -11,7 +12,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 100vh;
+  height: 100%;
   padding: 42px clamp(28px, 7vw, 110px);
   background: #173225;
   color: #f1f7ec;
@@ -86,6 +87,8 @@
   color: #d7f477;
 }
 .auth-panel {
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -198,10 +201,16 @@
   min-height: 46px;
 }
 @media (max-width: 760px) {
+  .auth-page-body {
+    height: auto;
+    overflow: visible;
+  }
   .auth-page {
+    height: auto;
     display: block;
   }
   .auth-story {
+    height: auto;
     min-height: auto;
     padding: 24px 20px 30px;
   }
@@ -216,6 +225,8 @@
     font-size: 14px;
   }
   .auth-panel {
+    min-height: auto;
+    overflow: visible;
     padding: 25px 20px 45px;
   }
   .auth-back {
@@ -224,4 +235,65 @@
   .auth-card {
     max-width: none;
   }
+}
+.auth-provider-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.auth-provider-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.auth-provider-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+.auth-provider-icon.google {
+  color: #4285f4;
+  border: 1px solid #d5e1fa;
+}
+.auth-provider-icon.github {
+  color: #20352a;
+  border: 1px solid #cbd8cb;
+}
+.auth-provider-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 4px;
+  color: #8b9c8e;
+  font-size: 11px;
+}
+.auth-provider-divider::before,
+.auth-provider-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e1e9de;
+}
+.auth-provider-divider span {
+  white-space: nowrap;
+}
+.auth-generate-password {
+  margin-top: 7px;
+  border: 0;
+  background: transparent;
+  color: #3b7650;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.auth-generate-password:hover {
+  color: #183c28;
 }

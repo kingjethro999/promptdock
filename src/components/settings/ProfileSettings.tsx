@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, json } from "@/lib/client/api";
 import { describeDevice } from "@/lib/client/device";
 import Button from "@/components/ui/Button";
+import ConnectedAccounts from "@/components/settings/ConnectedAccounts";
 
 type User = { email: string; username: string | null };
 type Session = {
@@ -234,6 +235,7 @@ export default function ProfileSettings({
       <p className="settings-feedback" role="status">
         {noticeArea === "password" ? notice : ""}
       </p>
+      <ConnectedAccounts />
       <div className="settings-session">
         <strong>Active sessions</strong>
         <p>
