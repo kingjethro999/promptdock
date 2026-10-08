@@ -249,22 +249,9 @@
   width: 100%;
 }
 .auth-provider-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-}
-.auth-provider-icon.google {
-  color: #4285f4;
-  border: 1px solid #d5e1fa;
-}
-.auth-provider-icon.github {
-  color: #20352a;
-  border: 1px solid #cbd8cb;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
 }
 .auth-provider-divider {
   display: flex;

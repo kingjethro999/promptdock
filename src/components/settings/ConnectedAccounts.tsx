@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { json } from "@/lib/client/api";
 import {
+  firebaseConfigured,
   linkProvider,
   signInWithFirebaseCustomToken,
   type FirebaseProvider,
@@ -19,6 +20,8 @@ export default function ConnectedAccounts() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<FirebaseProvider | null>(null);
   const [error, setError] = useState("");
+
+  if (!firebaseConfigured) return null;
 
   useEffect(() => {
     json<{ providers: FirebaseProvider[] }>(
