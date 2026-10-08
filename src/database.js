@@ -31,9 +31,7 @@ function getDatabaseConfig(env = process.env) {
       password: env.DATABASE_URL
         ? undefined
         : env.DB_PASSWORD || env.PGPASSWORD,
-      database: env.DATABASE_URL
-        ? undefined
-        : env.DB_NAME || env.PGDATABASE,
+      database: env.DATABASE_URL ? undefined : env.DB_NAME || env.PGDATABASE,
       max: env.VERCEL ? 1 : 5,
       connectionTimeoutMillis: 15000,
       idleTimeoutMillis: 30000,

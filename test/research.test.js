@@ -195,7 +195,10 @@ test("Jina search and reader are mocked and normalized with authorization", asyn
   assert.equal(result.used, true);
   assert.equal(result.provider, "jina");
   assert.equal(result.sources.length, 2);
-  assert.equal(calls[0].options.headers.Authorization, "Bearer jina-secret-key");
+  assert.equal(
+    calls[0].options.headers.Authorization,
+    "Bearer jina-secret-key",
+  );
   assert.equal(calls[0].options.headers.Accept, "application/json");
 });
 
@@ -266,7 +269,10 @@ test("performResearch uses Jina directly when only JINA_API_KEY is configured", 
 test("explicit reference URLs trigger targeted research and are extracted as targetUrls", () => {
   const decision = researchDecision({
     idea: "Generate a summary prompt",
-    referenceUrls: ["https://docs.stripe.com/api/charges", "https://docs.github.com/rest"],
+    referenceUrls: [
+      "https://docs.stripe.com/api/charges",
+      "https://docs.github.com/rest",
+    ],
   });
   assert.equal(decision.required, true);
   assert.equal(decision.reason, "A reference URL was provided.");
@@ -339,4 +345,3 @@ test("ideaToPrompt preserves source description snippets for the interactive dra
     "The official Next.js documentation and guide",
   );
 });
-

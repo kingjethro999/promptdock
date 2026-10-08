@@ -1,13 +1,22 @@
 module.exports = [
   {
+    id: "model-arena-playground",
+    version: "v0.10.0",
+    date: "October 8, 2026",
+    title: "Side-by-side Model Arena & multi-provider comparison",
+    summary:
+      "Run and compare finished prompts across multiple AI models simultaneously in a side-by-side playground arena.",
+    body:
+      "Evaluate prompt consistency, quality, and instruction following across different AI architectures without leaving your workspace. PromptDock's new Model Arena lets you execute your prompt across configured providers in parallel with a single click. View real-time outputs side-by-side with word counts, status indicators, and individual response copy buttons to quickly choose the best output or refine your prompt for maximum reliability across LLMs.",
+  },
+  {
     id: "prompt-variables-interpolation",
     version: "v0.9.9",
     date: "October 8, 2026",
     title: "Interactive prompt variables & live interpolation",
     summary:
       "Detect template placeholders like {{variable}} and fill in custom test values before copying or testing.",
-    body:
-      "Turn your prompts into reusable dynamic templates. PromptDock now automatically detects {{variable}} placeholders in your prompt output and presents an interactive Prompt Variables panel. Enter custom values for each field to preview the fully interpolated result in real time. Your test values travel directly into the in-app Test Prompt runner, one-click clipboard copy, and Markdown export, with instant toggles between raw template code and substituted text.",
+    body: "Turn your prompts into reusable dynamic templates. PromptDock now automatically detects {{variable}} placeholders in your prompt output and presents an interactive Prompt Variables panel. Enter custom values for each field to preview the fully interpolated result in real time. Your test values travel directly into the in-app Test Prompt runner, one-click clipboard copy, and Markdown export, with instant toggles between raw template code and substituted text.",
   },
   {
     id: "model-syntax-profiles",
@@ -16,8 +25,7 @@ module.exports = [
     title: "Model syntax profiles & .cursorrules export",
     summary:
       "Instantly adapt prompt syntax for Claude XML tags, OpenAI developer directives, reasoning models, or direct .cursorrules IDE rules.",
-    body:
-      "Prompts perform best when structured for the model executing them. PromptDock now features one-click target model optimization profiles in the prompt preview. Switch seamlessly between Universal Markdown, Claude (Anthropic XML tags like <role>, <task>, <context>, and <instructions>), OpenAI (structured developer headings and output schemas), Reasoning (o-series and DeepSeek-R1 step-by-step tradeoff analysis), and .cursorrules (ready-to-use IDE agent rulefiles). Switching profiles updates live previews, copies in the target syntax, and automatically formats downloads.",
+    body: "Prompts perform best when structured for the model executing them. PromptDock now features one-click target model optimization profiles in the prompt preview. Switch seamlessly between Universal Markdown, Claude (Anthropic XML tags like <role>, <task>, <context>, and <instructions>), OpenAI (structured developer headings and output schemas), Reasoning (o-series and DeepSeek-R1 step-by-step tradeoff analysis), and .cursorrules (ready-to-use IDE agent rulefiles). Switching profiles updates live previews, copies in the target syntax, and automatically formats downloads.",
   },
   {
     id: "interactive-research-drawer",
@@ -26,8 +34,7 @@ module.exports = [
     title: "Interactive research drawer & web grounding controls",
     summary:
       "Explore retrieved web sources directly in the prompt preview, ground ideas with explicit reference URLs, and control research modes.",
-    body:
-      "PromptDock now features an interactive Research Grounding Drawer inside the prompt preview. When live web research is used, you can explore the exact sources retrieved by Jina or Firecrawl, complete with page titles, source domain badges, publication dates, and excerpt snippets. Each source includes a direct link and one-click URL copy. You can now also paste explicit documentation or reference URLs directly in the fine-tune panel to ground prompt generation on exact APIs or specifications, and choose between Smart Detection (Auto), Always Research Web, or Offline knowledge modes.",
+    body: "PromptDock now features an interactive Research Grounding Drawer inside the prompt preview. When live web research is used, you can explore the exact sources retrieved by Jina or Firecrawl, complete with page titles, source domain badges, publication dates, and excerpt snippets. Each source includes a direct link and one-click URL copy. You can now also paste explicit documentation or reference URLs directly in the fine-tune panel to ground prompt generation on exact APIs or specifications, and choose between Smart Detection (Auto), Always Research Web, or Offline knowledge modes.",
   },
   {
     id: "research-aware-refinement",

@@ -38,4 +38,3 @@ test("firebase-admin configured check and modular API contract", () => {
   assert.ok(firebaseAdmin.admin?.firestore?.FieldValue);
   assert.equal(typeof firebaseAdmin.FieldValue?.serverTimestamp, "function");
 });
-

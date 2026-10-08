@@ -512,4 +512,120 @@
   box-shadow: 0 0 0 2px rgba(68, 119, 78, 0.15);
 }
 
+.arena-button {
+  background: #204727;
+  color: #f1f8ee;
+  border-color: #204727;
+}
 
+.arena-button:hover:not(:disabled) {
+  background: #17381d;
+}
+
+.arena-card {
+  margin: 16px 0 0;
+  padding: 16px;
+  background: #fbfdfa;
+  border: 1px solid #dce8d8;
+  border-radius: 14px;
+}
+
+.arena-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.arena-header h3 {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #1a3021;
+}
+
+.arena-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #6b8273;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.arena-close-btn:hover {
+  color: #1a3021;
+  background: #edf5eb;
+}
+
+.arena-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.arena-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e1ecde;
+  border-radius: 10px;
+}
+
+.arena-col-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #edf4ea;
+}
+
+.arena-provider-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #edf5ea;
+  color: #27472e;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.arena-metric {
+  font-size: 11px;
+  color: #799182;
+}
+
+.arena-copy-btn {
+  margin-left: auto;
+  font-size: 11px;
+  color: #4b6653;
+  background: none;
+  border: 1px solid #dbe6d5;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.arena-copy-btn:hover {
+  background: #f0f7ee;
+  color: #1a3021;
+}
+
+.arena-content {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #263c2c;
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.arena-error {
+  margin: 0;
+  font-size: 12px;
+  color: #a84234;
+}

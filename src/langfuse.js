@@ -16,7 +16,9 @@ function isLangfuseEnabled(env = process.env) {
 function normalizeUsage(rawUsage) {
   if (!rawUsage || typeof rawUsage !== "object") return undefined;
   const promptTokens =
-    rawUsage.prompt_tokens ?? rawUsage.promptTokenCount ?? rawUsage.input_tokens;
+    rawUsage.prompt_tokens ??
+    rawUsage.promptTokenCount ??
+    rawUsage.input_tokens;
   const completionTokens =
     rawUsage.completion_tokens ??
     rawUsage.candidatesTokenCount ??

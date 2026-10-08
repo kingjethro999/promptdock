@@ -2,8 +2,18 @@ const PROMPT_PROFILES = [
   { id: "universal", label: "Universal", extension: ".md", badge: "Standard" },
   { id: "claude", label: "Claude (XML)", extension: ".md", badge: "Anthropic" },
   { id: "openai", label: "OpenAI", extension: ".md", badge: "Structured" },
-  { id: "reasoning", label: "Reasoning", extension: ".md", badge: "o-series / R1" },
-  { id: "cursor", label: ".cursorrules", extension: ".cursorrules", badge: "IDE Rule" },
+  {
+    id: "reasoning",
+    label: "Reasoning",
+    extension: ".md",
+    badge: "o-series / R1",
+  },
+  {
+    id: "cursor",
+    label: ".cursorrules",
+    extension: ".cursorrules",
+    badge: "IDE Rule",
+  },
 ];
 
 const depthCopy = {
@@ -115,7 +125,8 @@ function buildReasoningPrompt(data = {}) {
     "Analyze this request step-by-step. Work through tradeoffs and verify edge cases before concluding.",
   );
   if (data.focus) directives.push(`Priorities to verify:\n${data.focus}`);
-  if (data.constraints) directives.push(`Constraints to satisfy:\n${data.constraints}`);
+  if (data.constraints)
+    directives.push(`Constraints to satisfy:\n${data.constraints}`);
   if (data.format) directives.push(`Deliverable format: ${data.format}`);
   parts.push(directives.join("\n\n"));
   return parts.join("\n\n");
@@ -123,7 +134,9 @@ function buildReasoningPrompt(data = {}) {
 
 function buildCursorRulesPrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  const roleText = data.role ? ` specialized as ${data.role.replace(/[.\s]+$/, "")}` : "";
+  const roleText = data.role
+    ? ` specialized as ${data.role.replace(/[.\s]+$/, "")}`
+    : "";
   const parts = [
     `# You are an expert AI assistant${roleText}.`,
     `## Purpose\n${data.task}`,
@@ -135,7 +148,8 @@ function buildCursorRulesPrompt(data = {}) {
   if (data.approach) rules.push(`- **Implementation Flow**: ${data.approach}`);
   if (data.focus) rules.push(`- **Quality Standards**: ${data.focus}`);
   if (data.format) rules.push(`- **Response Format**: ${data.format}`);
-  if (data.constraints) rules.push(`- **Invariants & Constraints**: ${data.constraints}`);
+  if (data.constraints)
+    rules.push(`- **Invariants & Constraints**: ${data.constraints}`);
   if (rules.length) {
     parts.push(`## Rules & Invariants\n${rules.join("\n")}`);
   }

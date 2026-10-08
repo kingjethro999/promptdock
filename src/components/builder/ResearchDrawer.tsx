@@ -79,7 +79,10 @@ export default function ResearchDrawer({
                 {research.sources.map((source, index) => {
                   const host = extractHostname(source.url);
                   return (
-                    <div key={source.url + index} className="research-source-card">
+                    <div
+                      key={source.url + index}
+                      className="research-source-card"
+                    >
                       <div className="research-source-top">
                         <span className="research-host-badge">{host}</span>
                         {source.publishedAt && (
@@ -125,7 +128,8 @@ export default function ResearchDrawer({
             ℹ
           </span>
           <span className="research-fallback-text">
-            {research.fallbackReason} Prompt shaped with offline model knowledge.
+            {research.fallbackReason} Prompt shaped with offline model
+            knowledge.
           </span>
         </div>
       )}
