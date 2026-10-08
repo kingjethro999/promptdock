@@ -58,7 +58,45 @@ export async function linkProvider(name: FirebaseProvider) {
   const auth = firebase.getAuth(firebaseApp);
   if (!auth.currentUser)
     throw new Error("Sign in before connecting an account.");
-  return firebase.linkWithPopup(auth.currentUser, await providerFor(name));
+  const providerKey = `${name}.com`;
+  const isLinked = (user: unknown) => {
+    const list = (user as { providerData?: Array<{ providerId?: string }> })
+      ?.providerData;
+    return Boolean(list?.some((entry) => entry.providerId === providerKey));
+  };
+  if (isLinked(auth.currentUser)) {
+    return { user: auth.currentUser };
+  }
+  try {
+    return await firebase.linkWithPopup(
+      auth.currentUser,
+      await providerFor(name),
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
+    if (
+      message.includes("provider-already-linked") ||
+      message.includes("credential-already-in-use")
+    ) {
+      const reloadFn = (
+        firebase as { reload?: (user: unknown) => Promise<void> }
+      ).reload;
+      if (typeof reloadFn === "function") {
+        await reloadFn(auth.currentUser).catch(() => {});
+      } else {
+        const userWithReload = auth.currentUser as unknown as {
+          reload?: () => Promise<void>;
+        };
+        if (typeof userWithReload?.reload === "function") {
+          await userWithReload.reload().catch(() => {});
+        }
+      }
+      if (isLinked(auth.currentUser)) {
+        return { user: auth.currentUser };
+      }
+    }
+    throw error;
+  }
 }
 
 export async function signInWithFirebaseCustomToken(token: string) {

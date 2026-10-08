@@ -38,3 +38,84 @@ test("firebase-admin configured check and modular API contract", () => {
   assert.ok(firebaseAdmin.admin?.firestore?.FieldValue);
   assert.equal(typeof firebaseAdmin.FieldValue?.serverTimestamp, "function");
 });
+
+test("providerUidFrom extracts provider UID from providerData, identities, or decoded UID", () => {
+  const decoded = {
+    uid: "promptdock-user-uuid",
+    firebase: {
+      identities: {
+        "github.com": ["121499565"],
+        "google.com": ["google-sub-999"],
+      },
+      sign_in_provider: "github.com",
+    },
+  };
+
+  const firebaseUser = {
+    providerData: [
+      { providerId: "github.com", uid: "121499565" },
+      { providerId: "google.com", uid: "google-sub-999" },
+    ],
+  };
+
+  assert.equal(
+    auth.providerUidFrom(decoded, "github", firebaseUser),
+    "121499565",
+  );
+  assert.equal(
+    auth.providerUidFrom(decoded, "google", firebaseUser),
+    "google-sub-999",
+  );
+  assert.equal(auth.providerUidFrom(decoded, "github"), "121499565");
+  assert.equal(
+    auth.providerUidFrom({ uid: "fallback-id" }, "github"),
+    "fallback-id",
+  );
+});
+
+test("firebaseIdentity allows GitHub with email even when email_verified is false, but enforces verified email for Google", async () => {
+  const firebaseAdmin = require("../src/firebase-admin");
+  const originalGetAuth = firebaseAdmin.getAuth;
+
+  try {
+    let mockDecoded;
+    firebaseAdmin.getAuth = () => ({
+      verifyIdToken: async () => mockDecoded,
+    });
+
+    mockDecoded = {
+      uid: "github-user-id",
+      email: "user@example.com",
+      email_verified: false,
+      firebase: { sign_in_provider: "github.com" },
+    };
+    const ghResult = await auth.firebaseIdentity({ idToken: "token" });
+    assert.equal(ghResult.provider, "github");
+    assert.equal(ghResult.email, "user@example.com");
+
+    mockDecoded = {
+      uid: "google-user-id",
+      email: "user@example.com",
+      email_verified: false,
+      firebase: { sign_in_provider: "google.com" },
+    };
+    await assert.rejects(
+      () => auth.firebaseIdentity({ idToken: "token" }),
+      /Google did not provide a verified email address/,
+    );
+
+    mockDecoded = {
+      uid: "github-no-email",
+      email: "",
+      email_verified: false,
+      firebase: { sign_in_provider: "github.com" },
+    };
+    await assert.rejects(
+      () => auth.firebaseIdentity({ idToken: "token" }),
+      /GitHub did not provide an email address/,
+    );
+  } finally {
+    firebaseAdmin.getAuth = originalGetAuth;
+  }
+});
+
