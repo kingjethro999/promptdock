@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { json } from "@/lib/client/api";
 import Button from "@/components/ui/Button";
+import type { ResearchMetadata } from "@/lib/prompt/types";
 
 type Props = {
   prompt: string;
   onSave(): void;
+  research?: ResearchMetadata;
 };
 
-export default function PromptPreview({ prompt, onSave }: Props) {
+export default function PromptPreview({ prompt, onSave, research }: Props) {
   const [message, setMessage] = useState("");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
@@ -76,6 +78,20 @@ export default function PromptPreview({ prompt, onSave }: Props) {
           ? "Review and refine it before using it with any AI platform."
           : "Share your idea, then let PromptDock shape it."}
       </p>
+      {prompt && research?.used && research.sources.length > 0 && (
+        <p className="research-used" role="status">
+          Research used · {research.sources.length}{" "}
+          {research.sources.length === 1 ? "source" : "sources"}
+        </p>
+      )}
+      {prompt &&
+        research?.attempted &&
+        !research.used &&
+        research.fallbackReason && (
+          <p className="research-fallback" role="status">
+            {research.fallbackReason} Prompt refined without external sources.
+          </p>
+        )}
       <div
         className={`prompt-output${prompt ? "" : " is-empty"}`}
         tabIndex={0}

@@ -22,6 +22,13 @@ export type PendingClarification = {
   questions: string[];
   answers: string[];
   imageCount?: number;
+  researchContext?: string;
+  researchSources?: {
+    title?: string;
+    url: string;
+    publishedAt?: string;
+    sourceType?: string;
+  }[];
 };
 
 export type BuilderState = {

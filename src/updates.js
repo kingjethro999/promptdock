@@ -1,5 +1,14 @@
 module.exports = [
   {
+    id: "research-aware-refinement",
+    version: "v0.9.3",
+    date: "October 8, 2026",
+    title: "Prompt refinement can now use live research",
+    summary:
+      "Research-aware refinement uses focused web sources when a request needs current or external information.",
+    body: "PromptDock now detects when a request would benefit from current information, documentation, comparisons, or a supplied URL, then uses Firecrawl as an optional server-side research layer before the existing prompt architect runs. Retrieved sources are bounded, deduplicated, preserved by URL, treated as untrusted data, and reused during clarification follow-ups. Ordinary creative and transformation prompts continue through the normal refinement path, while unavailable research falls back gracefully without pretending that sources were used.",
+  },
+  {
     id: "image-to-prompt",
     version: "v0.7.5",
     date: "October 3, 2026",

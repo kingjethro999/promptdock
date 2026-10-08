@@ -21,11 +21,29 @@ export type PromptInterpretation = {
 
 export type Clarification = { question: string; answer: string };
 
+export type ResearchSource = {
+  title?: string;
+  url: string;
+  publishedAt?: string;
+  sourceType?: string;
+};
+
+export type ResearchMetadata = {
+  used: boolean;
+  attempted: boolean;
+  queries: string[];
+  sources: ResearchSource[];
+  reused?: boolean;
+  fallbackReason?: string;
+  context?: string;
+};
+
 export type IdeaResult = {
   provider: string;
   questions?: string[];
   data?: PromptData;
   interpretation?: PromptInterpretation;
+  research?: ResearchMetadata;
 };
 
 export type SavedPrompt = {
