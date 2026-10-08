@@ -19,11 +19,15 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-export const firebaseApp = getApps().length
-  ? getApp()
-  : initializeApp(firebaseConfig);
+export const firebaseConfigured = Object.values(firebaseConfig).every(Boolean);
+export const firebaseApp = firebaseConfigured
+  ? getApps().length
+    ? getApp()
+    : initializeApp(firebaseConfig)
+  : null;
 
 export function getFirebaseAuth() {
+  if (!firebaseApp) throw new Error("Firebase sign-in is not configured.");
   return getAuth(firebaseApp);
 }
 

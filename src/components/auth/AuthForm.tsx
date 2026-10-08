@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, json } from "@/lib/client/api";
 import {
+  firebaseConfigured,
   signInWithProvider,
   type FirebaseProvider,
 } from "@/lib/client/firebase";
@@ -238,36 +240,39 @@ export default function AuthForm() {
             </p>
             {mode !== "verify" && (
               <form onSubmit={submit} noValidate>
-                {(mode === "login" || mode === "register") && (
-                  <>
-                    <div className="auth-provider-actions">
-                      {(["google", "github"] as FirebaseProvider[]).map(
-                        (provider) => (
-                          <Button
-                            key={provider}
-                            type="button"
-                            className="auth-provider-button"
-                            disabled={busy || Boolean(oauthBusy)}
-                            onClick={() => continueWith(provider)}
-                          >
-                            <span
-                              aria-hidden="true"
-                              className={`auth-provider-icon ${provider}`}
+                {firebaseConfigured &&
+                  (mode === "login" || mode === "register") && (
+                    <>
+                      <div className="auth-provider-actions">
+                        {(["google", "github"] as FirebaseProvider[]).map(
+                          (provider) => (
+                            <Button
+                              key={provider}
+                              type="button"
+                              className="auth-provider-button"
+                              disabled={busy || Boolean(oauthBusy)}
+                              onClick={() => continueWith(provider)}
                             >
-                              {provider === "google" ? "G" : "◆"}
-                            </span>
-                            {oauthBusy === provider
-                              ? "Connecting…"
-                              : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
-                          </Button>
-                        ),
-                      )}
-                    </div>
-                    <div className="auth-provider-divider">
-                      <span>or continue with email</span>
-                    </div>
-                  </>
-                )}
+                              <Image
+                                className="auth-provider-icon"
+                                src={`/assets/brands/${provider}.svg`}
+                                alt=""
+                                width={18}
+                                height={18}
+                                aria-hidden="true"
+                              />
+                              {oauthBusy === provider
+                                ? "Connecting…"
+                                : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
+                            </Button>
+                          ),
+                        )}
+                      </div>
+                      <div className="auth-provider-divider">
+                        <span>or continue with email</span>
+                      </div>
+                    </>
+                  )}
                 {mode !== "reset" && (
                   <div className="auth-form-field">
                     <label htmlFor="authEmail">Email</label>
