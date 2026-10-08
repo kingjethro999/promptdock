@@ -385,3 +385,131 @@
   color: #e4f2e0;
 }
 
+.prompt-variables-panel {
+  border: 1px solid #dce8d8;
+  border-radius: 12px;
+  background: #fcfdfb;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+}
+
+.variables-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.variables-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.variables-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #edf5ea;
+  color: #31593d;
+  font-size: 12px;
+}
+
+.variables-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #27472e;
+}
+
+.variables-subtitle {
+  font-size: 11px;
+  color: #6b8273;
+}
+
+.variables-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.variables-toggle-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border: 1px solid #d0e0cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #31593d;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.variables-toggle-btn.is-active {
+  background: #edf5ea;
+  border-color: #bad3b4;
+  color: #204226;
+}
+
+.variables-reset-btn {
+  font-size: 11px;
+  color: #799182;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.variables-reset-btn:hover {
+  color: #33543b;
+}
+
+.variables-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eaf2e7;
+}
+
+.variable-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.variable-field label {
+  font-size: 11px;
+  color: #4b6653;
+}
+
+.variable-field label code {
+  font-family: var(--font-mono, monospace);
+  background: #edf5eb;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #27472e;
+}
+
+.variable-field input {
+  padding: 6px 10px;
+  border: 1px solid #d4e2d0;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  color: #1a3021;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.variable-field input:focus {
+  border-color: #44774e;
+  box-shadow: 0 0 0 2px rgba(68, 119, 78, 0.15);
+}
+
+

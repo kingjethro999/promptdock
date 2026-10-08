@@ -1,5 +1,15 @@
 module.exports = [
   {
+    id: "prompt-variables-interpolation",
+    version: "v0.9.9",
+    date: "October 8, 2026",
+    title: "Interactive prompt variables & live interpolation",
+    summary:
+      "Detect template placeholders like {{variable}} and fill in custom test values before copying or testing.",
+    body:
+      "Turn your prompts into reusable dynamic templates. PromptDock now automatically detects {{variable}} placeholders in your prompt output and presents an interactive Prompt Variables panel. Enter custom values for each field to preview the fully interpolated result in real time. Your test values travel directly into the in-app Test Prompt runner, one-click clipboard copy, and Markdown export, with instant toggles between raw template code and substituted text.",
+  },
+  {
     id: "model-syntax-profiles",
     version: "v0.9.8",
     date: "October 8, 2026",
