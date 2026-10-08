@@ -173,6 +173,21 @@ async function firebaseProvidersFor(userId) {
   return result.rows.map((row) => row.provider);
 }
 
+function providerUidFrom(decoded, provider, firebaseUser = null) {
+  const providerKey = `${provider}.com`;
+  if (firebaseUser?.providerData) {
+    const match = firebaseUser.providerData.find(
+      (item) => item.providerId === providerKey,
+    );
+    if (match?.uid) return String(match.uid);
+  }
+  const identity = decoded?.firebase?.identities?.[providerKey];
+  if (Array.isArray(identity) && identity[0]) {
+    return String(identity[0]);
+  }
+  return decoded.uid;
+}
+
 async function firebaseIdentity(body, allowBodyProvider = false) {
   if (!body?.idToken || typeof body.idToken !== "string")
     throw new AuthError("The provider sign-in token is missing.", 400);
@@ -189,7 +204,12 @@ async function firebaseIdentity(body, allowBodyProvider = false) {
       typeof decoded.email === "string"
         ? decoded.email.trim().toLowerCase()
         : "";
-    if (!email || decoded.email_verified === false)
+    if (!email)
+      throw new AuthError(
+        `${providerLabel(provider)} did not provide an email address.`,
+        400,
+      );
+    if (provider === "google" && decoded.email_verified === false)
       throw new AuthError(
         `${providerLabel(provider)} did not provide a verified email address.`,
         400,
@@ -208,11 +228,12 @@ async function firebaseIdentity(body, allowBodyProvider = false) {
 async function firebaseLogin(body, request) {
   await database.ensureSchema();
   const { decoded, provider, email } = await firebaseIdentity(body);
+  const providerUid = providerUidFrom(decoded, provider);
   const linked = await database.pool.query(
     `SELECT users.id, users.email, users.username
      FROM auth_identities identities JOIN users ON users.id = identities.user_id
-     WHERE identities.provider = $1 AND identities.provider_uid = $2`,
-    [provider, decoded.uid],
+     WHERE identities.provider = $1 AND (identities.provider_uid = $2 OR identities.provider_uid = $3)`,
+    [provider, providerUid, decoded.uid],
   );
   if (linked.rows[0]) {
     const user = linked.rows[0];
@@ -258,7 +279,7 @@ async function firebaseLogin(body, request) {
     await database.pool.query(
       `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
        VALUES ($1, $2, $3, $4)`,
-      [user.id, provider, decoded.uid, email],
+      [user.id, provider, providerUid, email],
     );
   } catch (error) {
     if (error.code === "23505")
@@ -305,8 +326,9 @@ async function firebaseLinkComplete(user, body) {
       "This provider session is not authorized for your account.",
       403,
     );
+  let firebaseUser;
   try {
-    const firebaseUser = await firebaseAdmin.getAuth().getUser(decoded.uid);
+    firebaseUser = await firebaseAdmin.getAuth().getUser(decoded.uid);
     const hasProvider = firebaseUser.providerData.some(
       (item) => item.providerId === `${provider}.com`,
     );
@@ -319,9 +341,10 @@ async function firebaseLinkComplete(user, body) {
     if (error instanceof AuthError) throw error;
     throw new AuthError("Could not verify the provider connection.", 401);
   }
+  const providerUid = providerUidFrom(decoded, provider, firebaseUser);
   const conflict = await database.pool.query(
     "SELECT user_id FROM auth_identities WHERE provider = $1 AND provider_uid = $2",
-    [provider, decoded.uid],
+    [provider, providerUid],
   );
   if (conflict.rows[0] && conflict.rows[0].user_id !== user.id)
     throw new AuthError(
@@ -334,7 +357,7 @@ async function firebaseLinkComplete(user, body) {
       `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, provider) DO UPDATE SET provider_uid = EXCLUDED.provider_uid, provider_email = EXCLUDED.provider_email`,
-      [user.id, provider, decoded.uid, email],
+      [user.id, provider, providerUid, email],
     );
   } catch (error) {
     if (error.code === "23505")
@@ -723,4 +746,6 @@ module.exports = {
   firebaseIdentities,
   firebaseLinkStart,
   firebaseLinkComplete,
+  firebaseIdentity,
+  providerUidFrom,
 };

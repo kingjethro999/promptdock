@@ -1,5 +1,14 @@
 module.exports = [
   {
+    id: "firebase-github-linking-resolution",
+    version: "v0.10.5",
+    date: "October 8, 2026",
+    title: "GitHub OAuth linking & provider identity synchronization",
+    summary:
+      "Resolved GitHub account connection errors for email/password accounts and fixed provider UID identity tracking.",
+    body: "Fixed an issue where GitHub OAuth connections on existing email/password accounts failed with a verified email check error due to Firebase ID token email flags. PromptDock now accepts emails supplied by GitHub OAuth, accurately records provider UIDs in Postgres auth identities, and enables seamless re-linking when accounts are already linked in Firebase Auth.",
+  },
+  {
     id: "auth-esm-loader-fix",
     version: "v0.10.3",
     date: "October 8, 2026",
