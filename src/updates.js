@@ -1,5 +1,15 @@
 module.exports = [
   {
+    id: "model-syntax-profiles",
+    version: "v0.9.8",
+    date: "October 8, 2026",
+    title: "Model syntax profiles & .cursorrules export",
+    summary:
+      "Instantly adapt prompt syntax for Claude XML tags, OpenAI developer directives, reasoning models, or direct .cursorrules IDE rules.",
+    body:
+      "Prompts perform best when structured for the model executing them. PromptDock now features one-click target model optimization profiles in the prompt preview. Switch seamlessly between Universal Markdown, Claude (Anthropic XML tags like <role>, <task>, <context>, and <instructions>), OpenAI (structured developer headings and output schemas), Reasoning (o-series and DeepSeek-R1 step-by-step tradeoff analysis), and .cursorrules (ready-to-use IDE agent rulefiles). Switching profiles updates live previews, copies in the target syntax, and automatically formats downloads.",
+  },
+  {
     id: "interactive-research-drawer",
     version: "v0.9.7",
     date: "October 8, 2026",

@@ -3,51 +3,81 @@
 import { useState } from "react";
 import { json } from "@/lib/client/api";
 import Button from "@/components/ui/Button";
-import type { ResearchMetadata } from "@/lib/prompt/types";
+import type { PromptData, ResearchMetadata } from "@/lib/prompt/types";
+import {
+  PROMPT_PROFILES,
+  buildPromptWithProfile,
+  type PromptProfile,
+} from "@/lib/prompt/format";
 import ResearchDrawer from "./ResearchDrawer";
 
 type Props = {
   prompt: string;
+  data?: PromptData | null;
   onSave(): void;
   research?: ResearchMetadata;
 };
 
-export default function PromptPreview({ prompt, onSave, research }: Props) {
+export default function PromptPreview({
+  prompt,
+  data,
+  onSave,
+  research,
+}: Props) {
+  const [profile, setProfile] = useState<PromptProfile>("universal");
   const [message, setMessage] = useState("");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
 
+  const activePrompt =
+    data && data.task?.trim()
+      ? buildPromptWithProfile(data, profile)
+      : prompt;
+
   async function copy() {
-    if (!prompt) return;
+    if (!activePrompt) return;
     try {
-      await navigator.clipboard.writeText(prompt);
-      setMessage("Prompt copied.");
+      await navigator.clipboard.writeText(activePrompt);
+      const currentProfile = PROMPT_PROFILES.find((p) => p.id === profile);
+      setMessage(`Prompt copied (${currentProfile?.label || "Universal"}).`);
     } catch {
       setMessage("Copy unavailable. Select the text and copy it.");
     }
   }
 
   function download() {
-    if (!prompt) return;
+    if (!activePrompt) return;
+    const currentProfile = PROMPT_PROFILES.find((p) => p.id === profile);
+    const filename =
+      currentProfile?.id === "cursor"
+        ? ".cursorrules"
+        : `promptdock-${currentProfile?.id || "prompt"}.md`;
+    const mime =
+      currentProfile?.id === "cursor" ? "text/plain" : "text/markdown";
+    const header =
+      currentProfile?.id === "cursor"
+        ? `${activePrompt}\n`
+        : `# My prompt (${currentProfile?.label})\n\n${activePrompt}\n`;
+
     const url = URL.createObjectURL(
-      new Blob([`# My prompt\n\n${prompt}\n`], { type: "text/markdown" }),
+      new Blob([header], { type: mime }),
     );
     const link = document.createElement("a");
     link.href = url;
-    link.download = "promptdock-prompt.md";
+    link.download = filename;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function testPrompt() {
-    if (!prompt || running) return;
+    if (!activePrompt || running) return;
     setRunning(true);
     setMessage("Testing your finished prompt…");
     try {
       const result = await json<{ text: string; provider: string }>(
         "/api/run",
         "POST",
-        { prompt },
+        { prompt: activePrompt },
       );
       setRunOutput(result.text);
       setMessage(`Tested with ${result.provider}.`);
@@ -66,54 +96,87 @@ export default function PromptPreview({ prompt, onSave, research }: Props) {
         <div className="section-kicker">PROMPT OUTPUT</div>
         <span
           className="ready-badge"
-          style={{ visibility: prompt ? "visible" : "hidden" }}
+          style={{ visibility: activePrompt ? "visible" : "hidden" }}
         >
           <span className="status-dot" /> Ready to copy
         </span>
       </div>
       <h2 id="previewHeading">
-        {prompt ? "Your finished prompt" : "Your prompt will appear here"}
+        {activePrompt ? "Your finished prompt" : "Your prompt will appear here"}
       </h2>
       <p className="preview-subtitle">
-        {prompt
-          ? "Review and refine it before using it with any AI platform."
+        {activePrompt
+          ? "Review and optimize it for your target AI platform."
           : "Share your idea, then let PromptDock shape it."}
       </p>
-      {prompt && <ResearchDrawer research={research} />}
+
+      {activePrompt && (
+        <div
+          className="prompt-profile-tabs"
+          role="tablist"
+          aria-label="Target model optimization profiles"
+        >
+          {PROMPT_PROFILES.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="tab"
+              aria-selected={profile === p.id}
+              className={`profile-tab-btn${profile === p.id ? " active" : ""}`}
+              onClick={() => {
+                setProfile(p.id);
+                setMessage(`Switched syntax profile to ${p.label}`);
+              }}
+            >
+              <span className="profile-label">{p.label}</span>
+              <span className="profile-badge">{p.badge}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activePrompt && <ResearchDrawer research={research} />}
+
       <div
-        className={`prompt-output${prompt ? "" : " is-empty"}`}
+        className={`prompt-output${activePrompt ? "" : " is-empty"}`}
         tabIndex={0}
         aria-live="polite"
       >
-        {prompt ||
+        {activePrompt ||
           "Your prompt will appear here after PromptDock shapes your idea."}
       </div>
+
       <div className="preview-actions">
-        <Button variant="primary" disabled={!prompt} onClick={copy}>
+        <Button variant="primary" disabled={!activePrompt} onClick={copy}>
           <span>▣</span> Copy prompt <span className="button-arrow">↗</span>
         </Button>
-        <Button disabled={!prompt} onClick={onSave}>
+        <Button disabled={!activePrompt} onClick={onSave}>
           ♡ &nbsp; Save
         </Button>
       </div>
+
       <div className="export-row">
         <button
           type="button"
           className="quiet-button"
-          disabled={!prompt}
+          disabled={!activePrompt}
           onClick={download}
         >
-          ↓ Download .md
+          ↓ Download{" "}
+          {profile === "cursor" ? ".cursorrules" : `(${profile}) .md`}
         </button>
         <span className="word-count">
-          {prompt ? `${prompt.trim().split(/\s+/).length} words` : "0 words"}
+          {activePrompt
+            ? `${activePrompt.trim().split(/\s+/).length} words`
+            : "0 words"}
         </span>
       </div>
+
       <div className="run-row">
         <button
           type="button"
           className="ai-button run-button"
-          disabled={!prompt || running}
+          disabled={!activePrompt || running}
           onClick={testPrompt}
         >
           <span>▶</span> Run prompt
@@ -122,11 +185,13 @@ export default function PromptPreview({ prompt, onSave, research }: Props) {
           Tests this prompt on your configured AI
         </span>
       </div>
+
       {message && (
         <p className="settings-feedback" role="status">
           {message}
         </p>
       )}
+
       {runOutput && (
         <div className="run-card">
           <div className="section-kicker">TEST RESULT</div>
