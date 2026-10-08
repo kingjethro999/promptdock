@@ -1,13 +1,4 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import {
-  GithubAuthProvider,
-  GoogleAuthProvider,
-  getAuth,
-  linkWithPopup,
-  signInWithCustomToken,
-  signInWithPopup,
-  unlink,
-} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -26,39 +17,51 @@ export const firebaseApp = firebaseConfigured
     : initializeApp(firebaseConfig)
   : null;
 
-export function getFirebaseAuth() {
-  if (!firebaseApp) throw new Error("Firebase sign-in is not configured.");
-  return getAuth(firebaseApp);
-}
-
 export type FirebaseProvider = "google" | "github";
 
-export function providerFor(name: FirebaseProvider) {
+async function authModule() {
+  if (!firebaseApp) throw new Error("Firebase sign-in is not configured.");
+  return import("firebase/auth");
+}
+
+export async function getFirebaseAuth() {
+  const firebase = await authModule();
+  return firebase.getAuth(firebaseApp);
+}
+
+async function providerFor(name: FirebaseProvider) {
+  const firebase = await authModule();
   return name === "google"
-    ? new GoogleAuthProvider()
-    : new GithubAuthProvider();
+    ? new firebase.GoogleAuthProvider()
+    : new firebase.GithubAuthProvider();
 }
 
 export async function signInWithProvider(name: FirebaseProvider) {
-  return signInWithPopup(getFirebaseAuth(), providerFor(name));
+  const firebase = await authModule();
+  const auth = firebase.getAuth(firebaseApp);
+  return firebase.signInWithPopup(auth, await providerFor(name));
 }
 
 export async function linkProvider(name: FirebaseProvider) {
-  const auth = getFirebaseAuth();
+  const firebase = await authModule();
+  const auth = firebase.getAuth(firebaseApp);
   if (!auth.currentUser)
     throw new Error("Sign in before connecting an account.");
-  return linkWithPopup(auth.currentUser, providerFor(name));
+  return firebase.linkWithPopup(auth.currentUser, await providerFor(name));
 }
 
 export async function signInWithFirebaseCustomToken(token: string) {
-  return signInWithCustomToken(getFirebaseAuth(), token);
+  const firebase = await authModule();
+  const auth = firebase.getAuth(firebaseApp);
+  return firebase.signInWithCustomToken(auth, token);
 }
 
 export async function disconnectProvider(name: FirebaseProvider) {
-  const auth = getFirebaseAuth();
+  const firebase = await authModule();
+  const auth = firebase.getAuth(firebaseApp);
   if (!auth.currentUser)
     throw new Error("Sign in before disconnecting an account.");
-  return unlink(
+  return firebase.unlink(
     auth.currentUser,
     name === "google" ? "google.com" : "github.com",
   );

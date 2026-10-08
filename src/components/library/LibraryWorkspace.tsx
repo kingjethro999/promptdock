@@ -179,67 +179,68 @@ export default function LibraryWorkspace({
           {notice}
         </p>
       )}
-      <Masonry
-        className="library-grid react-library-masonry"
-        minColumnWidth={255}
-        maxColumns={5}
-        gap={15}
-      >
-        {prompts.map((prompt) => (
-          <PromptCard
-            key={prompt.id}
-            prompt={prompt}
-            onOpen={(item) => {
-              loadPrompt(item);
-              router.push("/workspace");
-            }}
-            onDuplicate={duplicate}
-            onShare={setShareCandidate}
-            onDelete={setConfirm}
-            onHistory={showHistory}
-          />
-        ))}
-        {prompts.length === 0 && loading && (
-          <div className="empty-state" role="status">
-            <div className="empty-state-icon">✳</div>
-            <h3>Loading your library…</h3>
-          </div>
-        )}
-        {prompts.length === 0 && !loading && loadError && (
-          <div className="empty-state" role="alert">
-            <div className="empty-state-icon">✳</div>
-            <h3>Could not load your library</h3>
-            <p>{loadError}</p>
-            <Button variant="primary" onClick={() => void refresh()}>
-              Try again
-            </Button>
-          </div>
-        )}
-        {prompts.length === 0 && !loading && !loadError && (
-          <div className="empty-state">
-            <div className="empty-state-icon">✳</div>
-            <h3>
-              {q || tag ? "No matching prompts" : "Your library starts here"}
-            </h3>
-            <p>
-              {q || tag
-                ? "Try a different search term, or clear the tag filter."
-                : "Save a prompt from the builder and it will appear here."}
-            </p>
-            {!q && !tag && (
-              <Button
-                variant="primary"
-                onClick={() => {
-                  clear();
-                  router.push("/workspace");
-                }}
-              >
-                Create a prompt
+      {prompts.length === 0 && loading ? (
+        <div className="library-loading-state" role="status">
+          <div className="empty-state-icon">✳</div>
+          <h3>Loading your library…</h3>
+        </div>
+      ) : (
+        <Masonry
+          className="library-grid react-library-masonry"
+          minColumnWidth={255}
+          maxColumns={5}
+          gap={15}
+        >
+          {prompts.map((prompt) => (
+            <PromptCard
+              key={prompt.id}
+              prompt={prompt}
+              onOpen={(item) => {
+                loadPrompt(item);
+                router.push("/workspace");
+              }}
+              onDuplicate={duplicate}
+              onShare={setShareCandidate}
+              onDelete={setConfirm}
+              onHistory={showHistory}
+            />
+          ))}
+          {prompts.length === 0 && !loading && loadError && (
+            <div className="empty-state" role="alert">
+              <div className="empty-state-icon">✳</div>
+              <h3>Could not load your library</h3>
+              <p>{loadError}</p>
+              <Button variant="primary" onClick={() => void refresh()}>
+                Try again
               </Button>
-            )}
-          </div>
-        )}
-      </Masonry>
+            </div>
+          )}
+          {prompts.length === 0 && !loading && !loadError && (
+            <div className="empty-state">
+              <div className="empty-state-icon">✳</div>
+              <h3>
+                {q || tag ? "No matching prompts" : "Your library starts here"}
+              </h3>
+              <p>
+                {q || tag
+                  ? "Try a different search term, or clear the tag filter."
+                  : "Save a prompt from the builder and it will appear here."}
+              </p>
+              {!q && !tag && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    clear();
+                    router.push("/workspace");
+                  }}
+                >
+                  Create a prompt
+                </Button>
+              )}
+            </div>
+          )}
+        </Masonry>
+      )}
       {total > 100 && (
         <div className="react-pagination">
           <span>
