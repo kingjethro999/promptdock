@@ -6,8 +6,7 @@ module.exports = [
     title: "Side-by-side Model Arena & multi-provider comparison",
     summary:
       "Run and compare finished prompts across multiple AI models simultaneously in a side-by-side playground arena.",
-    body:
-      "Evaluate prompt consistency, quality, and instruction following across different AI architectures without leaving your workspace. PromptDock's new Model Arena lets you execute your prompt across configured providers in parallel with a single click. View real-time outputs side-by-side with word counts, status indicators, and individual response copy buttons to quickly choose the best output or refine your prompt for maximum reliability across LLMs.",
+    body: "Evaluate prompt consistency, quality, and instruction following across different AI architectures without leaving your workspace. PromptDock's new Model Arena lets you execute your prompt across configured providers in parallel with a single click. View real-time outputs side-by-side with word counts, status indicators, and individual response copy buttons to quickly choose the best output or refine your prompt for maximum reliability across LLMs.",
   },
   {
     id: "prompt-variables-interpolation",
