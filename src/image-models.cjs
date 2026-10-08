@@ -10,7 +10,9 @@ function supportsImages(provider, model) {
   if (provider === "groq")
     return /(?:qwen3\.8|vision|vl|llama-4|llama-3\.2-\d+b-vision)/.test(id);
   if (provider === "apmix")
-    return /(?:gpt-4o|gpt-4\.1|gpt-5|claude-(?:3|4|sonnet-4|opus-4|haiku-4)|gemini-[2-9]|qwen3\.8|vision|(?:^|[/-])vl(?:$|[/-]))/.test(id);
+    return /(?:gpt-4o|gpt-4\.1|gpt-5|claude-(?:3|4|sonnet-4|opus-4|haiku-4)|gemini-[2-9]|qwen3\.8|vision|(?:^|[/-])vl(?:$|[/-]))/.test(
+      id,
+    );
   return false;
 }
 
