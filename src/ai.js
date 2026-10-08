@@ -635,6 +635,7 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
     idea,
     guidance,
     researchMode: input?.researchMode,
+    referenceUrls: input?.referenceUrls,
   });
   const research = existingResearch
     ? {
@@ -696,9 +697,10 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
       attempted: Boolean(research.attempted),
       queries: research.queries || decision.queries || [],
       sources: (research.sources || []).map(
-        ({ title, url, publishedAt, sourceType }) => ({
+        ({ title, url, description, publishedAt, sourceType }) => ({
           title,
           url,
+          description,
           publishedAt,
           sourceType,
         }),

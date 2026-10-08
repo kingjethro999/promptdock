@@ -14,12 +14,16 @@ export function usePromptBuilder() {
   const ready = usePromptBuilderStore((state) => state.ready);
   const attachments = usePromptBuilderStore((state) => state.attachments);
   const sourcePrompt = usePromptBuilderStore((state) => state.sourcePrompt);
+  const researchMode = usePromptBuilderStore((state) => state.researchMode);
+  const referenceUrl = usePromptBuilderStore((state) => state.referenceUrl);
   const data = result?.data
     ? { ...emptyPromptData, ...result.data, ...guidance }
     : null;
   return {
     idea,
     guidance,
+    researchMode,
+    referenceUrl,
     result,
     pending,
     status,
@@ -30,6 +34,8 @@ export function usePromptBuilder() {
     prompt: ready && data ? buildPrompt(data) : "",
     attachments,
     setIdea: usePromptBuilderStore((state) => state.setIdea),
+    setResearchMode: usePromptBuilderStore((state) => state.setResearchMode),
+    setReferenceUrl: usePromptBuilderStore((state) => state.setReferenceUrl),
     updateGuidance: usePromptBuilderStore((state) => state.updateGuidance),
     editPromptField: usePromptBuilderStore((state) => state.editPromptField),
     addImages: usePromptBuilderStore((state) => state.addImages),

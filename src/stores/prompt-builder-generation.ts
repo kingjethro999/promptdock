@@ -19,9 +19,14 @@ async function requestPrompt(
     sources?: {
       title?: string;
       url: string;
+      description?: string;
       publishedAt?: string;
       sourceType?: string;
     }[];
+  },
+  options?: {
+    researchMode?: "auto" | "on" | "off";
+    referenceUrls?: string[];
   },
 ) {
   const body = JSON.parse(
@@ -34,6 +39,8 @@ async function requestPrompt(
   );
   if (research?.context) body.researchContext = research.context;
   if (research?.sources?.length) body.researchSources = research.sources;
+  if (options?.researchMode) body.researchMode = options.researchMode;
+  if (options?.referenceUrls?.length) body.referenceUrls = options.referenceUrls;
   return api<IdeaResult>("/api/idea-to-prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -53,6 +60,12 @@ export async function generatePrompt(get: GetState, set: SetState) {
       source,
       state.guidance,
       state.attachments.map(({ file }) => file),
+      undefined,
+      undefined,
+      {
+        researchMode: state.researchMode,
+        referenceUrls: state.referenceUrl ? [state.referenceUrl.trim()] : undefined,
+      },
     );
     if (revision !== get().revision) return;
     if (response.questions?.length) {

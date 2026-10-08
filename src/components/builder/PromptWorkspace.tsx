@@ -134,6 +134,10 @@ export default function PromptWorkspace() {
           <FineTunePanel
             guidance={builder.guidance}
             update={builder.updateGuidance}
+            researchMode={builder.researchMode}
+            setResearchMode={builder.setResearchMode}
+            referenceUrl={builder.referenceUrl}
+            setReferenceUrl={builder.setReferenceUrl}
             idea={builder.idea}
             imageCount={builder.attachments.length}
             busy={builder.busy}
