@@ -92,7 +92,9 @@ export default function AuthForm() {
       setError(
         code.includes("popup-closed") || code.includes("cancelled")
           ? "Provider sign-in was cancelled."
-          : code || "Could not continue with that provider.",
+          : code.includes("popup-blocked")
+            ? "Sign-in popup was blocked by your browser. Please allow popups for PromptDock and retry."
+            : code || "Could not continue with that provider.",
       );
     } finally {
       setOauthBusy(null);

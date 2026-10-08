@@ -31,6 +31,10 @@ async function authModule() {
   return import("firebase/auth");
 }
 
+if (typeof window !== "undefined" && firebaseConfigured) {
+  authModule().catch(() => {});
+}
+
 export async function getFirebaseAuth() {
   const firebase = await authModule();
   return firebase.getAuth(firebaseApp);
