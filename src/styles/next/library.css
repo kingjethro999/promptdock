@@ -183,3 +183,18 @@
 .library-loading-state .empty-state-icon {
   margin: 0;
 }
+
+.library-backup {
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+}
+.library-backup .text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
