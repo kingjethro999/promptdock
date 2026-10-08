@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
