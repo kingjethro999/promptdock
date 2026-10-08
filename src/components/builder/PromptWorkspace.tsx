@@ -148,6 +148,7 @@ export default function PromptWorkspace() {
         </div>
         <PromptPreview
           prompt={builder.prompt}
+          data={builder.data}
           research={builder.result?.research}
           onSave={() => {
             setSaveError("");
