@@ -34,18 +34,25 @@ function isInternalNavigation(anchor: HTMLAnchorElement, event: MouseEvent) {
 
 export default function TopLoader() {
   const pathname = usePathname();
-  const [visible, setVisible] = useState(false);
+  const previousPathname = useRef(pathname);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  const start = () => {
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    if (finishTimer.current) clearTimeout(finishTimer.current);
+    setVisible(true);
+    fallbackTimer.current = setTimeout(() => setVisible(false), 10000);
+  };
 
   useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
     if (!visible) return;
 
-    if (finishTimer.current) clearTimeout(finishTimer.current);
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
     finishTimer.current = setTimeout(() => setVisible(false), 180);
-
-    return () => {
-      if (finishTimer.current) clearTimeout(finishTimer.current);
-    };
   }, [pathname, visible]);
 
   useEffect(() => {
@@ -53,17 +60,23 @@ export default function TopLoader() {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const anchor = target.closest("a");
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      if (isInternalNavigation(anchor, event)) setVisible(true);
+      if (
+        anchor instanceof HTMLAnchorElement &&
+        isInternalNavigation(anchor, event)
+      ) {
+        start();
+      }
     };
 
-    const handlePopState = () => setVisible(true);
+    const handlePopState = () => start();
     document.addEventListener("click", handleClick, true);
     window.addEventListener("popstate", handlePopState);
 
     return () => {
       document.removeEventListener("click", handleClick, true);
       window.removeEventListener("popstate", handlePopState);
+      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+      if (finishTimer.current) clearTimeout(finishTimer.current);
     };
   }, []);
 
