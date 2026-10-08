@@ -15,22 +15,34 @@ function normalizeDatabaseUrl(value) {
   return url.toString();
 }
 
-const configured = Boolean(process.env.DATABASE_URL || process.env.PGHOST);
-const pool = configured
-  ? new Pool({
-      connectionString: normalizeDatabaseUrl(process.env.DATABASE_URL),
-      host: process.env.DATABASE_URL ? undefined : process.env.PGHOST,
-      port: process.env.DATABASE_URL
+function getDatabaseConfig(env = process.env) {
+  const host = env.DB_HOST || env.PGHOST;
+  const configured = Boolean(env.DATABASE_URL || host);
+  if (!configured) return { configured: false, options: null };
+  return {
+    configured: true,
+    options: {
+      connectionString: normalizeDatabaseUrl(env.DATABASE_URL),
+      host: env.DATABASE_URL ? undefined : host,
+      port: env.DATABASE_URL
         ? undefined
-        : Number(process.env.PGPORT) || 5432,
-      user: process.env.DATABASE_URL ? undefined : process.env.PGUSER,
-      password: process.env.DATABASE_URL ? undefined : process.env.PGPASSWORD,
-      database: process.env.DATABASE_URL ? undefined : process.env.PGDATABASE,
-      max: process.env.VERCEL ? 1 : 5,
+        : Number(env.DB_PORT || env.PGPORT) || 5432,
+      user: env.DATABASE_URL ? undefined : env.DB_USER || env.PGUSER,
+      password: env.DATABASE_URL
+        ? undefined
+        : env.DB_PASSWORD || env.PGPASSWORD,
+      database: env.DATABASE_URL
+        ? undefined
+        : env.DB_NAME || env.PGDATABASE,
+      max: env.VERCEL ? 1 : 5,
       connectionTimeoutMillis: 15000,
       idleTimeoutMillis: 30000,
-    })
-  : null;
+    },
+  };
+}
+
+const { configured, options: poolOptions } = getDatabaseConfig(process.env);
+const pool = configured ? new Pool(poolOptions) : null;
 let schemaReady;
 const schemaKey = `schema:${createHash("sha256").update(schema.join("\n")).digest("hex")}`;
 
@@ -632,6 +644,7 @@ async function analytics() {
 module.exports = {
   configured,
   pool,
+  getDatabaseConfig,
   normalizeDatabaseUrl,
   ensureSchema,
   accountKey,

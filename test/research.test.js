@@ -5,7 +5,9 @@ const {
   normalizeSources,
   researchContext,
   researchWithFirecrawl,
+  performResearch,
 } = require("../src/research/firecrawl");
+const { researchWithJina } = require("../src/research/jina");
 
 test("ordinary creative prompts skip research", () => {
   const decision = researchDecision({ idea: "Write a warm poem about rain" });
@@ -142,3 +144,122 @@ test("research context is injected into the existing prompt architect", async ()
   assert.equal(result.research.sources.length, 1);
   assert.match(JSON.stringify(calls[1].body), /Current API behavior/);
 });
+
+test("Jina search and reader are mocked and normalized with authorization", async () => {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push({ url, options, body: JSON.parse(options.body) });
+    if (url.includes("s.jina.ai")) {
+      return {
+        ok: true,
+        json: async () => ({
+          code: 200,
+          data: [
+            {
+              title: "Jina Search Result",
+              url: "https://jina.example.com/guide",
+              content: "Clean extracted markdown content from search",
+              description: "A description of the page",
+            },
+          ],
+        }),
+      };
+    }
+    if (url.includes("r.jina.ai")) {
+      return {
+        ok: true,
+        json: async () => ({
+          code: 200,
+          data: {
+            title: "Jina Reader Result",
+            url: "https://jina.example.com/read",
+            content: "Direct reader markdown content",
+          },
+        }),
+      };
+    }
+    throw new Error(`Unexpected endpoint: ${url}`);
+  };
+
+  const decision = researchDecision({
+    idea: "Read https://jina.example.com/read and research latest docs",
+  });
+  decision.required = true;
+
+  const result = await researchWithJina(
+    decision,
+    { JINA_API_KEY: "jina-secret-key" },
+    request,
+  );
+
+  assert.equal(result.used, true);
+  assert.equal(result.provider, "jina");
+  assert.equal(result.sources.length, 2);
+  assert.equal(calls[0].options.headers.Authorization, "Bearer jina-secret-key");
+  assert.equal(calls[0].options.headers.Accept, "application/json");
+});
+
+test("performResearch falls back to Jina when Firecrawl fails", async () => {
+  const request = async (url) => {
+    if (url.includes("firecrawl")) {
+      return { ok: false, status: 500 };
+    }
+    if (url.includes("s.jina.ai")) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              title: "Fallback Result",
+              url: "https://fallback.example.com",
+              content: "Recovered via Jina fallback",
+            },
+          ],
+        }),
+      };
+    }
+    throw new Error(`Unexpected url: ${url}`);
+  };
+
+  const result = await performResearch(
+    researchDecision({ idea: "Research current updates" }),
+    {
+      FIRECRAWL_API_KEY: "broken-firecrawl-key",
+      JINA_API_KEY: "working-jina-key",
+    },
+    request,
+  );
+
+  assert.equal(result.used, true);
+  assert.equal(result.sources.length, 1);
+  assert.equal(result.sources[0].url, "https://fallback.example.com");
+  assert.equal(result.fallbackFrom, "firecrawl");
+});
+
+test("performResearch uses Jina directly when only JINA_API_KEY is configured", async () => {
+  const request = async (url) => {
+    assert.ok(url.includes("jina.ai"));
+    return {
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            title: "Direct Jina",
+            url: "https://direct.jina.example.com",
+            content: "Direct result",
+          },
+        ],
+      }),
+    };
+  };
+
+  const result = await performResearch(
+    researchDecision({ idea: "Research latest updates" }),
+    { JINA_API_KEY: "direct-jina-key" },
+    request,
+  );
+
+  assert.equal(result.used, true);
+  assert.equal(result.sources[0].title, "Direct Jina");
+});
+

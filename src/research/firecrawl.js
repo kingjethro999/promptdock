@@ -200,6 +200,51 @@ function researchContext(sources = []) {
   ].join("\n\n");
 }
 
+async function performResearch(
+  decision,
+  env = process.env,
+  request = fetch,
+) {
+  const { researchWithJina } = require("./jina");
+  const base = {
+    used: false,
+    attempted: false,
+    queries: decision?.queries || [],
+    sources: [],
+    reason: decision?.reason,
+  };
+  if (!decision?.required) return base;
+
+  if (env.FIRECRAWL_API_KEY) {
+    const firecrawlResult = await researchWithFirecrawl(decision, env, request);
+    if (firecrawlResult.used && firecrawlResult.sources?.length) {
+      return { ...firecrawlResult, provider: "firecrawl" };
+    }
+    if (env.JINA_API_KEY) {
+      const jinaResult = await researchWithJina(decision, env, request);
+      if (jinaResult.used && jinaResult.sources?.length) {
+        return {
+          ...jinaResult,
+          fallbackFrom: "firecrawl",
+          firecrawlReason: firecrawlResult.fallbackReason,
+        };
+      }
+    }
+    return firecrawlResult;
+  }
+
+  if (env.JINA_API_KEY) {
+    return researchWithJina(decision, env, request);
+  }
+
+  return {
+    ...base,
+    attempted: true,
+    unavailable: true,
+    fallbackReason: "Research is not configured.",
+  };
+}
+
 module.exports = {
   MAX_CONTEXT_CHARS,
   MAX_SOURCE_CHARS,
@@ -208,4 +253,6 @@ module.exports = {
   normalizeSources,
   researchContext,
   researchWithFirecrawl,
+  performResearch,
 };
+
