@@ -1,13 +1,15 @@
 const fs = require("node:fs");
-const {
-  initializeApp,
-  cert,
-  getApps,
-  getApp,
-  applicationDefault,
-} = require("firebase-admin/app");
-const { getAuth } = require("firebase-admin/auth");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+function getAppModule() {
+  return require("firebase-admin/app");
+}
+
+function getAuthModule() {
+  return require("firebase-admin/auth");
+}
+
+function getFirestoreModule() {
+  return require("firebase-admin/firestore");
+}
 
 let app = null;
 
@@ -66,6 +68,8 @@ function loadServiceAccount() {
 
 function getFirebaseApp() {
   if (app) return app;
+  const { initializeApp, cert, getApps, getApp, applicationDefault } =
+    getAppModule();
   const apps = getApps();
   if (apps.length) {
     app = getApp();
@@ -109,10 +113,12 @@ function getFirebaseApp() {
 }
 
 function getAuthInstance() {
+  const { getAuth } = getAuthModule();
   return getAuth(getFirebaseApp());
 }
 
 function getFirestoreInstance() {
+  const { getFirestore } = getFirestoreModule();
   return getFirestore(getFirebaseApp());
 }
 
@@ -135,9 +141,20 @@ function configured() {
   );
 }
 
+const FieldValue = {
+  serverTimestamp() {
+    return getFirestoreModule().FieldValue.serverTimestamp();
+  },
+  delete() {
+    return getFirestoreModule().FieldValue.delete();
+  },
+};
+
 const admin = {
-  firestore: {
-    FieldValue,
+  get firestore() {
+    return {
+      FieldValue,
+    };
   },
 };
 
