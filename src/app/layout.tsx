@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BootScreen from "@/components/ui/BootScreen";
+import TopLoader from "@/components/ui/TopLoader";
 import "../styles/shared/styles.css";
 import "../styles/shared/landing.css";
 import "../styles/shared/auth.css";
@@ -72,6 +73,7 @@ export default function RootLayout({
     <html lang="en" className="booting">
       <body className="booting">
         <BootScreen />
+        <TopLoader />
         {children}
       </body>
     </html>
