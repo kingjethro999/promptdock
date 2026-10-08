@@ -170,3 +170,16 @@
   background: #aa493b;
   color: #fff;
 }
+
+.library-loading-state {
+  display: grid;
+  min-height: 360px;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  color: #20352a;
+  text-align: center;
+}
+.library-loading-state .empty-state-icon {
+  margin: 0;
+}
