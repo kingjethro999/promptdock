@@ -146,15 +146,19 @@ function providerLabel(provider) {
 async function syncFirebaseUser(user, providers = []) {
   if (!firebaseAdmin.configured()) return;
   try {
-    await firebaseAdmin.getFirestore().collection("users").doc(user.id).set(
-      {
-        email: user.email,
-        username: user.username || null,
-        authProviders: providers,
-        updatedAt: firebaseAdmin.admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+    await firebaseAdmin
+      .getFirestore()
+      .collection("users")
+      .doc(user.id)
+      .set(
+        {
+          email: user.email,
+          username: user.username || null,
+          authProviders: providers,
+          updatedAt: firebaseAdmin.admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
   } catch {
     // Firestore is a mirror for Firebase identity metadata. App auth must not
     // fail when the optional mirror is unavailable.
@@ -175,16 +179,29 @@ async function firebaseIdentity(body, allowBodyProvider = false) {
   try {
     const decoded = await firebaseAdmin.getAuth().verifyIdToken(body.idToken);
     const provider = firebaseProvider(
-      allowBodyProvider ? body.provider || decoded.firebase?.sign_in_provider : decoded.firebase?.sign_in_provider,
+      allowBodyProvider
+        ? body.provider || decoded.firebase?.sign_in_provider
+        : decoded.firebase?.sign_in_provider,
     );
-    if (!provider) throw new AuthError("That sign-in provider is not supported.", 400);
-    const email = typeof decoded.email === "string" ? decoded.email.trim().toLowerCase() : "";
+    if (!provider)
+      throw new AuthError("That sign-in provider is not supported.", 400);
+    const email =
+      typeof decoded.email === "string"
+        ? decoded.email.trim().toLowerCase()
+        : "";
     if (!email || decoded.email_verified === false)
-      throw new AuthError(`${providerLabel(provider)} did not provide a verified email address.`, 400);
+      throw new AuthError(
+        `${providerLabel(provider)} did not provide a verified email address.`,
+        400,
+      );
     return { decoded, provider, email };
   } catch (error) {
     if (error instanceof AuthError) throw error;
-    throw new AuthError("The provider sign-in could not be verified.", 401, "provider_verification_failed");
+    throw new AuthError(
+      "The provider sign-in could not be verified.",
+      401,
+      "provider_verification_failed",
+    );
   }
 }
 
@@ -216,8 +233,11 @@ async function firebaseLogin(body, request) {
     );
   }
 
-  const usernameBase = (email.split("@")[0].replace(/[^A-Za-z0-9_]/g, "") || "member").slice(0, 20);
-  let username = usernameBase.length >= 3 ? usernameBase : `${usernameBase}user`;
+  const usernameBase = (
+    email.split("@")[0].replace(/[^A-Za-z0-9_]/g, "") || "member"
+  ).slice(0, 20);
+  let username =
+    usernameBase.length >= 3 ? usernameBase : `${usernameBase}user`;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const taken = await usernameTaken(username);
     if (!taken) break;
@@ -228,7 +248,12 @@ async function firebaseLogin(body, request) {
     await database.pool.query(
       `INSERT INTO users (id, email, username, password_hash, email_verified_at, referred_by)
        VALUES ($1, $2, $3, NULL, now(), $4)`,
-      [user.id, user.email, user.username, (await referrals.inviterFor(body?.referralCode, email))?.id || null],
+      [
+        user.id,
+        user.email,
+        user.username,
+        (await referrals.inviterFor(body?.referralCode, email))?.id || null,
+      ],
     );
     await database.pool.query(
       `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
@@ -237,7 +262,11 @@ async function firebaseLogin(body, request) {
     );
   } catch (error) {
     if (error.code === "23505")
-      throw new AuthError("This provider account is already connected to another account.", 409, "provider_already_linked");
+      throw new AuthError(
+        "This provider account is already connected to another account.",
+        409,
+        "provider_already_linked",
+      );
     throw error;
   }
   await syncFirebaseUser(user, [provider]);
@@ -255,7 +284,9 @@ async function firebaseLinkStart(user) {
   if (!firebaseAdmin.configured())
     throw new AuthError("Firebase provider linking is not configured.", 503);
   try {
-    return { customToken: await firebaseAdmin.getAuth().createCustomToken(user.id) };
+    return {
+      customToken: await firebaseAdmin.getAuth().createCustomToken(user.id),
+    };
   } catch {
     throw new AuthError("Could not start provider linking.", 503);
   }
@@ -265,14 +296,20 @@ async function firebaseLinkComplete(user, body) {
   await database.ensureSchema();
   const { decoded, provider, email } = await firebaseIdentity(body, true);
   if (decoded.uid !== user.id)
-    throw new AuthError("This provider session is not authorized for your account.", 403);
+    throw new AuthError(
+      "This provider session is not authorized for your account.",
+      403,
+    );
   try {
     const firebaseUser = await firebaseAdmin.getAuth().getUser(decoded.uid);
     const hasProvider = firebaseUser.providerData.some(
       (item) => item.providerId === `${provider}.com`,
     );
     if (!hasProvider)
-      throw new AuthError("Complete the provider connection before continuing.", 400);
+      throw new AuthError(
+        "Complete the provider connection before continuing.",
+        400,
+      );
   } catch (error) {
     if (error instanceof AuthError) throw error;
     throw new AuthError("Could not verify the provider connection.", 401);
@@ -282,7 +319,11 @@ async function firebaseLinkComplete(user, body) {
     [provider, decoded.uid],
   );
   if (conflict.rows[0] && conflict.rows[0].user_id !== user.id)
-    throw new AuthError(`This ${providerLabel(provider)} account is already connected to another account.`, 409, "provider_already_linked");
+    throw new AuthError(
+      `This ${providerLabel(provider)} account is already connected to another account.`,
+      409,
+      "provider_already_linked",
+    );
   try {
     await database.pool.query(
       `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
@@ -292,7 +333,11 @@ async function firebaseLinkComplete(user, body) {
     );
   } catch (error) {
     if (error.code === "23505")
-      throw new AuthError(`This ${providerLabel(provider)} account is already connected to another account.`, 409, "provider_already_linked");
+      throw new AuthError(
+        `This ${providerLabel(provider)} account is already connected to another account.`,
+        409,
+        "provider_already_linked",
+      );
     throw error;
   }
   const providers = await firebaseProvidersFor(user.id);

@@ -533,7 +533,9 @@ async function handleBackendRequest(request, response) {
       json(response, 200, await auth.firebaseIdentities(user));
     } catch (error) {
       json(response, error.status || 503, {
-        error: error.status ? error.message : "Provider accounts are unavailable.",
+        error: error.status
+          ? error.message
+          : "Provider accounts are unavailable.",
         code: error.code || undefined,
       });
     }
