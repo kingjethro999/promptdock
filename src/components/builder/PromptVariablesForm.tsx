@@ -28,7 +28,11 @@ export default function PromptVariablesForm({
   if (!variables.length) return null;
 
   return (
-    <div className="prompt-variables-panel" role="region" aria-label="Prompt variables">
+    <div
+      className="prompt-variables-panel"
+      role="region"
+      aria-label="Prompt variables"
+    >
       <div className="variables-header">
         <div className="variables-title-wrap">
           <span className="variables-icon" aria-hidden="true">

@@ -46,17 +46,26 @@ test("isLangfuseEnabled checks both flag and required keys", () => {
 test("normalizeUsage normalizes multiple provider usage schemas", () => {
   assert.equal(normalizeUsage(null), undefined);
   assert.deepEqual(
-    normalizeUsage({ prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }),
+    normalizeUsage({
+      prompt_tokens: 10,
+      completion_tokens: 20,
+      total_tokens: 30,
+    }),
     { input: 10, output: 20, total: 30 },
   );
   assert.deepEqual(
-    normalizeUsage({ promptTokenCount: 15, candidatesTokenCount: 25, totalTokenCount: 40 }),
+    normalizeUsage({
+      promptTokenCount: 15,
+      candidatesTokenCount: 25,
+      totalTokenCount: 40,
+    }),
     { input: 15, output: 25, total: 40 },
   );
-  assert.deepEqual(
-    normalizeUsage({ input_tokens: 12, output_tokens: 18 }),
-    { input: 12, output: 18, total: 30 },
-  );
+  assert.deepEqual(normalizeUsage({ input_tokens: 12, output_tokens: 18 }), {
+    input: 12,
+    output: 18,
+    total: 30,
+  });
 });
 
 test("recordLangfuseTrace formats Ingestion API batch payload with basic auth", async () => {
@@ -97,7 +106,10 @@ test("recordLangfuseTrace formats Ingestion API batch payload with basic auth", 
 
   assert.equal(success, true);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://langfuse.mycompany.com/api/public/ingestion");
+  assert.equal(
+    calls[0].url,
+    "https://langfuse.mycompany.com/api/public/ingestion",
+  );
 
   const expectedAuth = `Basic ${Buffer.from("pk-test:sk-test").toString("base64")}`;
   assert.equal(calls[0].options.headers.Authorization, expectedAuth);
@@ -169,11 +181,7 @@ test("AI generation triggers Langfuse trace recording when enabled", async () =>
     AI_PROVIDER_ORDER: "groq",
   };
 
-  const result = await enhanceWithAI(
-    { task: "Build a web app" },
-    env,
-    request,
-  );
+  const result = await enhanceWithAI({ task: "Build a web app" }, env, request);
 
   assert.equal(result.data.task, "Build a web app");
   assert.equal(traceCalls.length, 1);

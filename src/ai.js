@@ -5,10 +5,7 @@ const { ideaSystemPrompt, enhanceSystemPrompt } = require("./prompt-policy");
 const { supportsImages } = require("./image-models.cjs");
 const { siteFreeModel } = require("./apmix-models.cjs");
 const { researchDecision } = require("./research/intent");
-const {
-  researchContext,
-  performResearch,
-} = require("./research/firecrawl");
+const { researchContext, performResearch } = require("./research/firecrawl");
 const { isLangfuseEnabled, recordLangfuseTrace } = require("./langfuse");
 
 const envPath = path.join(__dirname, "..", ".env");
@@ -505,12 +502,7 @@ async function generateWithProviders(
       const attemptStart = new Date().toISOString();
       let config;
       try {
-        config = providerRequest(
-          provider,
-          messages,
-          providerEnv,
-          options,
-        );
+        config = providerRequest(provider, messages, providerEnv, options);
         const response = await request(config.url, {
           method: "POST",
           headers: config.headers,
@@ -751,8 +743,49 @@ async function runPrompt(input, env = process.env, request = fetch) {
   );
 }
 
+async function runPromptComparison(input, env = process.env, request = fetch) {
+  const text = normalizeRunInput(input);
+  const available = configuredProviders(env);
+  const selected =
+    Array.isArray(input.providers) && input.providers.length
+      ? input.providers.filter((p) => available.includes(p))
+      : available.slice(0, 2);
+  const targets = selected.length ? selected : available.slice(0, 1);
+  if (!targets.length) {
+    throw new Error("No AI providers configured to run comparison.");
+  }
+  const runs = await Promise.allSettled(
+    targets.map(async (provider) => {
+      const specificEnv = {
+        ...env,
+        AI_PROVIDER_ORDER: provider,
+        AI_MAX_FALLBACKS: "0",
+      };
+      const result = await runPrompt(
+        { ...input, prompt: text },
+        specificEnv,
+        request,
+      );
+      return { provider, text: result.text, success: true };
+    }),
+  );
+  const results = runs.map((res, index) => {
+    const provider = targets[index];
+    if (res.status === "fulfilled") {
+      return res.value;
+    }
+    return {
+      provider,
+      error: res.reason?.message || "Execution failed",
+      success: false,
+    };
+  });
+  return { results };
+}
+
 module.exports = {
   configuredProviders,
+  runPromptComparison,
   normalizeDraft,
   normalizeIdea,
   normalizeIdeaGuidance,

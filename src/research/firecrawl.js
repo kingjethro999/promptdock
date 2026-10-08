@@ -200,11 +200,7 @@ function researchContext(sources = []) {
   ].join("\n\n");
 }
 
-async function performResearch(
-  decision,
-  env = process.env,
-  request = fetch,
-) {
+async function performResearch(decision, env = process.env, request = fetch) {
   const { researchWithJina } = require("./jina");
   const base = {
     used: false,
@@ -255,4 +251,3 @@ module.exports = {
   researchWithFirecrawl,
   performResearch,
 };
-

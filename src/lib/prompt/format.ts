@@ -17,11 +17,7 @@ const promptFormat = require("../../prompt-format") as {
 };
 
 export type PromptProfile =
-  | "universal"
-  | "claude"
-  | "openai"
-  | "reasoning"
-  | "cursor";
+  "universal" | "claude" | "openai" | "reasoning" | "cursor";
 
 export const PROMPT_PROFILES = promptFormat.PROMPT_PROFILES;
 export const buildUniversalPrompt = promptFormat.buildUniversalPrompt;

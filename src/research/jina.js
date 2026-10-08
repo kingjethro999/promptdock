@@ -21,11 +21,7 @@ async function jinaRequest(endpoint, body, env, request) {
   return response.json();
 }
 
-async function researchWithJina(
-  decision,
-  env = process.env,
-  request = fetch,
-) {
+async function researchWithJina(decision, env = process.env, request = fetch) {
   const base = {
     provider: "jina",
     used: false,
@@ -45,14 +41,10 @@ async function researchWithJina(
 
   const tasks = [];
   for (const url of (decision.targetUrls || []).slice(0, 2)) {
-    tasks.push(
-      jinaRequest(JINA_READER_ENDPOINT, { url }, env, request),
-    );
+    tasks.push(jinaRequest(JINA_READER_ENDPOINT, { url }, env, request));
   }
   for (const query of (decision.queries || []).slice(0, 2)) {
-    tasks.push(
-      jinaRequest(JINA_SEARCH_ENDPOINT, { q: query }, env, request),
-    );
+    tasks.push(jinaRequest(JINA_SEARCH_ENDPOINT, { q: query }, env, request));
   }
   if (!tasks.length)
     return {

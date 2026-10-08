@@ -39,7 +39,10 @@ function researchDecision(input = {}) {
       ? extractUrls(input.referenceUrls)
       : [];
   const combined = `${idea} ${guidanceText}`.trim();
-  const targetUrls = [...new Set([...refUrls, ...extractUrls(combined)])].slice(0, 3);
+  const targetUrls = [...new Set([...refUrls, ...extractUrls(combined)])].slice(
+    0,
+    3,
+  );
   const lower = combined.toLowerCase();
   const explicitlyOff =
     /\b(do not|don't|dont|without|no)\s+(browse|search|research|web|internet|online sources?)\b/.test(

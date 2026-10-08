@@ -1080,7 +1080,13 @@ async function handleBackendRequest(request, response) {
       }
       const env = user ? await settings.effectiveEnv(user.id) : process.env;
       if (pathname === "/api/run")
-        json(response, 200, await ai.runPrompt(body, env));
+        json(
+          response,
+          200,
+          await (body?.compare
+            ? ai.runPromptComparison(body, env)
+            : ai.runPrompt(body, env)),
+        );
       else
         json(
           response,

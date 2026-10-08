@@ -27,16 +27,21 @@ export default function PromptPreview({
   research,
 }: Props) {
   const [profile, setProfile] = useState<PromptProfile>("universal");
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [variableValues, setVariableValues] = useState<Record<string, string>>(
+    {},
+  );
   const [useVariables, setUseVariables] = useState(true);
   const [message, setMessage] = useState("");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
+  const [comparing, setComparing] = useState(false);
+  const [compareOutputs, setCompareOutputs] = useState<
+    | { provider: string; text?: string; error?: string; success: boolean }[]
+    | null
+  >(null);
 
   const activePrompt =
-    data && data.task?.trim()
-      ? buildPromptWithProfile(data, profile)
-      : prompt;
+    data && data.task?.trim() ? buildPromptWithProfile(data, profile) : prompt;
 
   const finalPrompt = useVariables
     ? interpolatePrompt(activePrompt, variableValues)
@@ -67,9 +72,7 @@ export default function PromptPreview({
         ? `${finalPrompt}\n`
         : `# My prompt (${currentProfile?.label})\n\n${finalPrompt}\n`;
 
-    const url = URL.createObjectURL(
-      new Blob([header], { type: mime }),
-    );
+    const url = URL.createObjectURL(new Blob([header], { type: mime }));
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
@@ -78,7 +81,7 @@ export default function PromptPreview({
   }
 
   async function testPrompt() {
-    if (!finalPrompt || running) return;
+    if (!finalPrompt || running || comparing) return;
     setRunning(true);
     setMessage("Testing your finished prompt…");
     try {
@@ -95,6 +98,36 @@ export default function PromptPreview({
       );
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function comparePrompt() {
+    if (!finalPrompt || running || comparing) return;
+    setComparing(true);
+    setMessage("Running prompt across multiple models in parallel…");
+    try {
+      const result = await json<{
+        results: {
+          provider: string;
+          text?: string;
+          error?: string;
+          success: boolean;
+        }[];
+      }>("/api/run", "POST", { prompt: finalPrompt, compare: true });
+      setCompareOutputs(result.results);
+      setMessage(
+        `Comparison complete across ${result.results.length} model${
+          result.results.length === 1 ? "" : "s"
+        }.`,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not compare models right now.",
+      );
+    } finally {
+      setComparing(false);
     }
   }
 
@@ -197,13 +230,21 @@ export default function PromptPreview({
         <button
           type="button"
           className="ai-button run-button"
-          disabled={!finalPrompt || running}
+          disabled={!finalPrompt || running || comparing}
           onClick={testPrompt}
         >
-          <span>▶</span> Run prompt
+          <span>▶</span> {running ? "Running…" : "Run prompt"}
+        </button>
+        <button
+          type="button"
+          className="ai-button arena-button"
+          disabled={!finalPrompt || running || comparing}
+          onClick={comparePrompt}
+        >
+          <span>⚔</span> {comparing ? "Comparing…" : "Compare (Arena)"}
         </button>
         <span className="run-note">
-          Tests this prompt on your configured AI
+          Test on your configured AI or compare multi-model outputs
         </span>
       </div>
 
@@ -217,6 +258,61 @@ export default function PromptPreview({
         <div className="run-card">
           <div className="section-kicker">TEST RESULT</div>
           <p>{runOutput}</p>
+        </div>
+      )}
+
+      {compareOutputs && (
+        <div
+          className="arena-card"
+          role="region"
+          aria-label="Model comparison arena"
+        >
+          <div className="arena-header">
+            <div>
+              <div className="section-kicker">MODEL ARENA</div>
+              <h3>Side-by-side comparison</h3>
+            </div>
+            <button
+              type="button"
+              className="arena-close-btn"
+              onClick={() => setCompareOutputs(null)}
+              title="Close arena comparison"
+            >
+              ×
+            </button>
+          </div>
+          <div className="arena-grid">
+            {compareOutputs.map((item, idx) => (
+              <div key={item.provider + idx} className="arena-column">
+                <div className="arena-col-top">
+                  <span className="arena-provider-pill">{item.provider}</span>
+                  {item.text && (
+                    <span className="arena-metric">
+                      {item.text.trim().split(/\s+/).length} words
+                    </span>
+                  )}
+                  {item.text && (
+                    <button
+                      type="button"
+                      className="arena-copy-btn"
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.text || "");
+                        setMessage(`Copied ${item.provider} response.`);
+                      }}
+                      title="Copy response"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                {item.error ? (
+                  <p className="arena-error">{item.error}</p>
+                ) : (
+                  <div className="arena-content">{item.text}</div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>
