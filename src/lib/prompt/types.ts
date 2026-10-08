@@ -24,6 +24,7 @@ export type Clarification = { question: string; answer: string };
 export type ResearchSource = {
   title?: string;
   url: string;
+  description?: string;
   publishedAt?: string;
   sourceType?: string;
 };

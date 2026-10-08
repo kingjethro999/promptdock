@@ -1,5 +1,15 @@
 module.exports = [
   {
+    id: "interactive-research-drawer",
+    version: "v0.9.7",
+    date: "October 8, 2026",
+    title: "Interactive research drawer & web grounding controls",
+    summary:
+      "Explore retrieved web sources directly in the prompt preview, ground ideas with explicit reference URLs, and control research modes.",
+    body:
+      "PromptDock now features an interactive Research Grounding Drawer inside the prompt preview. When live web research is used, you can explore the exact sources retrieved by Jina or Firecrawl, complete with page titles, source domain badges, publication dates, and excerpt snippets. Each source includes a direct link and one-click URL copy. You can now also paste explicit documentation or reference URLs directly in the fine-tune panel to ground prompt generation on exact APIs or specifications, and choose between Smart Detection (Auto), Always Research Web, or Offline knowledge modes.",
+  },
+  {
     id: "research-aware-refinement",
     version: "v0.9.3",
     date: "October 8, 2026",

@@ -33,8 +33,13 @@ function researchDecision(input = {}) {
   const guidanceText = Object.values(guidance)
     .filter((value) => typeof value === "string")
     .join(" ");
+  const refUrls = Array.isArray(input.referenceUrls)
+    ? input.referenceUrls.flatMap((item) => extractUrls(item))
+    : typeof input.referenceUrls === "string"
+      ? extractUrls(input.referenceUrls)
+      : [];
   const combined = `${idea} ${guidanceText}`.trim();
-  const targetUrls = extractUrls(combined);
+  const targetUrls = [...new Set([...refUrls, ...extractUrls(combined)])].slice(0, 3);
   const lower = combined.toLowerCase();
   const explicitlyOff =
     /\b(do not|don't|dont|without|no)\s+(browse|search|research|web|internet|online sources?)\b/.test(
@@ -87,9 +92,11 @@ function researchDecision(input = {}) {
     reason:
       mode === "on"
         ? "Research was requested."
-        : targetUrls.length
-          ? "A source URL was provided."
-          : "The request depends on external or current information.",
+        : refUrls.length > 0
+          ? "A reference URL was provided."
+          : targetUrls.length
+            ? "A source URL was provided."
+            : "The request depends on external or current information.",
     queries: query ? [query] : [],
     targetUrls,
     freshness,

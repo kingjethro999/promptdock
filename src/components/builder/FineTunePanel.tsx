@@ -28,6 +28,10 @@ const depths = ["Quick", "Balanced", "Deep"];
 type Props = {
   guidance: Guidance;
   update(field: GuidanceField, value: string): void;
+  researchMode?: "auto" | "on" | "off";
+  setResearchMode?(mode: "auto" | "on" | "off"): void;
+  referenceUrl?: string;
+  setReferenceUrl?(url: string): void;
   idea: string;
   imageCount: number;
   busy: boolean;
@@ -39,6 +43,10 @@ type Props = {
 export default function FineTunePanel({
   guidance,
   update,
+  researchMode = "auto",
+  setResearchMode,
+  referenceUrl = "",
+  setReferenceUrl,
   idea,
   imageCount,
   busy,
@@ -182,6 +190,48 @@ export default function FineTunePanel({
             "e.g. Keep it under 200 words. Avoid jargon. Include a call to action.",
             2,
           )}
+          <div className="field-row">
+            <GuidanceSelect
+              id="researchMode"
+              label="Live web research"
+              placeholder="Auto (smart detection)"
+              options={[
+                "Auto (smart detection)",
+                "Always research web",
+                "No research (offline)",
+              ]}
+              value={
+                researchMode === "on"
+                  ? "Always research web"
+                  : researchMode === "off"
+                    ? "No research (offline)"
+                    : "Auto (smart detection)"
+              }
+              onChange={(value) => {
+                if (setResearchMode) {
+                  setResearchMode(
+                    value === "Always research web"
+                      ? "on"
+                      : value === "No research (offline)"
+                        ? "off"
+                        : "auto",
+                  );
+                }
+              }}
+            />
+            <div className="field">
+              <label htmlFor="referenceUrl">
+                Reference URL / Docs <span className="optional">optional</span>
+              </label>
+              <input
+                id="referenceUrl"
+                type="url"
+                value={referenceUrl}
+                placeholder="e.g. https://docs.stripe.com/api"
+                onChange={(event) => setReferenceUrl?.(event.target.value)}
+              />
+            </div>
+          </div>
         </div>
       )}
       <div className="idea-footer">

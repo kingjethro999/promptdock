@@ -263,3 +263,80 @@ test("performResearch uses Jina directly when only JINA_API_KEY is configured", 
   assert.equal(result.sources[0].title, "Direct Jina");
 });
 
+test("explicit reference URLs trigger targeted research and are extracted as targetUrls", () => {
+  const decision = researchDecision({
+    idea: "Generate a summary prompt",
+    referenceUrls: ["https://docs.stripe.com/api/charges", "https://docs.github.com/rest"],
+  });
+  assert.equal(decision.required, true);
+  assert.equal(decision.reason, "A reference URL was provided.");
+  assert.deepEqual(decision.targetUrls, [
+    "https://docs.stripe.com/api/charges",
+    "https://docs.github.com/rest",
+  ]);
+});
+
+test("researchMode on forces research even on general creative ideas", () => {
+  const decision = researchDecision({
+    idea: "Write a poem about trees",
+    researchMode: "on",
+  });
+  assert.equal(decision.required, true);
+  assert.equal(decision.reason, "Research was requested.");
+});
+
+test("ideaToPrompt preserves source description snippets for the interactive drawer", async () => {
+  const { ideaToPrompt } = require("../src/ai");
+  const request = async (url) => {
+    if (url.endsWith("/search")) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              title: "Next.js Docs",
+              url: "https://nextjs.org/docs",
+              markdown: "Documentation contents",
+              description: "The official Next.js documentation and guide",
+            },
+          ],
+        }),
+      };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                data: {
+                  task: "Study Next.js features",
+                  focus: "Focus on API updates",
+                },
+              }),
+            },
+          },
+        ],
+      }),
+    };
+  };
+  const result = await ideaToPrompt(
+    { idea: "Research Next.js docs and shape a prompt" },
+    {
+      FIRECRAWL_API_KEY: "test-firecrawl",
+      APMIX_API_KEY: "provider-key",
+      APMIX_BASE_URL: "https://api.apmix.ai/v1",
+      APMIX_MODEL: "provider/model",
+      AI_PROVIDER_ORDER: "apmix",
+    },
+    request,
+  );
+  assert.equal(result.research.used, true);
+  assert.equal(result.research.sources.length, 1);
+  assert.equal(
+    result.research.sources[0].description,
+    "The official Next.js documentation and guide",
+  );
+});
+

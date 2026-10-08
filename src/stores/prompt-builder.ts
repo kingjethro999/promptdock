@@ -34,6 +34,8 @@ export type PendingClarification = {
 export type BuilderState = {
   idea: string;
   guidance: Guidance;
+  researchMode: "auto" | "on" | "off";
+  referenceUrl: string;
   result: IdeaResult | null;
   pending: PendingClarification | null;
   status: string;
@@ -43,6 +45,8 @@ export type BuilderState = {
   sourcePrompt: SavedPrompt | null;
   revision: number;
   setIdea(value: string): void;
+  setResearchMode(mode: "auto" | "on" | "off"): void;
+  setReferenceUrl(url: string): void;
   updateGuidance(field: GuidanceField, value: string): void;
   editPromptField(field: keyof PromptData, value: string): void;
   addImages(files: File[]): void;
@@ -61,6 +65,8 @@ export const usePromptBuilderStore = create<BuilderState>()(
     (set, get) => ({
       idea: "",
       guidance: {},
+      researchMode: "auto",
+      referenceUrl: "",
       result: null,
       pending: null,
       status: "Add your idea to begin",
@@ -78,6 +84,12 @@ export const usePromptBuilderStore = create<BuilderState>()(
             ? "Ready to shape your idea"
             : "Add your idea to begin",
         }));
+      },
+      setResearchMode(mode) {
+        set({ researchMode: mode });
+      },
+      setReferenceUrl(url) {
+        set({ referenceUrl: url });
       },
       updateGuidance(field, value) {
         set((state) => ({
@@ -186,6 +198,8 @@ export const usePromptBuilderStore = create<BuilderState>()(
           ...resetForInput(state),
           idea: "",
           guidance: {},
+          researchMode: "auto",
+          referenceUrl: "",
           attachments: [],
           sourcePrompt: null,
           status: "Add your idea to begin",
@@ -199,6 +213,8 @@ export const usePromptBuilderStore = create<BuilderState>()(
       partialize: (state) => ({
         idea: state.idea,
         guidance: state.guidance,
+        researchMode: state.researchMode,
+        referenceUrl: state.referenceUrl,
         result: state.result,
         pending: state.pending,
         ready: state.ready,
