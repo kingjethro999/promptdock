@@ -9,7 +9,9 @@ import {
   buildPromptWithProfile,
   type PromptProfile,
 } from "@/lib/prompt/format";
+import { interpolatePrompt } from "@/lib/prompt/variables";
 import ResearchDrawer from "./ResearchDrawer";
+import PromptVariablesForm from "./PromptVariablesForm";
 
 type Props = {
   prompt: string;
@@ -25,6 +27,8 @@ export default function PromptPreview({
   research,
 }: Props) {
   const [profile, setProfile] = useState<PromptProfile>("universal");
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [useVariables, setUseVariables] = useState(true);
   const [message, setMessage] = useState("");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
@@ -34,10 +38,14 @@ export default function PromptPreview({
       ? buildPromptWithProfile(data, profile)
       : prompt;
 
+  const finalPrompt = useVariables
+    ? interpolatePrompt(activePrompt, variableValues)
+    : activePrompt;
+
   async function copy() {
-    if (!activePrompt) return;
+    if (!finalPrompt) return;
     try {
-      await navigator.clipboard.writeText(activePrompt);
+      await navigator.clipboard.writeText(finalPrompt);
       const currentProfile = PROMPT_PROFILES.find((p) => p.id === profile);
       setMessage(`Prompt copied (${currentProfile?.label || "Universal"}).`);
     } catch {
@@ -46,7 +54,7 @@ export default function PromptPreview({
   }
 
   function download() {
-    if (!activePrompt) return;
+    if (!finalPrompt) return;
     const currentProfile = PROMPT_PROFILES.find((p) => p.id === profile);
     const filename =
       currentProfile?.id === "cursor"
@@ -56,8 +64,8 @@ export default function PromptPreview({
       currentProfile?.id === "cursor" ? "text/plain" : "text/markdown";
     const header =
       currentProfile?.id === "cursor"
-        ? `${activePrompt}\n`
-        : `# My prompt (${currentProfile?.label})\n\n${activePrompt}\n`;
+        ? `${finalPrompt}\n`
+        : `# My prompt (${currentProfile?.label})\n\n${finalPrompt}\n`;
 
     const url = URL.createObjectURL(
       new Blob([header], { type: mime }),
@@ -70,14 +78,14 @@ export default function PromptPreview({
   }
 
   async function testPrompt() {
-    if (!activePrompt || running) return;
+    if (!finalPrompt || running) return;
     setRunning(true);
     setMessage("Testing your finished prompt…");
     try {
       const result = await json<{ text: string; provider: string }>(
         "/api/run",
         "POST",
-        { prompt: activePrompt },
+        { prompt: finalPrompt },
       );
       setRunOutput(result.text);
       setMessage(`Tested with ${result.provider}.`);
@@ -96,16 +104,16 @@ export default function PromptPreview({
         <div className="section-kicker">PROMPT OUTPUT</div>
         <span
           className="ready-badge"
-          style={{ visibility: activePrompt ? "visible" : "hidden" }}
+          style={{ visibility: finalPrompt ? "visible" : "hidden" }}
         >
           <span className="status-dot" /> Ready to copy
         </span>
       </div>
       <h2 id="previewHeading">
-        {activePrompt ? "Your finished prompt" : "Your prompt will appear here"}
+        {finalPrompt ? "Your finished prompt" : "Your prompt will appear here"}
       </h2>
       <p className="preview-subtitle">
-        {activePrompt
+        {finalPrompt
           ? "Review and optimize it for your target AI platform."
           : "Share your idea, then let PromptDock shape it."}
       </p>
@@ -135,22 +143,35 @@ export default function PromptPreview({
         </div>
       )}
 
+      {activePrompt && (
+        <PromptVariablesForm
+          promptText={activePrompt}
+          values={variableValues}
+          onChange={(field, value) =>
+            setVariableValues((prev) => ({ ...prev, [field]: value }))
+          }
+          onReset={() => setVariableValues({})}
+          enabled={useVariables}
+          onToggle={setUseVariables}
+        />
+      )}
+
       {activePrompt && <ResearchDrawer research={research} />}
 
       <div
-        className={`prompt-output${activePrompt ? "" : " is-empty"}`}
+        className={`prompt-output${finalPrompt ? "" : " is-empty"}`}
         tabIndex={0}
         aria-live="polite"
       >
-        {activePrompt ||
+        {finalPrompt ||
           "Your prompt will appear here after PromptDock shapes your idea."}
       </div>
 
       <div className="preview-actions">
-        <Button variant="primary" disabled={!activePrompt} onClick={copy}>
+        <Button variant="primary" disabled={!finalPrompt} onClick={copy}>
           <span>▣</span> Copy prompt <span className="button-arrow">↗</span>
         </Button>
-        <Button disabled={!activePrompt} onClick={onSave}>
+        <Button disabled={!finalPrompt} onClick={onSave}>
           ♡ &nbsp; Save
         </Button>
       </div>
@@ -159,15 +180,15 @@ export default function PromptPreview({
         <button
           type="button"
           className="quiet-button"
-          disabled={!activePrompt}
+          disabled={!finalPrompt}
           onClick={download}
         >
           ↓ Download{" "}
           {profile === "cursor" ? ".cursorrules" : `(${profile}) .md`}
         </button>
         <span className="word-count">
-          {activePrompt
-            ? `${activePrompt.trim().split(/\s+/).length} words`
+          {finalPrompt
+            ? `${finalPrompt.trim().split(/\s+/).length} words`
             : "0 words"}
         </span>
       </div>
@@ -176,7 +197,7 @@ export default function PromptPreview({
         <button
           type="button"
           className="ai-button run-button"
-          disabled={!activePrompt || running}
+          disabled={!finalPrompt || running}
           onClick={testPrompt}
         >
           <span>▶</span> Run prompt

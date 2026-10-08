@@ -62,6 +62,7 @@ module.exports = [
       "src/langfuse.js",
       "src/firebase-admin.js",
       "src/prompt-format.js",
+      "src/prompt-variables.js",
       "src/admin-server.js",
       "oldui/server.js",
       "oldui/diff.js",
