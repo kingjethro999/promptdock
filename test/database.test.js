@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  getDatabaseConfig,
   normalizeDatabaseUrl,
   validatePrompt,
   importPrompts,
@@ -54,6 +55,57 @@ test("Render external database URLs verify TLS without changing local URLs", () 
   assert.equal(normalizeDatabaseUrl(explicit), explicit);
   const local = "postgresql://user:example@localhost:5434/promptdock";
   assert.equal(normalizeDatabaseUrl(local), local);
+});
+
+test("database configuration resolves DB_* and PG* environment variables", () => {
+  const empty = getDatabaseConfig({});
+  assert.equal(empty.configured, false);
+  assert.equal(empty.options, null);
+
+  const dbEnv = getDatabaseConfig({
+    DB_HOST: "db.internal",
+    DB_PORT: "5433",
+    DB_USER: "app_user",
+    DB_PASSWORD: "secret_db_password",
+    DB_NAME: "promptdock_prod",
+  });
+  assert.equal(dbEnv.configured, true);
+  assert.equal(dbEnv.options.host, "db.internal");
+  assert.equal(dbEnv.options.port, 5433);
+  assert.equal(dbEnv.options.user, "app_user");
+  assert.equal(dbEnv.options.password, "secret_db_password");
+  assert.equal(dbEnv.options.database, "promptdock_prod");
+
+  const pgEnv = getDatabaseConfig({
+    PGHOST: "postgres.internal",
+    PGPORT: "5432",
+    PGUSER: "pg_user",
+    PGPASSWORD: "pg_password",
+    PGDATABASE: "pg_db",
+  });
+  assert.equal(pgEnv.configured, true);
+  assert.equal(pgEnv.options.host, "postgres.internal");
+  assert.equal(pgEnv.options.port, 5432);
+  assert.equal(pgEnv.options.user, "pg_user");
+  assert.equal(pgEnv.options.password, "pg_password");
+  assert.equal(pgEnv.options.database, "pg_db");
+
+  const mixedEnv = getDatabaseConfig({
+    DB_HOST: "override.host",
+    PGHOST: "fallback.host",
+    PGPORT: "5439",
+  });
+  assert.equal(mixedEnv.configured, true);
+  assert.equal(mixedEnv.options.host, "override.host");
+  assert.equal(mixedEnv.options.port, 5439);
+
+  const urlEnv = getDatabaseConfig({
+    DATABASE_URL: "postgresql://user:pass@main.host:5432/maindb",
+    DB_HOST: "ignored.host",
+  });
+  assert.equal(urlEnv.configured, true);
+  assert.equal(urlEnv.options.host, undefined);
+  assert.match(urlEnv.options.connectionString, /main\.host/);
 });
 
 test("prompt tags are normalized and bounded", () => {

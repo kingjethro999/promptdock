@@ -59,6 +59,7 @@ module.exports = [
       "src/speech.js",
       "src/updates.js",
       "src/feed.js",
+      "src/langfuse.js",
       "src/firebase-admin.js",
       "src/admin-server.js",
       "oldui/server.js",

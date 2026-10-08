@@ -1,13 +1,15 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { randomUUID } = require("node:crypto");
 const { ideaSystemPrompt, enhanceSystemPrompt } = require("./prompt-policy");
 const { supportsImages } = require("./image-models.cjs");
 const { siteFreeModel } = require("./apmix-models.cjs");
 const { researchDecision } = require("./research/intent");
 const {
   researchContext,
-  researchWithFirecrawl,
+  performResearch,
 } = require("./research/firecrawl");
+const { isLangfuseEnabled, recordLangfuseTrace } = require("./langfuse");
 
 const envPath = path.join(__dirname, "..", ".env");
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function")
@@ -490,14 +492,20 @@ async function generateWithProviders(
     providers.length,
     Math.max(1, (Number(runEnv.AI_MAX_FALLBACKS) || 0) + 1),
   );
+  const traceId = randomUUID();
+  const startTime = new Date().toISOString();
+  const generations = [];
+
   for (const provider of providers.slice(0, maxAttempts)) {
     const providerEnv =
       provider === "apmix" && runEnv === process.env
         ? { ...runEnv, APMIX_MODEL: await siteFreeModel(runEnv) }
         : runEnv;
     for (let attempt = 0; attempt < 2; attempt++) {
+      const attemptStart = new Date().toISOString();
+      let config;
       try {
-        const config = providerRequest(
+        config = providerRequest(
           provider,
           messages,
           providerEnv,
@@ -510,9 +518,46 @@ async function generateWithProviders(
           signal: AbortSignal.timeout(timeout),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const content = config.extract(await response.json());
-        return { ...parse(content), provider };
+        const json = await response.json();
+        const content = config.extract(json);
+        const parsed = parse(content);
+        generations.push({
+          provider,
+          model: config.body?.model || provider,
+          startTime: attemptStart,
+          endTime: new Date().toISOString(),
+          status: "success",
+          input: messages,
+          output: content,
+          usage: json?.usage || json?.usageMetadata,
+        });
+        if (isLangfuseEnabled(runEnv)) {
+          recordLangfuseTrace(
+            {
+              traceId,
+              name: options.traceName || "ai-generation",
+              userId: options.userId,
+              input: messages,
+              output: parsed,
+              startTime,
+              endTime: new Date().toISOString(),
+              generations,
+            },
+            runEnv,
+            request,
+          ).catch(() => {});
+        }
+        return { ...parsed, provider };
       } catch (error) {
+        generations.push({
+          provider,
+          model: config?.body?.model || provider,
+          startTime: attemptStart,
+          endTime: new Date().toISOString(),
+          status: "error",
+          error: error.message,
+          input: messages,
+        });
         if (attempt === 0 && error.message === "fetch failed") {
           await new Promise((resolve) => setTimeout(resolve, 250));
           continue;
@@ -537,6 +582,24 @@ async function generateWithProviders(
       request,
       options,
     );
+  if (isLangfuseEnabled(runEnv)) {
+    recordLangfuseTrace(
+      {
+        traceId,
+        name: options.traceName || "ai-generation",
+        userId: options.userId,
+        input: messages,
+        error:
+          options.errorMessage ||
+          "AI suggestions are temporarily unavailable. Please try again.",
+        startTime,
+        endTime: new Date().toISOString(),
+        generations,
+      },
+      runEnv,
+      request,
+    ).catch(() => {});
+  }
   throw new Error(
     options.errorMessage ||
       "AI suggestions are temporarily unavailable. Please try again.",
@@ -555,6 +618,7 @@ async function enhanceWithAI(input, env = process.env, request = fetch) {
     (content) => ({ data: parseSuggestion(content, original) }),
     env,
     request,
+    { traceName: "enhance-prompt", userId: input?.userId },
   );
 }
 
@@ -583,7 +647,7 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
         context: existingResearch,
         reused: true,
       }
-    : await researchWithFirecrawl(decision, env, request);
+    : await performResearch(decision, env, request);
   const context = existingResearch || researchContext(research.sources);
   const system = ideaSystemPrompt({
     fields: fieldNames,
@@ -618,7 +682,12 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
       ),
     env,
     request,
-    { images, ...(images.length ? { maxTokens: 4000, timeoutMs: 30000 } : {}) },
+    {
+      images,
+      traceName: "idea-to-prompt",
+      userId: input?.userId,
+      ...(images.length ? { maxTokens: 4000, timeoutMs: 30000 } : {}),
+    },
   );
   return {
     ...result,
@@ -673,6 +742,8 @@ async function runPrompt(input, env = process.env, request = fetch) {
       json: false,
       maxTokens: 4000,
       timeoutMs: 30000,
+      traceName: "run-prompt",
+      userId: input?.userId,
       errorMessage: "The prompt could not be run right now. Please try again.",
     },
   );
