@@ -29,3 +29,13 @@ test("account keys differ from legacy browser keys", () => {
   );
   assert.throws(() => database.legacyKey("bad-token"));
 });
+
+test("firebase-admin configured check and modular API contract", () => {
+  const firebaseAdmin = require("../src/firebase-admin");
+  assert.equal(typeof firebaseAdmin.configured, "function");
+  assert.equal(typeof firebaseAdmin.getAuth, "function");
+  assert.equal(typeof firebaseAdmin.getFirestore, "function");
+  assert.ok(firebaseAdmin.admin?.firestore?.FieldValue);
+  assert.equal(typeof firebaseAdmin.FieldValue?.serverTimestamp, "function");
+});
+

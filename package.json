@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
@@ -34,6 +34,9 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zustand": "^5.0.15"
+  },
+  "overrides": {
+    "@firebase/app": "0.16.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
