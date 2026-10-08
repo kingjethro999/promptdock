@@ -282,7 +282,11 @@ async function firebaseIdentities(user) {
 
 async function firebaseLinkStart(user) {
   if (!firebaseAdmin.configured())
-    throw new AuthError("Firebase provider linking is not configured.", 503);
+    throw new AuthError(
+      "Provider linking needs Firebase Admin credentials on the server. Add FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY in the deployment environment.",
+      503,
+      "firebase_admin_not_configured",
+    );
   try {
     return {
       customToken: await firebaseAdmin.getAuth().createCustomToken(user.id),

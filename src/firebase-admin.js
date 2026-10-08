@@ -37,10 +37,19 @@ function getFirestore() {
 }
 
 function configured() {
+  const projectId =
+    process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const clientEmail =
+    process.env.FIREBASE_ADMIN_CLIENT_EMAIL ||
+    process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey =
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY;
+
+  // The browser Firebase config is intentionally public and cannot authenticate
+  // the Admin SDK. Provider linking needs a complete server credential or ADC.
   return Boolean(
-    process.env.FIREBASE_ADMIN_PROJECT_ID ||
-    process.env.FIREBASE_PROJECT_ID ||
-    process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+    (projectId && clientEmail && privateKey),
   );
 }
 
