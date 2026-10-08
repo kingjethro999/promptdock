@@ -291,7 +291,8 @@ async function firebaseLinkStart(user) {
     return {
       customToken: await firebaseAdmin.getAuth().createCustomToken(user.id),
     };
-  } catch {
+  } catch (error) {
+    console.error("Firebase custom token error:", error);
     throw new AuthError("Could not start provider linking.", 503);
   }
 }

@@ -1,9 +1,23 @@
-const admin = require("firebase-admin");
+const {
+  initializeApp,
+  cert,
+  getApps,
+  getApp,
+  applicationDefault,
+} = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 let app = null;
 
 function getFirebaseApp() {
   if (app) return app;
+  const apps = getApps();
+  if (apps.length) {
+    app = getApp();
+    return app;
+  }
+
   const projectId =
     process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
   const clientEmail =
@@ -16,24 +30,27 @@ function getFirebaseApp() {
   ).replace(/\\n/g, "\n");
 
   if (projectId && clientEmail && privateKey) {
-    app = admin.initializeApp({
-      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    app = initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
       projectId,
     });
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    app = initializeApp({
+      credential: applicationDefault(),
+      projectId: projectId || undefined,
+    });
   } else {
-    app = admin.apps.length
-      ? admin.app()
-      : admin.initializeApp({ projectId: projectId || undefined });
+    app = initializeApp({ projectId: projectId || undefined });
   }
   return app;
 }
 
-function getAuth() {
-  return admin.auth(getFirebaseApp());
+function getAuthInstance() {
+  return getAuth(getFirebaseApp());
 }
 
-function getFirestore() {
-  return admin.firestore(getFirebaseApp());
+function getFirestoreInstance() {
+  return getFirestore(getFirebaseApp());
 }
 
 function configured() {
@@ -49,8 +66,21 @@ function configured() {
   // the Admin SDK. Provider linking needs a complete server credential or ADC.
   return Boolean(
     process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-    (projectId && clientEmail && privateKey),
+      (projectId && clientEmail && privateKey),
   );
 }
 
-module.exports = { admin, configured, getAuth, getFirestore };
+const admin = {
+  firestore: {
+    FieldValue,
+  },
+};
+
+module.exports = {
+  admin,
+  configured,
+  getAuth: getAuthInstance,
+  getFirestore: getFirestoreInstance,
+  FieldValue,
+};
+
