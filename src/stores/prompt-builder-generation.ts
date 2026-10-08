@@ -14,17 +14,30 @@ async function requestPrompt(
   guidance: Guidance,
   files: File[],
   clarifications?: { question: string; answer: string }[],
+  research?: {
+    context?: string;
+    sources?: {
+      title?: string;
+      url: string;
+      publishedAt?: string;
+      sourceType?: string;
+    }[];
+  },
 ) {
-  const body = await ideaPayload(
-    idea,
-    guidance as Record<string, string>,
-    files,
-    clarifications,
+  const body = JSON.parse(
+    await ideaPayload(
+      idea,
+      guidance as Record<string, string>,
+      files,
+      clarifications,
+    ),
   );
+  if (research?.context) body.researchContext = research.context;
+  if (research?.sources?.length) body.researchSources = research.sources;
   return api<IdeaResult>("/api/idea-to-prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body,
+    body: JSON.stringify(body),
   });
 }
 
@@ -50,6 +63,8 @@ export async function generatePrompt(get: GetState, set: SetState) {
           questions: response.questions,
           answers: response.questions.map(() => ""),
           imageCount: state.attachments.length,
+          researchContext: response.research?.context,
+          researchSources: response.research?.sources,
         },
         status: "A few details could change the result. Answer or skip.",
       });
@@ -101,6 +116,12 @@ export async function completePromptClarification(
       guidance,
       state.attachments.map(({ file }) => file),
       clarifications,
+      state.pending.researchContext
+        ? {
+            context: state.pending.researchContext,
+            sources: state.pending.researchSources,
+          }
+        : undefined,
     );
     if (revision !== get().revision) return;
     if (!response.data)

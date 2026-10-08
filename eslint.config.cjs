@@ -31,6 +31,17 @@ module.exports = [
     languageOptions: { globals: globals.browser },
   },
   {
+    files: ["src/research/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        AbortSignal: "readonly",
+        URL: "readonly",
+        fetch: "readonly",
+      },
+    },
+  },
+  {
     files: [
       "src/ai.js",
       "src/prompt-policy.js",

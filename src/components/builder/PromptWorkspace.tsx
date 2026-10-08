@@ -144,6 +144,7 @@ export default function PromptWorkspace() {
         </div>
         <PromptPreview
           prompt={builder.prompt}
+          research={builder.result?.research}
           onSave={() => {
             setSaveError("");
             setName(builder.sourcePrompt?.name || "");

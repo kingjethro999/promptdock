@@ -3,6 +3,11 @@ const path = require("node:path");
 const { ideaSystemPrompt, enhanceSystemPrompt } = require("./prompt-policy");
 const { supportsImages } = require("./image-models.cjs");
 const { siteFreeModel } = require("./apmix-models.cjs");
+const { researchDecision } = require("./research/intent");
+const {
+  researchContext,
+  researchWithFirecrawl,
+} = require("./research/firecrawl");
 
 const envPath = path.join(__dirname, "..", ".env");
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function")
@@ -558,12 +563,35 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
   const idea = normalizeIdea(input);
   const guidance = normalizeIdeaGuidance(input);
   const clarifications = normalizeClarifications(input);
+  const existingResearch =
+    typeof input?.researchContext === "string"
+      ? input.researchContext.trim().slice(0, 14000)
+      : "";
+  const decision = researchDecision({
+    idea,
+    guidance,
+    researchMode: input?.researchMode,
+  });
+  const research = existingResearch
+    ? {
+        used: true,
+        attempted: false,
+        queries: [],
+        sources: Array.isArray(input?.researchSources)
+          ? input.researchSources.slice(0, 4)
+          : [],
+        context: existingResearch,
+        reused: true,
+      }
+    : await researchWithFirecrawl(decision, env, request);
+  const context = existingResearch || researchContext(research.sources);
   const system = ideaSystemPrompt({
     fields: fieldNames,
     formats,
     tones,
     clarified: clarifications.length > 0,
     imageCount: images.length,
+    researchAvailable: Boolean(context),
   });
   const messages = [
     { role: "system", content: system },
@@ -574,10 +602,11 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
         guidance,
         ...(images.length ? { attachmentCount: images.length } : {}),
         ...(clarifications.length ? { clarifications } : {}),
+        ...(context ? { researchContext: context } : {}),
       }),
     },
   ];
-  return generateWithProviders(
+  const result = await generateWithProviders(
     messages,
     (content) =>
       parseIdeaResponse(
@@ -591,6 +620,27 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
     request,
     { images, ...(images.length ? { maxTokens: 4000, timeoutMs: 30000 } : {}) },
   );
+  return {
+    ...result,
+    research: {
+      used: Boolean(context),
+      attempted: Boolean(research.attempted),
+      queries: research.queries || decision.queries || [],
+      sources: (research.sources || []).map(
+        ({ title, url, publishedAt, sourceType }) => ({
+          title,
+          url,
+          publishedAt,
+          sourceType,
+        }),
+      ),
+      reused: Boolean(research.reused),
+      ...(research.fallbackReason
+        ? { fallbackReason: research.fallbackReason }
+        : {}),
+      ...(context && result.questions?.length ? { context } : {}),
+    },
+  };
 }
 
 function normalizeRunInput(input) {
@@ -641,4 +691,5 @@ module.exports = {
   enhanceWithAI,
   ideaToPrompt,
   runPrompt,
+  researchDecision,
 };
