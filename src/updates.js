@@ -1,5 +1,14 @@
 module.exports = [
   {
+    id: "auth-esm-loader-fix",
+    version: "v0.10.3",
+    date: "October 8, 2026",
+    title: "Serverless auth stability & CommonJS module loader resolution",
+    summary:
+      "Eliminated HTTP 500 runtime crashes on email/password login, registration, and root routes caused by transitive ES Module imports.",
+    body: "Resolved an unhandled serverless runtime failure where transitive dependencies in firebase-admin (jwks-rsa and jose) threw ERR_REQUIRE_ESM on serverless environments during auth evaluation. Decoupled and lazy-loaded Firebase Admin modules so core routes, email/password sign-in, and registration evaluate without eager dependency overhead, while pinning jwks-rsa to a CommonJS-compatible release.",
+  },
+  {
     id: "firebase-auth-csp-resolution",
     version: "v0.10.2",
     date: "October 8, 2026",
