@@ -64,7 +64,11 @@ export default function ConnectedAccounts() {
       setError(
         code.includes("credential-already-in-use")
           ? `This ${labels[provider]} account is already connected to another account.`
-          : code || `Could not connect ${labels[provider]}.`,
+          : code.includes("popup-closed") || code.includes("cancelled")
+            ? `Connecting ${labels[provider]} was cancelled.`
+            : code.includes("popup-blocked")
+              ? `Connection popup was blocked by your browser. Please allow popups for PromptDock and retry.`
+              : code || `Could not connect ${labels[provider]}.`,
       );
     } finally {
       setBusy(null);

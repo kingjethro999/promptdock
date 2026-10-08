@@ -16,6 +16,16 @@ test("deployed pages and API retain security headers while Next has a nonce poli
   );
   assert.match(proxy, /nonce-/);
   assert.match(proxy, /img-src 'self' data: blob:/);
+  assert.match(proxy, /frame-src 'self' https:\/\/\*\.firebaseapp\.com/);
+  assert.match(proxy, /connect-src 'self' https:\/\/\*\.googleapis\.com/);
+  assert.match(
+    securityHeaders["Content-Security-Policy"],
+    /frame-src 'self' https:\/\/\*\.firebaseapp\.com/,
+  );
+  assert.match(
+    securityHeaders["Content-Security-Policy"],
+    /connect-src 'self' https:\/\/\*\.googleapis\.com/,
+  );
   assert.equal(
     securityHeaders["Strict-Transport-Security"],
     "max-age=31536000; includeSubDomains",

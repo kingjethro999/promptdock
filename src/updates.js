@@ -1,5 +1,14 @@
 module.exports = [
   {
+    id: "firebase-auth-csp-resolution",
+    version: "v0.10.2",
+    date: "October 8, 2026",
+    title: "Firebase Auth CSP & third-party provider sign-in hardening",
+    summary:
+      "Resolved Content Security Policy restrictions blocking Firebase Auth iframes and Google/GitHub third-party account creation.",
+    body: "Fixed Content Security Policy directives in the Next.js edge proxy and API security headers to support Firebase authentication end-to-end. Added frame-src permissions for Firebase project auth domains (*.firebaseapp.com) and Google accounts, expanded connect-src to authorize Google Identity Toolkit and Secure Token endpoints, enabled user avatar loading from Google and GitHub profile hosts, and added client-side auth module pre-warming to protect transient user gestures against aggressive browser popup blockers.",
+  },
+  {
     id: "model-arena-playground",
     version: "v0.10.0",
     date: "October 8, 2026",
