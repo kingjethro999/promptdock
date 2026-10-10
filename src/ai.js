@@ -244,6 +244,69 @@ function parseIdeaSuggestion(content, idea, guidance = {}, imageCount = 0) {
     /\b(build|implement|develop|code)\b/i.test(idea) &&
     /\b(app|game|website|tool|platform|system|api|feature)\b/i.test(idea);
   if (buildArtifact && !/\b(quick|brief)\b/i.test(idea)) data.depth = "Deep";
+
+  const isExecutionTask =
+    /\b(build|implement|develop|code|evolve|redesign|refactor|fix|debug|test|qa)\b/i.test(
+      idea,
+    ) &&
+    !/\b(only\s+a\s+plan|just\s+a\s+plan|plan\s+only|strategic\s+plan|business\s+plan|roadmap\s+only|migration\s+plan)\b/i.test(
+      idea,
+    );
+
+  if (isExecutionTask) {
+    const planWrapMatch = data.task.match(
+      /^(?:create|write|produce|draft|provide)\s+(?:a\s+)?(?:comprehensive\s+|detailed\s+)?(?:design\s+and\s+implementation\s+|implementation\s+|action\s+)?(?:plan|specification|spec|roadmap|guide|checklist|proposal)\s+to\s+(.+)$/is,
+    );
+    if (planWrapMatch) {
+      let target = planWrapMatch[1].trim();
+      target = target.replace(/^(?:how\s+to\s+|to\s+)?/i, "");
+      if (/^evolve\b/i.test(target)) {
+        data.task = `Audit, design, implement, and visually validate the evolution of ${target.slice(6).replace(/^(?:the\s+)?/, "").trim()}`;
+      } else if (/^redesign\b/i.test(target)) {
+        data.task = `Audit, design, implement, and visually validate the redesign of ${target.slice(8).replace(/^(?:the\s+)?/, "").trim()}`;
+      } else if (/^build\b/i.test(target)) {
+        data.task = `Build, verify, and deliver ${target.slice(5).replace(/^(?:the\s+)?/, "").trim()}`;
+      } else if (/^implement\b/i.test(target)) {
+        data.task = `Implement, run, and visually validate ${target.slice(9).replace(/^(?:the\s+)?/, "").trim()}`;
+      } else {
+        data.task = `Audit, implement, and visually validate: ${target}`;
+      }
+    }
+    data.task = data.task.replace(
+      /\b(?:the|this)\s+plan\s+must\s+include\b/gi,
+      "Execution must include",
+    );
+    if (
+      !/do not stop (?:at|after) (?:producing a )?(?:design )?plan/i.test(
+        data.task,
+      )
+    ) {
+      data.task +=
+        " Do not stop after producing a design plan; inspect, implement, run, verify, and refine directly.";
+    }
+
+    if (
+      !guidance.audience &&
+      /\b(?:developers?|dev\s+team|engineers?|team\s+who\s+will\s+implement|implementation\s+team)\b/i.test(
+        data.audience,
+      )
+    ) {
+      data.audience = "";
+    }
+
+    const nonStoppingDirective =
+      "Do not stop at planning. Inspect, plan, implement, run, visually evaluate, refine, and verify.";
+    if (
+      !guidance.constraints &&
+      !/do not stop (?:at|after) planning/i.test(data.constraints) &&
+      !/do not stop (?:at|after) planning/i.test(data.task)
+    ) {
+      data.constraints = data.constraints
+        ? `${data.constraints} ${nonStoppingDirective}`
+        : nonStoppingDirective;
+    }
+  }
+
   Object.assign(data, guidance);
   if (imageCount)
     for (const field of fieldNames)
