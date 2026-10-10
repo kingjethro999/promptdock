@@ -4,6 +4,7 @@ import { useState } from "react";
 import SearchSelect from "@/components/ui/SearchSelect";
 import Button from "@/components/ui/Button";
 import { json } from "@/lib/client/api";
+import { useScrollLock } from "@/components/scroll/useScrollLock";
 
 export default function FeedbackDialog({
   label = "Send feedback",
@@ -13,6 +14,7 @@ export default function FeedbackDialog({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  useScrollLock(open);
   const [kind, setKind] = useState("bug");
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -41,6 +43,7 @@ export default function FeedbackDialog({
       <button
         className={className}
         type="button"
+        data-testid="open-modal"
         onClick={() => {
           setOpen(true);
           setNotice("");
@@ -51,10 +54,11 @@ export default function FeedbackDialog({
       {open && (
         <div className="react-modal-backdrop" onClick={() => setOpen(false)}>
           <section
-            className="react-modal"
+            className="react-modal scroll-region"
             role="dialog"
             aria-modal="true"
             aria-labelledby="feedbackTitle"
+            data-lenis-prevent
             onClick={(event) => event.stopPropagation()}
           >
             <button
