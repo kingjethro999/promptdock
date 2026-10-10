@@ -101,8 +101,14 @@ export default function FeedbackDialog({
                   {notice}
                 </p>
               )}
-              <Button variant="primary" type="submit" disabled={busy}>
-                {busy ? "Sending…" : "Send feedback"}
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={busy}
+                loading={busy}
+                loadingText="Sending feedback…"
+              >
+                Send feedback
               </Button>
             </form>
           </section>

@@ -261,13 +261,25 @@ function parseIdeaSuggestion(content, idea, guidance = {}, imageCount = 0) {
       let target = planWrapMatch[1].trim();
       target = target.replace(/^(?:how\s+to\s+|to\s+)?/i, "");
       if (/^evolve\b/i.test(target)) {
-        data.task = `Audit, design, implement, and visually validate the evolution of ${target.slice(6).replace(/^(?:the\s+)?/, "").trim()}`;
+        data.task = `Audit, design, implement, and visually validate the evolution of ${target
+          .slice(6)
+          .replace(/^(?:the\s+)?/, "")
+          .trim()}`;
       } else if (/^redesign\b/i.test(target)) {
-        data.task = `Audit, design, implement, and visually validate the redesign of ${target.slice(8).replace(/^(?:the\s+)?/, "").trim()}`;
+        data.task = `Audit, design, implement, and visually validate the redesign of ${target
+          .slice(8)
+          .replace(/^(?:the\s+)?/, "")
+          .trim()}`;
       } else if (/^build\b/i.test(target)) {
-        data.task = `Build, verify, and deliver ${target.slice(5).replace(/^(?:the\s+)?/, "").trim()}`;
+        data.task = `Build, verify, and deliver ${target
+          .slice(5)
+          .replace(/^(?:the\s+)?/, "")
+          .trim()}`;
       } else if (/^implement\b/i.test(target)) {
-        data.task = `Implement, run, and visually validate ${target.slice(9).replace(/^(?:the\s+)?/, "").trim()}`;
+        data.task = `Implement, run, and visually validate ${target
+          .slice(9)
+          .replace(/^(?:the\s+)?/, "")
+          .trim()}`;
       } else {
         data.task = `Audit, implement, and visually validate: ${target}`;
       }

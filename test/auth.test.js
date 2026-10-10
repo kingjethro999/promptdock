@@ -118,4 +118,3 @@ test("firebaseIdentity allows GitHub with email even when email_verified is fals
     firebaseAdmin.getAuth = originalGetAuth;
   }
 });
-
