@@ -67,9 +67,14 @@
 /* --------------------------------------------------------------------------
    Hero Dynamic Atmosphere (Mesh glow)
    -------------------------------------------------------------------------- */
+.landing-hero {
+  position: relative;
+  overflow: hidden;
+}
+
 .hero-ambient-glow {
   position: absolute;
-  inset: -120px -80px auto;
+  inset: -60px 0 auto;
   height: 680px;
   background:
     radial-gradient(
@@ -660,3 +665,76 @@
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Smooth Scroll Addendum Global CSS
+   ========================================================================== */
+
+:root {
+  --header-h: 86px;
+}
+
+html {
+  scrollbar-gutter: stable;
+  scroll-padding-top: calc(var(--header-h, 86px) + 16px);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.lenis) {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  overflow-x: clip; /* safety net only: preserves position: sticky */
+}
+
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Mobile-safe full-height sections */
+.hero,
+.full-bleed {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+/* Nested scrollers (menus, modals, code panes) must not chain scroll to the page */
+.scroll-region {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Skip offscreen rendering work for tall, stable, non-pinned sections */
+.section--deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
+.scroll-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: #d5f876;
+  z-index: 999;
+  pointer-events: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-progress--css {
+    animation: grow linear both;
+    animation-timeline: scroll(root);
+    transform-origin: 0 50%;
+  }
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+

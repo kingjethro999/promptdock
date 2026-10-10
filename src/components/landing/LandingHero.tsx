@@ -5,6 +5,7 @@ import { dur, ease } from "@/components/motion/tokens";
 import { getPreset, type RevealKind } from "@/components/motion/presets";
 import { useMotionEnv } from "@/components/motion/env";
 import ActionLink from "@/components/ui/ActionLink";
+import { AnchorLink } from "@/components/scroll/AnchorLink";
 import LandingDemo from "./LandingDemo";
 
 const group = {
@@ -89,9 +90,9 @@ export default function LandingHero() {
           >
             Create your workspace <span>↗</span>
           </ActionLink>
-          <a className="landing-secondary-cta" href="#how-it-works">
+          <AnchorLink className="landing-secondary-cta" href="#how-it-works">
             See how it works <span>↓</span>
-          </a>
+          </AnchorLink>
         </m.div>
 
         <m.div
