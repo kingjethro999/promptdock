@@ -427,8 +427,223 @@
     box-shadow 220ms ease;
 }
 
+/* --------------------------------------------------------------------------
+   Addendum Global CSS: Word-mask, Sequence Layout, Safety Nets & Skeletons
+   -------------------------------------------------------------------------- */
+
+/* Word-mask headings: padding/negative margin stop overflow:hidden from clipping descenders */
+.reveal-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.reveal-mask__inner {
+  display: inline-block;
+}
+
+/* Sequence (GSAP Signature Moment) */
+.sequence {
+  position: relative;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 80px 34px;
+}
+
+.sequence__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr);
+  align-items: center;
+  gap: 60px;
+}
+
+.sequence__content {
+  position: relative;
+}
+
+.sequence__caption {
+  padding: 24px 0;
+}
+
+.sequence__kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #638c4b;
+  margin-bottom: 12px;
+}
+
+.sequence__title {
+  font: 800 clamp(28px, 3.2vw, 42px) / 1.15 Manrope, sans-serif;
+  letter-spacing: -1.5px;
+  color: #173225;
+  margin: 0 0 16px;
+}
+
+.sequence__description {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #627769;
+  max-width: 480px;
+}
+
+.sequence__stage {
+  perspective: 1200px;
+}
+
+.sequence__surface {
+  background: #ffffff;
+  border: 1px solid #dce6d5;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 24px 60px -12px rgba(22, 50, 32, 0.12);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.sequence__surface-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #688372;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #edf1e9;
+}
+
+.sequence__surface-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #82bf6c;
+  box-shadow: 0 0 0 4px #e5f4dc;
+}
+
+.sequence__surface-badge {
+  margin-left: auto;
+  border-radius: 12px;
+  background: #e9f5db;
+  color: #38602b;
+  padding: 3px 8px;
+  font-size: 9px;
+}
+
+.sequence__surface-body {
+  padding-top: 20px;
+}
+
+.sequence__surface-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #407b30;
+  margin-bottom: 14px;
+}
+
+.sequence__surface-content strong {
+  display: block;
+  font: 800 18px / 1.4 Manrope, sans-serif;
+  letter-spacing: -0.5px;
+  color: #173225;
+  margin-bottom: 8px;
+}
+
+.sequence__surface-content p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #627769;
+  margin-bottom: 20px;
+}
+
+.sequence__surface-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed #dbe5d4;
+  padding-top: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5d7d59;
+}
+
+/* Layout is decided HERE, with the same query the JS uses. JS only animates. */
+@media (min-width: 900px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+  .sequence__captions {
+    display: grid;
+  }
+  .sequence__captions > * {
+    grid-area: 1 / 1;
+  } /* captions overlap only when the pinned version runs */
+}
+
+@media (max-width: 899px), (max-height: 599px) {
+  .sequence__inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+
+/* Safety nets: inline styles from SSR need !important to override */
+@media print {
+  [data-reveal],
+  [data-reveal-item],
+  .reveal-mask__inner {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+}
+
+.motion-failsafe [data-reveal],
+.motion-failsafe [data-reveal-item],
+.motion-failsafe .reveal-mask__inner {
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+}
+
+/* Skeleton shimmer: transform-based, never background-position */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(213, 248, 118, 0.2),
+    transparent
+  );
+  animation: shimmer 1.4s ease-out infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
 /* Reduced Motion Overrides */
 @media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal-item],
+  .reveal-mask,
+  .reveal-mask__inner {
+    transform: none !important;
+  }
   .motion-reveal {
     opacity: 1 !important;
     transform: none !important;

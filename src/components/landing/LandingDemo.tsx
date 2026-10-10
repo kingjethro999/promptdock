@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import InteractiveSurface from "@/components/ui/InteractiveSurface";
+import { InteractiveSurface } from "@/components/motion/InteractiveSurface";
 import LiquidButton from "@/components/ui/LiquidButton";
 
 const examples = [
@@ -47,7 +47,7 @@ export default function LandingDemo() {
 
   return (
     <div className="landing-demo-wrapper">
-      <InteractiveSurface maxTilt={5} perspective={1100} glare={true}>
+      <InteractiveSurface max={5}>
         <div
           className={`landing-demo ${isSynthesizing ? "is-synthesizing" : ""}`}
           aria-label="Interactive prompt workspace preview"
