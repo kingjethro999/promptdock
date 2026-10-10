@@ -1,48 +1,66 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { publicPrompt } from "@/lib/server/public-data";
+import { cache } from "react";
+import { database } from "@/server/database";
+import { clean } from "@/lib/og/text";
 import { buildPrompt } from "@/lib/prompt/format";
 import ShareActions from "@/components/share/ShareActions";
 import { sharedPromptStructuredData } from "@/lib/seo/structured-data";
 
-type Props = { params: Promise<{ id: string }> };
+const getPrompt = cache((id: string) => database.getPublicPrompt(id));
+
+type Props = { params: Promise<{ publicId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const item = await publicPrompt((await params).id);
-  if (!item)
-    return { title: "Shared prompt unavailable", robots: { index: false } };
-  const owner = item.ownerUsername || "A PromptDock member";
-  const title = item.ownerUsername
+  const { publicId } = await params;
+  const prompt = await getPrompt(publicId).catch(() => null);
+  if (!prompt) {
+    return { title: "Shared prompt", robots: { index: false } };
+  }
+
+  const owner = clean(prompt.ownerUsername, 40);
+  const title = owner
     ? `${owner} wants to share a prompt with you`
-    : `${item.name} — PromptDock`;
-  const description = String(item.data?.task || "A shared PromptDock prompt")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 180);
+    : `${clean(prompt.name, 90)}`;
+  const description = clean(
+    prompt.data?.task || "A shared PromptDock prompt",
+    180,
+  );
+  const image = `/api/og/p/${publicId}?v=${new Date(prompt.updatedAt ?? 0).getTime()}`;
+
   return {
     title,
     description,
-    alternates: { canonical: `/p/${item.publicId}` },
+    alternates: { canonical: `/p/${publicId}` },
     openGraph: {
       type: "article",
       title,
       description,
-      url: `/p/${item.publicId}`,
-      images: [{ url: "/social-card.png", width: 1200, height: 630 }],
+      url: `/p/${publicId}`,
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/social-card.png"],
+      images: [image],
     },
   };
 }
 
 export default async function SharedPromptPage({ params }: Props) {
-  const item = await publicPrompt((await params).id);
+  const { publicId } = await params;
+  const item = await getPrompt(publicId).catch(() => null);
   if (!item) notFound();
+
   const prompt = buildPrompt(item.data);
   const owner = item.ownerUsername || "A PromptDock member";
   const origin = (
@@ -52,13 +70,11 @@ export default async function SharedPromptPage({ params }: Props) {
     origin,
     publicId: item.publicId,
     name: item.name,
-    description: String(item.data?.task || "A shared PromptDock prompt")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 180),
+    description: clean(item.data?.task || "A shared PromptDock prompt", 180),
     ownerUsername: item.ownerUsername,
     updatedAt: item.updatedAt,
   });
+
   return (
     <div className="shared-page">
       <script

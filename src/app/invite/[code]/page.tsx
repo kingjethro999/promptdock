@@ -1,36 +1,43 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import { clean } from "@/lib/og/text";
+import { referrals } from "@/server/referrals";
 
-const referrals = require("../../../referrals") as {
-  inviterFor(code: string): Promise<{ username: string | null } | null>;
-};
+const getInviter = cache((code: string) => referrals.inviterFor(code));
+
 type Props = { params: Promise<{ code: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const code = (await params).code;
-  const inviter = await referrals.inviterFor(code).catch(() => null);
-  if (!inviter)
+  const { code } = await params;
+  const inviter = await getInviter(code).catch(() => null);
+  if (!inviter || !inviter.username) {
     return { title: "Invitation unavailable", robots: { index: false } };
-  const name = inviter.username || "A PromptDock member";
+  }
+
+  const name = clean(inviter.username, 40);
   const title = `${name} invited you to PromptDock`;
   const description =
     "Turn rough ideas into prompts worth keeping. Create a free workspace, save what works, and share it with others.";
+  const image = `/api/og/invite/${clean(code, 24)}`;
+
   return {
     title,
     description,
     alternates: { canonical: `/invite/${code}` },
     robots: { index: false, follow: true },
     openGraph: {
+      type: "website",
       title,
       description,
       url: `/invite/${code}`,
       images: [
         {
-          url: "/social-card.png",
+          url: image,
           width: 1200,
           height: 630,
-          alt: "PromptDock — Good ideas deserve a clearer prompt",
+          alt: title,
         },
       ],
     },
@@ -38,16 +45,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: ["/social-card.png"],
+      images: [image],
     },
   };
 }
 
 export default async function InvitePage({ params }: Props) {
-  const code = (await params).code;
-  const inviter = await referrals.inviterFor(code).catch(() => null);
-  if (!inviter) notFound();
-  const name = inviter.username || "A PromptDock member";
+  const { code } = await params;
+  const inviter = await getInviter(code).catch(() => null);
+  if (!inviter || !inviter.username) notFound();
+  const name = clean(inviter.username, 40);
+
   return (
     <div className="react-invite-page">
       <header>
