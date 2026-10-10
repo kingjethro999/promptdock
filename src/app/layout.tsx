@@ -68,15 +68,35 @@ export const metadata: Metadata = {
   },
 };
 
+import { MotionProvider } from "@/components/motion/env";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="booting">
+      <head>
+        <noscript>
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                "[data-reveal],[data-reveal-item],.reveal-mask__inner{opacity:1!important;transform:none!important;clip-path:none!important}",
+            }}
+          />
+        </noscript>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'setTimeout(function () { if (!document.documentElement.hasAttribute("data-motion")) document.documentElement.classList.add("motion-failsafe"); }, 3500);',
+          }}
+        />
+      </head>
       <body className="booting">
-        <BootScreen />
-        <TopLoader />
-        {children}
+        <MotionProvider>
+          <BootScreen />
+          <TopLoader />
+          {children}
+        </MotionProvider>
       </body>
     </html>
   );

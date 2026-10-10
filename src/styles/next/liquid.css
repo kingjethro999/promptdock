@@ -12,7 +12,7 @@
   gap: 10px;
   overflow: hidden;
   border-radius: 10px;
-  border: 1px solid transparent;
+  /* border: 1px solid transparent; */
   font-family: "Manrope", "DM Sans", sans-serif;
   font-weight: 800;
   text-decoration: none;
@@ -21,7 +21,7 @@
   transform: translateZ(0);
   transition:
     background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    /* border-color 220ms cubic-bezier(0.16, 1, 0.3, 1), */
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -49,7 +49,7 @@
 .liquid-button--primary {
   background: #193726;
   color: #ffffff;
-  border-color: #244b36;
+  /* border-color: #244b36; */
   box-shadow:
     0 10px 24px -6px rgba(25, 55, 38, 0.28),
     0 2px 6px rgba(25, 55, 38, 0.12);
@@ -57,7 +57,7 @@
 
 .liquid-button--primary:hover:not(:disabled) {
   background: #234d35;
-  border-color: #35694a;
+  /* border-color: #35694a; */
   box-shadow:
     0 14px 30px -8px rgba(25, 55, 38, 0.38),
     0 4px 10px rgba(25, 55, 38, 0.16);

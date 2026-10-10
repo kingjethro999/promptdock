@@ -1,8 +1,18 @@
+"use client"
+
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { LandingDetails, LandingFooter, LandingProof } from "./LandingDetails";
-import LandingDemo from "./LandingDemo";
+import LandingHero from "./LandingHero";
 import ActionLink from "@/components/ui/ActionLink";
-import MotionReveal from "@/components/ui/MotionReveal";
+import { Reveal } from "@/components/motion/Reveal";
+import { Stagger, StaggerItem } from "@/components/motion/Stagger";
+import { RevealHeading } from "@/components/motion/RevealHeading";
+
+const SignatureSequence = dynamic(() => import("./SignatureSequence"), {
+  ssr: false,
+  loading: () => <div className="sequence" style={{ minHeight: "500px" }} />,
+});
 
 export default function LandingPage() {
   return (
@@ -27,90 +37,31 @@ export default function LandingPage() {
       </header>
 
       <main id="top">
-        <section className="landing-hero">
-          {/* Ambient Living Mesh */}
-          <div className="hero-ambient-glow" aria-hidden="true" />
+        {/* LCP-safe choreographed hero */}
+        <LandingHero />
 
-          <MotionReveal
-            variant="fade-up"
-            delay={60}
-            duration={600}
-            className="landing-hero-copy"
-          >
-            {/* Evolution Supporting Tag */}
-            <div className="evolution-badge">
-              <span className="evolution-badge__pill">
-                <span className="evolution-badge__sparkle">✦</span> EVOLUTION
-              </span>
-              <span>A whole new look. Same workspace.</span>
-            </div>
-
-            <div className="landing-eyebrow">
-              <span>✳</span> THE IDEA-TO-PROMPT WORKSPACE
-            </div>
-
-            <h1>
-              Great prompts start with <em>rough ideas.</em>
-            </h1>
-
-            <p>
-              Say what you mean in your own words. PromptDock reads the intent,
-              finds the priorities, and shapes a clear prompt you can take to
-              any AI platform.
-            </p>
-
-            <div className="landing-hero-actions">
-              <ActionLink
-                className="landing-primary-cta"
-                href="/auth?mode=register"
-              >
-                Create your workspace <span>↗</span>
-              </ActionLink>
-              <a className="landing-secondary-cta" href="#how-it-works">
-                See how it works <span>↓</span>
-              </a>
-            </div>
-
-            <div className="landing-hero-note">
-              <span className="landing-note-stars">✳ ✳ ✳</span>
-              <span>From first thought to useful prompt, in one place.</span>
-            </div>
-          </MotionReveal>
-
-          <MotionReveal variant="scale-in" delay={180} duration={650}>
-            <LandingDemo />
-          </MotionReveal>
-        </section>
-
-        <MotionReveal variant="fade-in" delay={100} duration={500}>
+        {/* Supported platforms proof */}
+        <Reveal kind="fade">
           <LandingProof />
-        </MotionReveal>
+        </Reveal>
 
+        {/* How It Works with word-mask heading and budget-capped stagger */}
         <section className="landing-how" id="how-it-works">
-          <MotionReveal
-            variant="fade-up"
-            duration={550}
-            className="landing-section-intro"
-          >
+          <div className="landing-section-intro">
             <span className="landing-kicker">HOW IT WORKS</span>
-            <h2>
-              From “I have an idea”
-              <br />
-              to “I know what to ask.”
-            </h2>
-            <p>
-              You bring the thought. PromptDock helps turn it into clear
-              instructions without asking you to become a prompt engineer.
-            </p>
-          </MotionReveal>
+            <RevealHeading as="h2">
+              From “I have an idea” to “I know what to ask.”
+            </RevealHeading>
+            <Reveal kind="rise" delay={0.1}>
+              <p>
+                You bring the thought. PromptDock helps turn it into clear
+                instructions without asking you to become a prompt engineer.
+              </p>
+            </Reveal>
+          </div>
 
-          <div className="landing-step-grid">
-            <MotionReveal
-              variant="fade-up"
-              delay={80}
-              duration={500}
-              as="article"
-            >
+          <Stagger as="div" className="landing-step-grid">
+            <StaggerItem as="article" kind="rise">
               <span className="landing-step-number">01</span>
               <div className="landing-step-icon">✎</div>
               <h3>Say it naturally</h3>
@@ -118,14 +69,9 @@ export default function LandingPage() {
                 Type a messy thought or dictate it. A sentence is enough to
                 start.
               </p>
-            </MotionReveal>
+            </StaggerItem>
 
-            <MotionReveal
-              variant="fade-up"
-              delay={180}
-              duration={500}
-              as="article"
-            >
+            <StaggerItem as="article" kind="rise">
               <span className="landing-step-number">02</span>
               <div className="landing-step-icon">✳</div>
               <h3>See what matters</h3>
@@ -133,14 +79,9 @@ export default function LandingPage() {
                 AI understands the goal, ranks the focus areas, and flags
                 missing details.
               </p>
-            </MotionReveal>
+            </StaggerItem>
 
-            <MotionReveal
-              variant="fade-up"
-              delay={280}
-              duration={500}
-              as="article"
-            >
+            <StaggerItem as="article" kind="rise">
               <span className="landing-step-number">03</span>
               <div className="landing-step-icon">↗</div>
               <h3>Make it yours</h3>
@@ -148,14 +89,19 @@ export default function LandingPage() {
                 Save what works, share it, or copy it into your favorite AI
                 tool.
               </p>
-            </MotionReveal>
-          </div>
+            </StaggerItem>
+          </Stagger>
         </section>
 
+        {/* GSAP matchMedia-gated pinned/lite Signature Sequence */}
+        <SignatureSequence />
+
+        {/* Features, BYOK, FAQ, and Sponsor */}
         <LandingDetails />
 
+        {/* Final CTA */}
         <section className="landing-final">
-          <MotionReveal variant="fade-up" duration={550}>
+          <Reveal kind="rise">
             <div>
               <span className="landing-kicker">
                 THE NEXT GOOD PROMPT STARTS HERE
@@ -166,15 +112,15 @@ export default function LandingPage() {
                 to focus.
               </p>
             </div>
-          </MotionReveal>
-          <MotionReveal variant="scale-in" delay={150} duration={500}>
+          </Reveal>
+          <Reveal kind="settle" delay={0.1}>
             <ActionLink
               className="landing-primary-cta"
               href="/auth?mode=register"
             >
               Start with an idea <span>↗</span>
             </ActionLink>
-          </MotionReveal>
+          </Reveal>
         </section>
       </main>
 

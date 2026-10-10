@@ -202,7 +202,7 @@ export default function PromptPreview({
 
       <div className="preview-actions">
         <Button variant="primary" disabled={!finalPrompt} onClick={copy}>
-          <span>▣</span> Copy prompt <span className="button-arrow">↗</span>
+          <span>▣</span> Copy prompt <span className="button-arrow"></span>
         </Button>
         <Button disabled={!finalPrompt} onClick={onSave}>
           ♡ &nbsp; Save
@@ -233,7 +233,7 @@ export default function PromptPreview({
           disabled={!finalPrompt || running || comparing}
           onClick={testPrompt}
         >
-          <span>▶</span> {running ? "Running…" : "Run prompt"}
+          <span>▶</span> {running ? "Running…" : "Run"}
         </button>
         <button
           type="button"
@@ -241,10 +241,10 @@ export default function PromptPreview({
           disabled={!finalPrompt || running || comparing}
           onClick={comparePrompt}
         >
-          <span>⚔</span> {comparing ? "Comparing…" : "Compare (Arena)"}
+          <span>⚔</span> {comparing ? "Comparing…" : "Compare"}
         </button>
         <span className="run-note">
-          Test on your configured AI or compare multi-model outputs
+          Test your AI or compare multi-model outputs.
         </span>
       </div>
 
