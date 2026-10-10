@@ -29,7 +29,7 @@ export default function Button({
   type = "button",
   loading,
   status,
-  liquid = false,
+  liquid,
   loadingText,
   successText,
   errorText,
@@ -37,8 +37,17 @@ export default function Button({
   disabled,
   ...props
 }: Props) {
-  // If liquid is explicitly requested OR if loading/status is provided, route through LiquidButton
-  if (liquid || loading !== undefined || status !== undefined) {
+  // If liquid is explicitly true OR for primary/accent action buttons (unless liquid === false),
+  // OR if loading/status is provided, route through LiquidButton
+  const useLiquid =
+    liquid === true ||
+    (liquid !== false &&
+      (variant === "primary" ||
+        variant === "accent" ||
+        loading !== undefined ||
+        status !== undefined));
+
+  if (useLiquid) {
     return (
       <LiquidButton
         variant={variant}
