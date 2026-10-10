@@ -1027,3 +1027,33 @@ test("people can write as much as they need to", () => {
   assert.ok(draft.task.length > 80000);
   assert.doesNotThrow(() => normalizeDraft(draft));
 });
+
+test("execution tasks unwrap plan-wrapped tasks and enforce non-stopping execution", () => {
+  const result = parseIdeaSuggestion(
+    JSON.stringify({
+      data: {
+        task: "Create a comprehensive design and implementation plan to evolve the current application's landing page and overall UI. The plan must include visual audit and motion system.",
+        audience:
+          "The product's development team who will implement the design updates and QA the changes",
+        focus: "1. Motion system\n2. Liquid buttons",
+        constraints: "Preserve brand identity.",
+      },
+      interpretation: {
+        goal: "Evolve application UI",
+        focusAreas: ["Motion system", "Liquid buttons"],
+      },
+    }),
+    "I want to evolve the current application visually and interactively with Playwright visual QA",
+  );
+
+  assert.match(result.data.task, /^Audit, design, implement, and visually validate the evolution of/);
+  assert.match(result.data.task, /Execution must include visual audit/);
+  assert.match(result.data.task, /Do not stop after producing a design plan/);
+  assert.equal(result.data.audience, "");
+  assert.match(
+    result.data.constraints,
+    /Do not stop at planning\. Inspect, plan, implement, run, visually evaluate, refine, and verify\./,
+  );
+  assert.match(result.data.constraints, /Preserve brand identity\./);
+});
+
