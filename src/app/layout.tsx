@@ -23,48 +23,41 @@ import "../styles/next/liquid.css";
 import "../styles/next/motion.css";
 import "../styles/next/responsive.css";
 
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.APP_URL || "https://thepromptdock.vercel.app",
-  ),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "PromptDock — Your AI prompt workspace",
-    template: "%s — PromptDock",
+    default: `${SITE_NAME} — your prompt workspace`,
+    template: `%s — ${SITE_NAME}`,
   },
-  description:
-    "Turn rough or spoken ideas and image references into structured prompts you can save, reuse, and share with any AI tool.",
+  description: "Write, organize and share your best prompts.",
   applicationName: "PromptDock",
   alternates: { canonical: "/", types: { "application/rss+xml": "/feed.xml" } },
   icons: { icon: "/favicon.svg" },
   openGraph: {
     type: "website",
-    siteName: "PromptDock",
+    siteName: SITE_NAME,
     locale: "en_US",
     url: "/",
-    title: "PromptDock — Your AI prompt workspace",
-    description:
-      "Turn rough or spoken ideas and image references into structured prompts you can save, reuse, and share with any AI tool.",
+    title: `${SITE_NAME} — your prompt workspace`,
+    description: "Write, organize and share your best prompts.",
     images: [
       {
-        url: "/social-card-v2.png",
-        width: 1730,
-        height: 909,
-        alt: "PromptDock — Turn rough ideas into better prompts",
+        url: "/api/og/default",
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — your prompt workspace`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PromptDock — Your AI prompt workspace",
-    description: "Turn rough ideas into better prompts you can use anywhere.",
-    images: [
-      {
-        url: "/social-card-v2.png",
-        alt: "PromptDock turns rough ideas into better prompts",
-      },
-    ],
+    title: `${SITE_NAME} — your prompt workspace`,
+    description: "Write, organize and share your best prompts.",
+    images: ["/api/og/default"],
   },
 };
 

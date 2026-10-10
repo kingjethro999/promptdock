@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   reactStrictMode: true,
   devIndicators: false,
+  htmlLimitedBots:
+    /Twitterbot|facebookexternalhit|WhatsApp|LinkedInBot|Slackbot|Discordbot|TelegramBot|Googlebot|bingbot/i,
   env: { NEXT_PUBLIC_APP_VERSION: packageJson.version },
   async redirects() {
     return [
