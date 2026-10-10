@@ -73,6 +73,18 @@
   flex-wrap: wrap;
   margin-top: 20px;
 }
+.react-modal .primary-button,
+.react-modal .liquid-button--primary {
+  background: #193726;
+  color: #ffffff;
+  border: 1px solid #244b36;
+}
+.react-modal .secondary-button,
+.react-modal .liquid-button--secondary {
+  background: #ffffff;
+  color: #234030;
+  border: 1px solid #dbe4d7;
+}
 .action-link {
   display: inline-flex;
   align-items: center;

@@ -1046,7 +1046,10 @@ test("execution tasks unwrap plan-wrapped tasks and enforce non-stopping executi
     "I want to evolve the current application visually and interactively with Playwright visual QA",
   );
 
-  assert.match(result.data.task, /^Audit, design, implement, and visually validate the evolution of/);
+  assert.match(
+    result.data.task,
+    /^Audit, design, implement, and visually validate the evolution of/,
+  );
   assert.match(result.data.task, /Execution must include visual audit/);
   assert.match(result.data.task, /Do not stop after producing a design plan/);
   assert.equal(result.data.audience, "");
@@ -1056,4 +1059,3 @@ test("execution tasks unwrap plan-wrapped tasks and enforce non-stopping executi
   );
   assert.match(result.data.constraints, /Preserve brand identity\./);
 });
-

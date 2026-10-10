@@ -1,0 +1,337 @@
+/* ==========================================================================
+   PROMPTDOCK LIQUID LOADING LANGUAGE
+   Fluid wave loading primitive for interactive buttons & async triggers.
+   Preserves theme identity: Forest Green (#193726) + Luminous Lime (#d5f876)
+   ========================================================================== */
+
+.liquid-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-family: "Manrope", "DM Sans", sans-serif;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transform: translateZ(0);
+  transition:
+    background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sizing Tokens */
+.liquid-button--sm {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 11px;
+}
+
+.liquid-button--md {
+  height: 46px;
+  padding: 0 20px;
+  font-size: 13px;
+}
+
+.liquid-button--lg {
+  height: 54px;
+  padding: 0 26px;
+  font-size: 14px;
+}
+
+/* Primary Variant (Signature Forest Green) */
+.liquid-button--primary {
+  background: #193726;
+  color: #ffffff;
+  border-color: #244b36;
+  box-shadow:
+    0 10px 24px -6px rgba(25, 55, 38, 0.28),
+    0 2px 6px rgba(25, 55, 38, 0.12);
+}
+
+.liquid-button--primary:hover:not(:disabled) {
+  background: #234d35;
+  border-color: #35694a;
+  box-shadow:
+    0 14px 30px -8px rgba(25, 55, 38, 0.38),
+    0 4px 10px rgba(25, 55, 38, 0.16);
+  transform: translateY(-1px);
+}
+
+.liquid-button--primary:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: 0 4px 12px -2px rgba(25, 55, 38, 0.3);
+}
+
+/* Secondary Variant (Crisp Card / Stone) */
+.liquid-button--secondary {
+  background: #ffffff;
+  color: #234030;
+  border-color: #dbe4d7;
+  box-shadow: 0 4px 14px rgba(28, 55, 35, 0.05);
+}
+
+.liquid-button--secondary:hover:not(:disabled) {
+  background: #f7faf3;
+  border-color: #c4d7be;
+  color: #173225;
+  box-shadow: 0 8px 20px rgba(28, 55, 35, 0.08);
+  transform: translateY(-1px);
+}
+
+.liquid-button--secondary:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+/* Outline Variant */
+.liquid-button--outline {
+  background: transparent;
+  color: #2b4f3a;
+  border-color: #bed3b5;
+}
+
+.liquid-button--outline:hover:not(:disabled) {
+  background: #eef6e6;
+  border-color: #9cb991;
+}
+
+/* Accent Variant (Vibrant Chartreuse) */
+.liquid-button--accent {
+  background: #d5f876;
+  color: #1a3927;
+  border-color: #bfe85c;
+  box-shadow: 0 8px 24px -4px rgba(162, 209, 53, 0.35);
+}
+
+.liquid-button--accent:hover:not(:disabled) {
+  background: #defb87;
+  box-shadow: 0 12px 28px -6px rgba(162, 209, 53, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Disabled & Pending States */
+.liquid-button:disabled {
+  cursor: not-allowed;
+}
+
+.liquid-button:disabled:not(.is-loading) {
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Content container */
+.liquid-button__content {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+  pointer-events: none;
+}
+
+.liquid-button__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.liquid-button__icon {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 180ms ease;
+}
+
+.liquid-button:hover:not(:disabled) .liquid-button__icon {
+  transform: translate(2px, -2px);
+}
+
+/* --------------------------------------------------------------------------
+   Liquid Wave Canvas & Layers
+   -------------------------------------------------------------------------- */
+.liquid-button__canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-button.is-loading .liquid-button__canvas {
+  opacity: 1;
+}
+
+.liquid-button__fluid {
+  position: absolute;
+  left: -50%;
+  bottom: -4px;
+  width: 200%;
+  height: 85%;
+  transform: translateY(100%);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-button.is-loading .liquid-button__fluid {
+  transform: translateY(0);
+}
+
+/* Base wave SVG paths */
+.liquid-wave {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Primary Variant Waves */
+.liquid-button--primary .liquid-wave--back {
+  fill: rgba(79, 142, 92, 0.42);
+  animation: liquid-drift-back 3.2s cubic-bezier(0.44, 0.05, 0.55, 0.95)
+    infinite alternate;
+}
+
+.liquid-button--primary .liquid-wave--front {
+  fill: rgba(213, 248, 118, 0.58);
+  animation: liquid-drift-front 2.4s ease-in-out infinite alternate;
+}
+
+/* Secondary Variant Waves */
+.liquid-button--secondary .liquid-wave--back {
+  fill: rgba(206, 233, 194, 0.6);
+  animation: liquid-drift-back 3.2s cubic-bezier(0.44, 0.05, 0.55, 0.95)
+    infinite alternate;
+}
+
+.liquid-button--secondary .liquid-wave--front {
+  fill: rgba(182, 222, 148, 0.45);
+  animation: liquid-drift-front 2.4s ease-in-out infinite alternate;
+}
+
+/* Accent Variant Waves */
+.liquid-button--accent .liquid-wave--back {
+  fill: rgba(135, 184, 53, 0.35);
+  animation: liquid-drift-back 3.2s cubic-bezier(0.44, 0.05, 0.55, 0.95)
+    infinite alternate;
+}
+
+.liquid-button--accent .liquid-wave--front {
+  fill: rgba(255, 255, 255, 0.55);
+  animation: liquid-drift-front 2.4s ease-in-out infinite alternate;
+}
+
+/* Wave Animations */
+@keyframes liquid-drift-back {
+  0% {
+    transform: translateX(-18%) scaleY(0.9);
+  }
+  50% {
+    transform: translateX(0%) scaleY(1.05);
+  }
+  100% {
+    transform: translateX(18%) scaleY(0.92);
+  }
+}
+
+@keyframes liquid-drift-front {
+  0% {
+    transform: translateX(14%) scaleY(1.04);
+  }
+  50% {
+    transform: translateX(-6%) scaleY(0.92);
+  }
+  100% {
+    transform: translateX(-18%) scaleY(1.08);
+  }
+}
+
+/* Success State Flash */
+.liquid-button.is-success {
+  background: #255837 !important;
+  border-color: #8ed266 !important;
+  color: #f4ffe6 !important;
+  box-shadow: 0 0 0 3px rgba(142, 210, 102, 0.3) !important;
+}
+
+.liquid-button.is-success .liquid-button__canvas {
+  opacity: 0;
+}
+
+/* Error State Settle */
+.liquid-button.is-error {
+  background: #782929 !important;
+  border-color: #d76c6c !important;
+  color: #fff5f5 !important;
+  box-shadow: 0 0 0 3px rgba(215, 108, 108, 0.28) !important;
+}
+
+.liquid-button.is-error .liquid-button__canvas {
+  opacity: 0;
+}
+
+/* Fluid Shimmer for Cards & Loading Surfaces */
+.fluid-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.fluid-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(213, 248, 118, 0.12) 50%,
+    transparent 100%
+  );
+  animation: fluid-shimmer-sweep 2.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes fluid-shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Accessibility: Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-button {
+    transition: none !important;
+  }
+  .liquid-wave {
+    animation: none !important;
+  }
+  .liquid-button.is-loading .liquid-button__fluid {
+    transform: translateY(0);
+    opacity: 0.6;
+    animation: liquid-reduced-pulse 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes liquid-reduced-pulse {
+    0% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 0.75;
+    }
+  }
+  .fluid-shimmer::after {
+    animation: none !important;
+  }
+}

@@ -239,10 +239,11 @@ export default function FineTunePanel({
           variant="primary"
           className="idea-generate"
           disabled={busy || (idea.trim().length < 4 && imageCount === 0)}
+          loading={busy}
+          loadingText="Shaping your prompt…"
           onClick={generate}
         >
-          <span aria-hidden="true">✦</span>{" "}
-          {busy ? "Shaping your prompt…" : "Turn idea into prompt"}{" "}
+          <span aria-hidden="true">✦</span> Turn idea into prompt{" "}
           <span className="button-arrow">↗</span>
         </Button>
         <span role="status">

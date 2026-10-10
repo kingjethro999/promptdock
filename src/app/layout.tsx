@@ -19,6 +19,8 @@ import "../styles/next/settings.css";
 import "../styles/next/updates.css";
 import "../styles/next/invite.css";
 import "../styles/next/admin.css";
+import "../styles/next/liquid.css";
+import "../styles/next/motion.css";
 import "../styles/next/responsive.css";
 
 export const dynamic = "force-dynamic";

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import InteractiveSurface from "@/components/ui/InteractiveSurface";
+import LiquidButton from "@/components/ui/LiquidButton";
 
 const examples = [
   {
@@ -31,59 +33,100 @@ const examples = [
 
 export default function LandingDemo() {
   const [selected, setSelected] = useState(0);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
   const example = examples[selected];
+
+  const triggerSynthesis = (nextIndex: number) => {
+    if (isSynthesizing) return;
+    setIsSynthesizing(true);
+    setTimeout(() => {
+      setSelected(nextIndex);
+      setIsSynthesizing(false);
+    }, 750);
+  };
+
   return (
-    <div className="landing-demo" aria-label="Interactive prompt example">
-      <div className="landing-demo-top">
-        <span className="demo-live-dot" />
-        <span>LIVE EXAMPLE</span>
-        <span className="demo-step-count">0{selected + 1} / 03</span>
-      </div>
-      <div className="landing-demo-input">
-        <div className="demo-label">YOUR IDEA</div>
-        <p>{example.idea}</p>
-        <div className="demo-idea-picker" aria-label="Choose example idea">
-          {examples.map((item, index) => (
-            <button
-              className={`demo-choice${selected === index ? " active" : ""}`}
-              type="button"
-              key={item.name}
-              onClick={() => setSelected(index)}
+    <div className="landing-demo-wrapper">
+      <InteractiveSurface maxTilt={5} perspective={1100} glare={true}>
+        <div
+          className={`landing-demo ${isSynthesizing ? "is-synthesizing" : ""}`}
+          aria-label="Interactive prompt workspace preview"
+        >
+          <div className="landing-demo-top">
+            <span className="demo-live-dot" />
+            <span>LIVE WORKSPACE PREVIEW</span>
+            <span className="demo-step-count">0{selected + 1} / 03</span>
+          </div>
+
+          <div className="landing-demo-input">
+            <div className="demo-label">ROUGH IDEA</div>
+            <p>{example.idea}</p>
+            <div className="demo-idea-picker" aria-label="Choose example idea">
+              {examples.map((item, index) => (
+                <button
+                  className={`demo-choice${selected === index ? " active" : ""}`}
+                  type="button"
+                  key={item.name}
+                  onClick={() => triggerSynthesis(index)}
+                  disabled={isSynthesizing}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="demo-connector">
+            <div className="demo-connector__indicator">
+              <span className="demo-connector__asterisk" aria-hidden="true">
+                ✳
+              </span>
+              <span>
+                {isSynthesizing
+                  ? "Distilling intent & priorities…"
+                  : "PromptDock shapes the direction"}
+              </span>
+            </div>
+            <span className="demo-connector__badge">Auto-format</span>
+          </div>
+
+          <div
+            className={`landing-demo-output ${
+              isSynthesizing ? "is-synthesizing fluid-shimmer" : ""
+            }`}
+          >
+            <div className="demo-output-head">
+              <span>✦ STRUCTURED PROMPT</span>
+              <span>{example.depth}</span>
+            </div>
+            <div className="demo-output-row">
+              <span>GOAL</span>
+              <strong>{example.goal}</strong>
+            </div>
+            <div className="demo-output-row">
+              <span>FOCUS</span>
+              <strong>{example.focus}</strong>
+            </div>
+            <div className="demo-output-row">
+              <span>FORMAT</span>
+              <strong>{example.format}</strong>
+            </div>
+          </div>
+
+          <div className="demo-action-container">
+            <LiquidButton
+              variant="accent"
+              size="md"
+              loading={isSynthesizing}
+              loadingText="Shaping structured prompt…"
+              icon={<span>↗</span>}
+              onClick={() => triggerSynthesis((selected + 1) % examples.length)}
             >
-              {item.name}
-            </button>
-          ))}
+              Shape another idea
+            </LiquidButton>
+          </div>
         </div>
-      </div>
-      <div className="demo-connector">
-        <span aria-hidden="true">✳</span>
-        <span>PromptDock shapes the direction</span>
-      </div>
-      <div className="landing-demo-output">
-        <div className="demo-output-head">
-          <span>✦ STRUCTURED PROMPT</span>
-          <span>{example.depth}</span>
-        </div>
-        <div className="demo-output-row">
-          <span>GOAL</span>
-          <strong>{example.goal}</strong>
-        </div>
-        <div className="demo-output-row">
-          <span>FOCUS</span>
-          <strong>{example.focus}</strong>
-        </div>
-        <div className="demo-output-row">
-          <span>FORMAT</span>
-          <strong>{example.format}</strong>
-        </div>
-      </div>
-      <button
-        className="demo-action"
-        type="button"
-        onClick={() => setSelected((selected + 1) % examples.length)}
-      >
-        Shape another idea <span aria-hidden="true">↗</span>
-      </button>
+      </InteractiveSurface>
     </div>
   );
 }

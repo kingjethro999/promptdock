@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FeedbackDialog from "./FeedbackDialog";
 import ActionLink from "@/components/ui/ActionLink";
+import MotionReveal from "@/components/ui/MotionReveal";
 
 export function LandingProof() {
   return (
@@ -50,16 +51,26 @@ export function LandingDetails() {
   return (
     <>
       <section className="landing-features" id="features">
-        <div className="landing-section-intro">
+        <MotionReveal
+          variant="fade-up"
+          duration={550}
+          className="landing-section-intro"
+        >
           <span className="landing-kicker">BUILT FOR YOUR FLOW</span>
           <h2>
             Ideas move quickly.
             <br />
             Your workspace should too.
           </h2>
-        </div>
+        </MotionReveal>
+
         <div className="landing-feature-grid">
-          <article className="feature-main">
+          <MotionReveal
+            variant="scale-in"
+            duration={600}
+            as="article"
+            className="feature-main"
+          >
             <span>✳ IDEA TO PROMPT</span>
             <h3>Start before you know exactly what you want.</h3>
             <p>
@@ -73,39 +84,63 @@ export function LandingDetails() {
               <i>→</i>
               <span>ready-to-use prompt</span>
             </div>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={80}
+            duration={500}
+            as="article"
+          >
             <span className="feature-symbol">◉</span>
             <h3>Speak it out</h3>
             <p>
               Record a thought, review the transcription, and send it into the
               same idea-to-prompt flow.
             </p>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={160}
+            duration={500}
+            as="article"
+          >
             <span className="feature-symbol">▦</span>
             <h3>Save and share</h3>
             <p>
               Keep prompts in your library. Make one public so anyone can copy
               it, or sign in to save a personal version.
             </p>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={240}
+            duration={500}
+            as="article"
+          >
             <span className="feature-symbol">⌘</span>
             <h3>Keep control</h3>
             <p>
               Fine-tune the details, copy the final prompt, or export it as
               Markdown.
             </p>
-          </article>
+          </MotionReveal>
         </div>
       </section>
+
       <section className="landing-keys" id="your-keys">
-        <div className="landing-keys-orbit">
+        <MotionReveal
+          variant="scale-in"
+          duration={600}
+          className="landing-keys-orbit"
+        >
           ✳<span>YOUR MODEL</span>
           <small>YOUR KEY</small>
-        </div>
-        <div>
+        </MotionReveal>
+
+        <MotionReveal variant="fade-up" delay={100} duration={550}>
           <span className="landing-kicker">YOUR AI, YOUR WAY</span>
           <h2>
             Bring your own key.
@@ -123,45 +158,74 @@ export function LandingDetails() {
           >
             Set up your workspace <span>↗</span>
           </ActionLink>
-        </div>
+        </MotionReveal>
       </section>
+
       <section className="landing-faq" id="questions">
-        <div className="landing-section-intro">
+        <MotionReveal
+          variant="fade-up"
+          duration={550}
+          className="landing-section-intro"
+        >
           <span className="landing-kicker">GOOD TO KNOW</span>
           <h2>A few quick answers.</h2>
-        </div>
+        </MotionReveal>
+
         <div className="landing-faq-grid">
-          <article>
+          <MotionReveal
+            variant="fade-up"
+            delay={60}
+            duration={480}
+            as="article"
+          >
             <h3>What is PromptDock?</h3>
             <p>
               PromptDock is an open source workspace that turns rough ideas,
               dictated thoughts, or existing drafts into clearer prompts for AI
               tools.
             </p>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={120}
+            duration={480}
+            as="article"
+          >
             <h3>Can I use the prompts with my own AI platform?</h3>
             <p>
               Yes. Copy a finished prompt into ChatGPT, Claude, Gemini, or
               another AI tool. You can also add a supported provider key to run
               prompts inside PromptDock.
             </p>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={180}
+            duration={480}
+            as="article"
+          >
             <h3>Can I save and share my prompts?</h3>
             <p>
               Yes. Sign in to keep a synced library, then publish individual
               prompts when you want anyone with the link to view and copy them.
             </p>
-          </article>
-          <article>
+          </MotionReveal>
+
+          <MotionReveal
+            variant="fade-up"
+            delay={240}
+            duration={480}
+            as="article"
+          >
             <h3>Who makes PromptDock?</h3>
             <p>
               PromptDock is an independent, open source project by{" "}
               <a href="https://github.com/kingjethro999">King Jethro</a>. It is
               not affiliated with the AI platforms mentioned here.
             </p>
-          </article>
+          </MotionReveal>
         </div>
       </section>
     </>
@@ -172,15 +236,25 @@ export function LandingFooter() {
   return (
     <>
       <section className="landing-sponsor" aria-labelledby="sponsorHeading">
-        <div className="landing-sponsor-copy">
+        <MotionReveal
+          variant="fade-up"
+          duration={500}
+          className="landing-sponsor-copy"
+        >
           <span className="landing-kicker">SUPPORT PROMPTDOCK</span>
           <h2 id="sponsorHeading">Help keep better prompts within reach.</h2>
           <p>
             If PromptDock makes your ideas easier to use, you can support the
             person building it. Every contribution helps the project grow.
           </p>
-        </div>
-        <div className="landing-sponsor-card">
+        </MotionReveal>
+
+        <MotionReveal
+          variant="scale-in"
+          delay={120}
+          duration={550}
+          className="landing-sponsor-card"
+        >
           <Image
             className="sponsor-card-icon"
             src="/assets/brands/github.png"
@@ -202,8 +276,9 @@ export function LandingFooter() {
           >
             Sponsor on GitHub <span>↗</span>
           </ActionLink>
-        </div>
+        </MotionReveal>
       </section>
+
       <footer className="landing-footer">
         <span className="landing-footer-brand">✳ promptdock</span>
         <span className="landing-footer-tagline">

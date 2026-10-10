@@ -385,16 +385,20 @@ export default function AuthForm() {
                   >
                     {mode === "login" ? "Create account" : "Sign in"}
                   </ActionLink>
-                  <Button variant="primary" type="submit" disabled={busy}>
-                    {busy
-                      ? "Working…"
-                      : mode === "register"
-                        ? "Create account"
-                        : mode === "login"
-                          ? "Sign in"
-                          : mode === "forgot"
-                            ? "Send reset link"
-                            : "Reset password"}
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    disabled={busy}
+                    loading={busy}
+                    loadingText="Working…"
+                  >
+                    {mode === "register"
+                      ? "Create account"
+                      : mode === "login"
+                        ? "Sign in"
+                        : mode === "forgot"
+                          ? "Send reset link"
+                          : "Reset password"}
                   </Button>
                 </div>
                 {mode === "register" && (
