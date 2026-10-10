@@ -20,31 +20,60 @@ export function useReveal<T extends Element = HTMLDivElement>(
       return;
     }
 
+    const checkAtBottom = () => {
+      if (!el) return;
+      if (
+        typeof window !== "undefined" &&
+        window.innerHeight + window.scrollY >=
+          document.documentElement.scrollHeight - 250
+      ) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          setPhase("visible");
+          cleanup();
+        }
+      }
+    };
+
+    const cleanup = () => {
+      io.disconnect();
+      if (typeof window !== "undefined") {
+        window.removeEventListener("scroll", checkAtBottom);
+      }
+    };
+
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setPhase("visible");
-          io.disconnect();
-        } else if (entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0)) {
+          cleanup();
+        } else if (
+          entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0)
+        ) {
           // Already ABOVE the viewport: anchor jump, restored scroll, or a fling past it.
           // Snap to final state so it can never stay hidden. No animation for content the user can't see.
           setPhase("instant");
-          io.disconnect();
+          cleanup();
         } else if (
           typeof window !== "undefined" &&
           entry.boundingClientRect.top < window.innerHeight &&
           window.innerHeight + window.scrollY >=
-            document.documentElement.scrollHeight - 80
+            document.documentElement.scrollHeight - 250
         ) {
           // Bottom of page: negative bottom margin cannot be reached by further scrolling.
           setPhase("visible");
-          io.disconnect();
+          cleanup();
         }
       },
       { rootMargin: margin, threshold: 0 }, // threshold 0: tall elements can never fail an "amount" test
     );
     io.observe(el);
-    return () => io.disconnect();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("scroll", checkAtBottom, { passive: true });
+    }
+
+    return () => cleanup();
   }, [margin]);
 
   // Keyboard users must never focus something invisible.
