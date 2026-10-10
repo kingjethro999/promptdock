@@ -49,23 +49,21 @@ export function Card({
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div
-            style={{
-              display: "flex",
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: C.accent,
-              color: C.bg,
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 26,
-              fontWeight: 700,
-            }}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 64 64"
+            style={{ display: "flex", borderRadius: 14 }}
           >
-            ✳
-          </div>
+            <rect width="64" height="64" rx="18" fill="#182824" />
+            <path
+              d="M16 20h25a9 9 0 0 1 0 18H29v10l-13-10V20Z"
+              fill="#c7f464"
+            />
+            <circle cx="29" cy="29" r="3" fill="#182824" />
+            <circle cx="40" cy="29" r="3" fill="#182824" />
+          </svg>
           <div
             style={{
               display: "flex",
