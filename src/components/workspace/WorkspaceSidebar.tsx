@@ -12,6 +12,8 @@ import BrandMark from "@/components/ui/BrandMark";
 import FeedbackDialog from "@/components/landing/FeedbackDialog";
 import InviteFriends from "./InviteFriends";
 
+import { RESERVED } from "@/lib/community/username";
+
 type Props = {
   open: boolean;
   close(): void;
@@ -19,10 +21,65 @@ type Props = {
   username: string | null;
   onNotice(message: string): void;
 };
-const nav = [
-  { href: "/workspace", icon: "✦", label: "Idea to prompt" },
-  { href: "/library", icon: "▦", label: "My library" },
-  { href: "/settings", icon: "⚙", label: "Settings" },
+
+const isProfilePath = (p: string) =>
+  /^\/[^/]+\/?$/.test(p) &&
+  !RESERVED.has((p.split("/")[1] || "").toLowerCase());
+
+function CommunityIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      style={{ verticalAlign: "middle" }}
+      {...props}
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+const nav: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  match?: (p: string) => boolean;
+}[] = [
+  {
+    href: "/workspace",
+    icon: "✦",
+    label: "New Prompt",
+    match: (p: string) => p === "/workspace",
+  },
+  {
+    href: "/library",
+    icon: "▦",
+    label: "Library",
+    match: (p: string) => p.startsWith("/library"),
+  },
+  {
+    href: "/community",
+    icon: <CommunityIcon />,
+    label: "Community",
+    match: (p: string) => p.startsWith("/community") || isProfilePath(p),
+  },
+  {
+    href: "/settings",
+    icon: "⚙",
+    label: "Settings",
+    match: (p: string) => p.startsWith("/settings"),
+  },
 ];
 
 export default function WorkspaceSidebar({
@@ -66,22 +123,27 @@ export default function WorkspaceSidebar({
       <BrandMark compact />
       <div className="sidebar-label">WORKSPACE</div>
       <nav className="main-nav" aria-label="Main navigation">
-        {nav.map((item) => (
-          <Link
-            href={item.href}
-            onClick={close}
-            key={item.href}
-            className={`nav-item${pathname === item.href ? " active" : ""}`}
-          >
-            <span className="nav-icon" aria-hidden="true">
-              {item.icon}
-            </span>
-            <span>{item.label}</span>
-            {item.href === "/library" && libraryCount !== null && (
-              <span className="nav-count">{libraryCount}</span>
-            )}
-          </Link>
-        ))}
+        {nav.map((item) => {
+          const isActive = item.match
+            ? item.match(pathname)
+            : pathname === item.href;
+          return (
+            <Link
+              href={item.href}
+              onClick={close}
+              key={item.href}
+              className={`nav-item${isActive ? " active" : ""}`}
+            >
+              <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+              {item.href === "/library" && libraryCount !== null && (
+                <span className="nav-count">{libraryCount}</span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-label sidebar-label-row">
