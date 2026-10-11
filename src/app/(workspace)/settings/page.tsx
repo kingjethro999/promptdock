@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { session } from "@/lib/server/session";
 import AiProviderSettings from "@/components/settings/AiProviderSettings";
 import ProfileSettings from "@/components/settings/ProfileSettings";
+import PublicProfileSettings from "@/components/settings/PublicProfileSettings";
 import UsageSettings from "@/components/settings/UsageSettings";
 import Masonry from "@/components/ui/Masonry";
 
@@ -27,6 +28,9 @@ export default async function SettingsPage() {
           </h1>
           <p>Choose the AI behind your prompts and keep your account secure.</p>
         </div>
+      </div>
+      <div className="settings-public-profile-section">
+        <PublicProfileSettings />
       </div>
       <Masonry
         className="settings-grid react-settings-grid"
