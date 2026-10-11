@@ -899,7 +899,11 @@ async function handleBackendRequest(request, response) {
         );
       else if (pathname === "/api/prompts" && request.method === "PUT")
         json(response, 200, {
-          prompt: await database.putPrompt(key, await readBody(request)),
+          prompt: await database.putPrompt(
+            key,
+            await readBody(request),
+            user.id,
+          ),
         });
       else if (pathname === "/api/prompts/tags" && request.method === "GET")
         json(response, 200, { tags: await database.listTags(key) });

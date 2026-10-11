@@ -224,9 +224,24 @@ async function exportPrompts(key) {
   return result.rows;
 }
 
-async function putPrompt(key, input) {
+async function putPrompt(key, input, userId = null) {
   const item = validatePrompt(input);
   await ensureSchema();
+  let sourcePromptId = null;
+  let origin = null;
+  if (input.sourcePublicId && /^[0-9a-f-]{36}$/i.test(input.sourcePublicId)) {
+    try {
+      const { getPromptForViewer } = require("./lib/community/queries");
+      const src = await getPromptForViewer(input.sourcePublicId, userId);
+      if (src && src.ownerId !== userId) {
+        sourcePromptId = src.id;
+        origin = "remix";
+      }
+    } catch {
+      // ignore resolution error
+    }
+  }
+
   const client = await pool.connect();
   const params = [
     key,
@@ -236,21 +251,37 @@ async function putPrompt(key, input) {
     item.idea,
     item.analysis,
     item.tags,
+    userId,
+    sourcePromptId,
+    origin,
   ];
   try {
     await client.query("BEGIN");
     const inserted = await client.query(
-      `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags)
-      VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (owner_key, id) DO NOTHING`,
+      `INSERT INTO prompts (owner_key, id, name, data, idea, analysis, tags, owner_id, source_prompt_id, origin)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::uuid, $9::uuid, $10) ON CONFLICT (owner_key, id) DO NOTHING`,
       params,
     );
     if (!inserted.rowCount) {
+      if (userId) {
+        await client.query(
+          `UPDATE prompts SET owner_id = COALESCE(owner_id, $2::uuid) WHERE owner_key = $1 AND id = $3`,
+          [key, userId, item.id],
+        );
+      }
+      if (sourcePromptId && origin) {
+        await client.query(
+          `UPDATE prompts SET source_prompt_id = COALESCE(source_prompt_id, $2::uuid), origin = COALESCE(origin, $3)
+           WHERE owner_key = $1 AND id = $4`,
+          [key, sourcePromptId, origin, item.id],
+        );
+      }
       const previous = await client.query(
         `SELECT name, data, idea, analysis, tags,
         (name IS DISTINCT FROM $3::text OR data IS DISTINCT FROM $4::jsonb OR idea IS DISTINCT FROM $5::text
           OR analysis IS DISTINCT FROM $6::jsonb OR tags IS DISTINCT FROM $7::text[]) AS changed
         FROM prompts WHERE owner_key = $1 AND id = $2 FOR UPDATE`,
-        params,
+        params.slice(0, 8),
       );
       const old = previous.rows[0];
       if (old.changed) {
@@ -267,12 +298,13 @@ async function putPrompt(key, input) {
         await client.query(
           `UPDATE prompts SET name = $3, data = $4, idea = $5, analysis = $6, tags = $7, updated_at = now()
           WHERE owner_key = $1 AND id = $2`,
-          params,
+          params.slice(0, 8),
         );
       }
     }
     const result = await client.query(
-      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"
+      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
+              forked_from AS "forkedFrom", source_prompt_id AS "sourcePromptId", origin, updated_at AS "updatedAt"
       FROM prompts WHERE owner_key = $1 AND id = $2`,
       [key, item.id],
     );
