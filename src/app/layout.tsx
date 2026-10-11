@@ -61,11 +61,13 @@ export const metadata: Metadata = {
   },
 };
 
+import { headers } from "next/headers";
 import { MotionProvider } from "@/components/motion/env";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html lang="en" className="booting">
       <head>
@@ -78,6 +80,7 @@ export default function RootLayout({
           />
         </noscript>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html:
               'setTimeout(function () { if (!document.documentElement.hasAttribute("data-motion")) document.documentElement.classList.add("motion-failsafe"); }, 3500);',

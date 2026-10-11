@@ -5,7 +5,7 @@ export function proxy(request: NextRequest) {
   const development = process.env.NODE_ENV === "development";
   const policy = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'sha256-IDXwfxp8U/mY/v69aIXC5J2mOTcs5f9wM43yPItahOM=' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.googleusercontent.com https://*.githubusercontent.com",
