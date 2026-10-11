@@ -1,13 +1,13 @@
 {
   "name": "promptdock",
-  "version": "0.11.5",
+  "version": "0.11.6",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
   "scripts": {
     "start": "next start",
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "next:dev": "next dev",
     "next:start": "next start",
     "typecheck": "tsc --noEmit",
@@ -42,7 +42,8 @@
   },
   "overrides": {
     "@firebase/app": "0.16.2",
-    "jwks-rsa": "3.1.0"
+    "jwks-rsa": "3.1.0",
+    "@grpc/grpc-js": "^1.14.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -58,6 +59,7 @@
     "typescript-eslint": "^8.71.0"
   },
   "allowScripts": {
-    "@firebase/util@1.15.3": true
+    "@firebase/util@1.15.3": true,
+    "protobufjs@7.6.6": true
   }
 }
