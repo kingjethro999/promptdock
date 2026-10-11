@@ -8,7 +8,8 @@ import { referrals } from "@/server/referrals";
 
 export const runtime = "nodejs"; // DB access; Edge cannot run most drivers
 
-const CACHE = "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
+const CACHE =
+  "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 const SHORT = "public, max-age=60, s-maxage=300"; // generic fallback: keep short so a late-created code can show up
 
 export async function GET(
@@ -19,7 +20,8 @@ export async function GET(
   const fonts = await getFonts();
   const domain = SITE_URL.replace(/^https?:\/\//, "");
 
-  let inviter: { username?: string | null; avatarUrl?: string | null } | null = null;
+  let inviter: { username?: string | null; avatarUrl?: string | null } | null =
+    null;
   try {
     inviter = await referrals.inviterFor(code);
   } catch {

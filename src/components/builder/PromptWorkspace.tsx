@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import IdeaCard from "./IdeaCard";
 import FineTunePanel from "./FineTunePanel";
@@ -16,16 +16,48 @@ import { usePromptBuilder } from "@/hooks/usePromptBuilder";
 import { json } from "@/lib/client/api";
 import type { SavedPrompt } from "@/lib/prompt/types";
 
+import { useSearchParams } from "next/navigation";
+
 const builderColumnWeights = [1.1, 0.9] as const;
 
 export default function PromptWorkspace() {
   const builder = usePromptBuilder();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const remixId = searchParams.get("remix");
+  const [remixSourcePublicId, setRemixSourcePublicId] = useState<string | null>(
+    null,
+  );
+
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState("");
   const [tags, setTags] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!remixId) return;
+    fetch(`/api/community/prompts/${remixId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.data) {
+          builder.loadPrompt({
+            id: crypto.randomUUID(),
+            name: `${data.name} (Remix)`,
+            data: data.data,
+            idea: data.data.task || "",
+            analysis: null,
+            tags: data.tags || [],
+            publicId: null,
+            updatedAt: new Date().toISOString(),
+          });
+          setName(`${data.name} (Remix)`);
+          setTags((data.tags || []).join(", "));
+          setRemixSourcePublicId(remixId);
+        }
+      })
+      .catch(() => {});
+  }, [remixId]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,6 +87,7 @@ export default function PromptWorkspace() {
           tags: parsedTags.length
             ? parsedTags
             : builder.sourcePrompt?.tags || [],
+          sourcePublicId: remixSourcePublicId || undefined,
         },
       );
       builder.savedPrompt(result.prompt);

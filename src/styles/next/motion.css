@@ -481,7 +481,9 @@
 }
 
 .sequence__title {
-  font: 800 clamp(28px, 3.2vw, 42px) / 1.15 Manrope, sans-serif;
+  font:
+    800 clamp(28px, 3.2vw, 42px) / 1.15 Manrope,
+    sans-serif;
   letter-spacing: -1.5px;
   color: #173225;
   margin: 0 0 16px;
@@ -552,7 +554,9 @@
 
 .sequence__surface-content strong {
   display: block;
-  font: 800 18px / 1.4 Manrope, sans-serif;
+  font:
+    800 18px / 1.4 Manrope,
+    sans-serif;
   letter-spacing: -0.5px;
   color: #173225;
   margin-bottom: 8px;
@@ -737,4 +741,3 @@ body {
     }
   }
 }
-

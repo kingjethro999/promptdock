@@ -5,7 +5,8 @@ import { OG_SIZE, SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
 
-const CACHE = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
+const CACHE =
+  "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
 
 export async function GET() {
   const fonts = await getFonts();
