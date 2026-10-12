@@ -22,6 +22,15 @@ export type PublicProfile = PublicCreator & {
   communityAudience?: "public" | "followers";
 };
 
+export type CommunityCreatorCard = PublicCreator & {
+  id: string;
+  bio: string | null;
+  followerCount: number;
+  promptCount: number;
+  following?: boolean;
+  isOwner?: boolean;
+};
+
 export type Page = {
   items: CommunityPromptCard[];
   nextCursor: string | null;

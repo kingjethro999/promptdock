@@ -368,8 +368,13 @@
 
 .profile-avatar {
   width: var(--avatar);
-  aspect-ratio: 1;
+  height: var(--avatar);
+  min-width: var(--avatar);
+  min-height: var(--avatar);
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
+  overflow: hidden;
   margin-top: calc(var(--avatar) / -2);
   border: 4px solid var(--community-bg);
   background: var(--community-surface);
@@ -938,4 +943,234 @@
 
 .profile-avatar-wrapper--clickable:hover .profile-avatar-edit-badge {
   transform: scale(1.1);
+}
+
+/* Community Explorer Tabs & Creator Discovery */
+.community-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--community-border);
+  padding-bottom: 12px;
+}
+
+.community-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--community-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.community-tab-btn:hover {
+  background: var(--community-tag-bg);
+  color: var(--community-text);
+}
+
+.community-tab-btn.active {
+  background: var(--community-surface);
+  border-color: var(--community-border);
+  color: var(--community-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.community-tab-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--community-tag-bg);
+  color: var(--community-tag-text);
+}
+
+/* Matching Creators bar inside Prompts search */
+.matching-creators-bar {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--community-surface);
+  border: 1px solid var(--community-border);
+  border-radius: 12px;
+}
+
+.matching-creators-heading {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--community-muted);
+  margin-bottom: 12px;
+}
+
+.matching-creators-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.matching-creator-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--community-tag-bg);
+  border: 1px solid var(--community-border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.matching-creator-item:hover {
+  border-color: var(--community-accent);
+}
+
+.matching-creator-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-sizing: border-box;
+}
+
+.matching-creator-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.matching-creator-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--community-text);
+}
+
+.matching-creator-handle {
+  font-size: 11px;
+  color: var(--community-muted);
+}
+
+/* Creators Grid */
+.creators-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.creator-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--community-surface);
+  border: 1px solid var(--community-border);
+  border-radius: 12px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.creator-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.creator-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.creator-card-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  flex: 1;
+}
+
+.creator-card-avatar {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.creator-card-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.creator-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--community-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creator-card-username {
+  font-size: 12px;
+  color: var(--community-muted);
+}
+
+.creator-card-bio {
+  font-size: 13px;
+  color: var(--community-text);
+  line-height: 1.45;
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.creator-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--community-border);
+  font-size: 12px;
+  color: var(--community-muted);
+  margin-top: auto;
+}
+
+.creator-card-stat strong {
+  color: var(--community-text);
+}
+
+.creator-card-view-btn {
+  margin-left: auto;
+  color: var(--community-accent-hover);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.creator-card-view-btn:hover {
+  text-decoration: underline;
 }

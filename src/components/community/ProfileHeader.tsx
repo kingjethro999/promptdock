@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { PublicProfile } from "@/lib/community/types";
-import { avatarFallback } from "@/lib/community/username";
+import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
 import FollowButton from "./FollowButton";
 
 type ViewProps = {
@@ -101,17 +101,27 @@ export default function ProfileHeader(props: Props) {
             tabIndex={isEdit ? 0 : undefined}
             aria-label={isEdit ? "Change profile photo" : undefined}
           >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="profile-avatar" />
-            ) : (
-              <div
-                className="profile-avatar"
-                data-tone={fallback.tone}
-                aria-hidden="true"
-              >
-                {fallback.letter}
-              </div>
-            )}
+            <img
+              src={avatarUrl || getGravatarUrl(username, 256)}
+              alt={displayName}
+              className="profile-avatar"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const fallbackEl =
+                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                    ".profile-avatar-fallback",
+                  );
+                if (fallbackEl) fallbackEl.style.display = "flex";
+              }}
+            />
+            <div
+              className="profile-avatar profile-avatar-fallback"
+              data-tone={fallback.tone}
+              style={{ display: "none" }}
+              aria-hidden="true"
+            >
+              {fallback.letter}
+            </div>
 
             {isEdit && (
               <div className="profile-avatar-edit-badge" aria-hidden="true">

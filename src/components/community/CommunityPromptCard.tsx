@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { CommunityPromptCard as CardType } from "@/lib/community/types";
-import { avatarFallback } from "@/lib/community/username";
+import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
 import { copyPromptText } from "@/lib/community/copy";
 
 export default function CommunityPromptCard({ card }: { card: CardType }) {
@@ -68,21 +68,30 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
           href={`/${card.creator.username}`}
           className="community-card-creator"
         >
-          {card.creator.avatarUrl ? (
-            <img
-              src={card.creator.avatarUrl}
-              alt=""
-              className="community-avatar-small"
-            />
-          ) : (
-            <span
-              className="community-avatar-small"
-              data-tone={fallback.tone}
-              aria-hidden="true"
-            >
-              {fallback.letter}
-            </span>
-          )}
+          <img
+            src={
+              card.creator.avatarUrl ||
+              getGravatarUrl(card.creator.username, 72)
+            }
+            alt=""
+            className="community-avatar-small"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              const fb =
+                e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                  ".community-avatar-fallback",
+                );
+              if (fb) fb.style.display = "inline-flex";
+            }}
+          />
+          <span
+            className="community-avatar-small community-avatar-fallback"
+            data-tone={fallback.tone}
+            style={{ display: "none" }}
+            aria-hidden="true"
+          >
+            {fallback.letter}
+          </span>
           <div className="community-creator-info">
             <span className="community-creator-name">
               {card.creator.displayName}
