@@ -221,4 +221,12 @@ module.exports = [
     WHERE EXISTS (SELECT 1 FROM marker)
       AND prompts.owner_id IS NULL
       AND prompts.owner_key = encode(sha256(u.id::text::bytea), 'hex')`,
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('community_legacy_public_prompts_listed_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE prompts SET
+      listed_in_community = true,
+      listed_at = COALESCE(listed_at, published_at, updated_at, now())
+    WHERE EXISTS (SELECT 1 FROM marker)
+      AND visibility = 'public'
+      AND listed_in_community = false`,
 ];

@@ -192,7 +192,10 @@ async function listPrompts(key, options = {}) {
   const params = [key, q, pattern, tag];
   const [result, count] = await Promise.all([
     pool.query(
-      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY ${promptSorts[sort]} LIMIT 100 OFFSET $5`,
+      `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
+        COALESCE(visibility, CASE WHEN public_id IS NOT NULL THEN 'public' ELSE 'private' END) AS "visibility",
+        COALESCE(listed_in_community, false) AS "listedInCommunity",
+        forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY ${promptSorts[sort]} LIMIT 100 OFFSET $5`,
       [...params, offset],
     ),
     pool.query(
@@ -217,6 +220,8 @@ async function exportPrompts(key) {
   await ensureSchema();
   const result = await pool.query(
     `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
+      COALESCE(visibility, CASE WHEN public_id IS NOT NULL THEN 'public' ELSE 'private' END) AS "visibility",
+      COALESCE(listed_in_community, false) AS "listedInCommunity",
       forked_from AS "forkedFrom", updated_at AS "updatedAt"
     FROM prompts WHERE owner_key = $1 ORDER BY updated_at DESC, id ASC`,
     [key],
@@ -304,6 +309,8 @@ async function putPrompt(key, input, userId = null) {
     }
     const result = await client.query(
       `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
+              COALESCE(visibility, CASE WHEN public_id IS NOT NULL THEN 'public' ELSE 'private' END) AS "visibility",
+              COALESCE(listed_in_community, false) AS "listedInCommunity",
               forked_from AS "forkedFrom", source_prompt_id AS "sourcePromptId", origin, updated_at AS "updatedAt"
       FROM prompts WHERE owner_key = $1 AND id = $2`,
       [key, item.id],
@@ -468,11 +475,16 @@ async function setPromptPublic(key, id, published, username = null) {
     throw new Error("Invalid sharing request.");
   await ensureSchema();
   const result = await pool.query(
-    `UPDATE prompts SET public_id = CASE WHEN $3 THEN COALESCE(public_id, $4::uuid) ELSE NULL END,
-    published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END,
-    owner_username = CASE WHEN $3 THEN $5 ELSE owner_username END
+    `UPDATE prompts SET
+      public_id = CASE WHEN $3 THEN COALESCE(public_id, $4::uuid) ELSE NULL END,
+      visibility = CASE WHEN $3 THEN 'public' ELSE 'private' END,
+      listed_in_community = CASE WHEN $3 THEN listed_in_community ELSE false END,
+      published_at = CASE WHEN $3 THEN COALESCE(published_at, now()) ELSE NULL END,
+      owner_username = CASE WHEN $3 THEN $5 ELSE owner_username END
     WHERE owner_key = $1 AND id = $2
-    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId", forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
+    RETURNING id, name, data, idea, analysis, tags, public_id AS "publicId",
+      visibility, listed_in_community AS "listedInCommunity",
+      forked_from AS "forkedFrom", updated_at AS "updatedAt"`,
     [key, id, published, randomUUID(), username],
   );
   return result.rows[0] || null;

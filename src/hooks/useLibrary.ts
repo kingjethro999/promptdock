@@ -197,6 +197,7 @@ export function useLibrary() {
 
   return {
     prompts,
+    setPrompts,
     total,
     q,
     setQ,

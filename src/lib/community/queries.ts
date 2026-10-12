@@ -11,7 +11,12 @@ import {
   RESERVED,
   USERNAME_RE,
 } from "./username.ts";
-import type { CommunityPromptCard, PublicProfile, Page } from "./types";
+import type {
+  CommunityPromptCard,
+  CommunityCreatorCard,
+  PublicProfile,
+  Page,
+} from "./types";
 
 import { createRequire } from "node:module";
 
@@ -359,6 +364,65 @@ export async function listCommunityTags(limit: number = 12): Promise<string[]> {
       [limit],
     );
     return rows.map((r: { tag: string }) => r.tag);
+  } catch {
+    return [];
+  }
+}
+
+export async function listCommunityCreators(options: {
+  viewerId: string | null;
+  q?: string;
+  limit?: number;
+}): Promise<CommunityCreatorCard[]> {
+  try {
+    await db.ensureSchema();
+    const limit = Math.min(Math.max(1, options.limit ?? 24), 60);
+    const q = options.q?.trim() || "";
+    const params: (string | number | null)[] = [options.viewerId];
+    let whereClause =
+      "WHERE COALESCE(u.community_audience, 'public') = 'public'";
+    if (q) {
+      params.push(`%${q.toLowerCase()}%`);
+      whereClause += ` AND (LOWER(u.username) LIKE $${params.length} OR LOWER(COALESCE(u.display_name, '')) LIKE $${params.length} OR LOWER(COALESCE(u.bio, '')) LIKE $${params.length})`;
+    }
+    params.push(limit);
+    const limitIdx = params.length;
+
+    const { rows } = await db.pool.query(
+      `SELECT u.id, u.username, COALESCE(u.display_name, u.username) AS "displayName",
+              u.avatar_url AS "avatarUrl", u.bio,
+              (SELECT count(*)::int FROM follows WHERE followee_id = u.id) AS "followerCount",
+              (SELECT count(*)::int FROM prompts p WHERE p.owner_id = u.id AND p.visibility = 'public' AND p.listed_in_community = true) AS "promptCount",
+              EXISTS (SELECT 1 FROM follows WHERE follower_id = $1::uuid AND followee_id = u.id) AS "following"
+         FROM users u
+        ${whereClause}
+        ORDER BY "followerCount" DESC, "promptCount" DESC, u.created_at DESC
+        LIMIT $${limitIdx}`,
+      params,
+    );
+
+    return rows.map(
+      (r: {
+        id: string;
+        username: string;
+        displayName: string;
+        avatarUrl: string | null;
+        bio: string | null;
+        followerCount: number | string;
+        promptCount: number | string;
+        following: boolean;
+      }) => ({
+        id: r.id,
+        username: r.username,
+        displayName: r.displayName,
+        avatarUrl: r.avatarUrl,
+        bio: r.bio,
+        followerCount: Number(r.followerCount) || 0,
+        promptCount: Number(r.promptCount) || 0,
+        following: Boolean(r.following),
+        isOwner: options.viewerId !== null && options.viewerId === r.id,
+      }),
+    );
   } catch {
     return [];
   }

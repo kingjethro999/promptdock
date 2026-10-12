@@ -19,21 +19,25 @@ type Props = {
     published: boolean,
   ): Promise<SavedPrompt | undefined>;
   setPrompt(prompt: SavedPrompt): void;
+  onUpdated?(prompt: SavedPrompt): void;
 };
 
 export default function SharePromptDialog({
   prompt,
-  username,
   close,
   setPrompt,
+  onUpdated,
 }: Props) {
   const [notice, setNotice] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(
-    prompt.publicId ? "public" : "private",
+    prompt.visibility || (prompt.publicId ? "public" : "private"),
   );
-  const [listed, setListed] = useState(false);
+  const [listed, setListed] = useState<boolean>(
+    Boolean(prompt.listedInCommunity),
+  );
   const [audience, setAudience] = useState<Audience>("public");
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const publicLink =
     prompt.publicId && typeof window !== "undefined"
@@ -41,7 +45,6 @@ export default function SharePromptDialog({
       : "";
 
   useEffect(() => {
-    // Fetch user audience setting
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -62,7 +65,9 @@ export default function SharePromptDialog({
         input?.select();
         if (!document.execCommand("copy")) throw new Error("Copy failed");
       }
-      setNotice("Link copied. Anyone with access can view this prompt.");
+      setCopied(true);
+      setNotice("Link copied to clipboard.");
+      setTimeout(() => setCopied(false), 2500);
     } catch {
       document.querySelector<HTMLInputElement>("#reactShareLink")?.select();
       setNotice("Select the link above to copy it.");
@@ -86,13 +91,21 @@ export default function SharePromptDialog({
       const data = await res.json();
       setVisibility(data.visibility);
       setListed(data.listedInCommunity);
-      setPrompt({
+      const updated: SavedPrompt = {
         ...prompt,
         publicId: data.publicId,
-      });
-      setNotice("Sharing settings updated.");
+        visibility: data.visibility,
+        listedInCommunity: data.listedInCommunity,
+      };
+      setPrompt(updated);
+      onUpdated?.(updated);
+      setNotice(
+        data.visibility === "private"
+          ? "Prompt is now private."
+          : "Privacy updated. Share link is ready.",
+      );
     } catch {
-      setNotice("Could not update sharing settings. Try again.");
+      setNotice("Could not update privacy. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -100,65 +113,20 @@ export default function SharePromptDialog({
 
   const effective = effectiveVisibility(visibility, audience);
   let effectiveLabel = "";
-  if (effective === "private") {
-    effectiveLabel = "Private. Only you can view this prompt.";
-  } else if (effective === "followers") {
-    if (visibility === "public" && audience === "followers") {
-      effectiveLabel =
-        "Public, limited to followers by your profile audience cap.";
-    } else {
-      effectiveLabel =
-        "Followers only. Visible to your followers with the link.";
-    }
-  } else {
-    effectiveLabel = "Public. Anyone with the link can view.";
-  }
-
-  if (!prompt.publicId && visibility === "private") {
-    return (
-      <AppDialog
-        key="publish"
-        className="confirm-dialog"
-        label="Publish prompt"
-        close={close}
-      >
-        <button
-          className="dialog-close"
-          type="button"
-          aria-label="Close confirmation"
-          onClick={close}
-        >
-          ×
-        </button>
-        <span className="dialog-icon" aria-hidden="true">
-          ✳
-        </span>
-        <span className="confirm-kicker">PLEASE CONFIRM</span>
-        <h2>Share this prompt?</h2>
-        <p>
-          Generate a shareable link for this prompt. You can choose whether to
-          list it in Community discovery or keep it link-only.
-        </p>
-        <div className="dialog-actions">
-          <Button onClick={close}>Cancel</Button>
-          <Button
-            variant="primary"
-            onClick={async () => {
-              await updateVisibility("public", false);
-            }}
-          >
-            Create link
-          </Button>
-        </div>
-      </AppDialog>
-    );
+  if (
+    effective === "followers" &&
+    visibility === "public" &&
+    audience === "followers"
+  ) {
+    effectiveLabel =
+      "Your profile audience is set to followers only, so link access is limited to followers.";
   }
 
   return (
     <AppDialog
       key="share"
-      className="share-dialog"
-      label="Share prompt"
+      className="share-dialog prompt-privacy-dialog"
+      label="Prompt Privacy & Sharing"
       close={close}
     >
       <button
@@ -169,120 +137,132 @@ export default function SharePromptDialog({
       >
         ×
       </button>
-      <span className="dialog-icon" aria-hidden="true">
-        ↗
-      </span>
-      <h2>Share this prompt</h2>
-      {username && (
-        <p className="share-attribution">
-          {username} shared a prompt with you.
-        </p>
-      )}
 
-      {/* Visibility control */}
-      <div
-        style={{
-          margin: "16px 0",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
-        <label style={{ fontSize: 13, fontWeight: 600 }}>Visibility</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {(["private", "followers", "public"] as Visibility[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              className={`community-btn${visibility === v ? " community-btn-primary" : ""}`}
-              style={{ flex: 1, textTransform: "capitalize", minHeight: 40 }}
-              onClick={() => {
-                const nextListed = v === "private" ? false : listed;
-                void updateVisibility(v, nextListed);
-              }}
-              disabled={saving}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-
-        <p
-          style={{
-            fontSize: 12,
-            color: "var(--community-muted)",
-            margin: "4px 0 0",
-          }}
-        >
-          {effectiveLabel}
-        </p>
-      </div>
-
-      {/* Community listing toggle */}
-      <div
-        style={{
-          padding: "12px",
-          background: "var(--community-tag-bg, #edf1eb)",
-          borderRadius: 8,
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          opacity: visibility === "private" ? 0.5 : 1,
-        }}
-      >
-        <div>
-          <strong style={{ fontSize: 13, display: "block" }}>
-            List in Community
-          </strong>
-          <span style={{ fontSize: 12, color: "var(--community-muted)" }}>
-            Allow discovery in the global community feed & profile.
-          </span>
-        </div>
-        <input
-          type="checkbox"
-          checked={listed && visibility !== "private"}
-          disabled={visibility === "private" || saving}
-          onChange={(e) => {
-            void updateVisibility(visibility, e.target.checked);
-          }}
-          style={{ width: 18, height: 18, cursor: "pointer" }}
-        />
-      </div>
-
-      {publicLink && visibility !== "private" && (
-        <>
-          <label htmlFor="reactShareLink">Share link</label>
-          <input
-            id="reactShareLink"
-            type="text"
-            readOnly
-            aria-label="Public prompt link"
-            value={publicLink}
-            onFocus={(event) => event.currentTarget.select()}
-          />
-        </>
-      )}
-
-      <div className="dialog-actions">
-        {visibility !== "private" && (
-          <Button
-            onClick={() => {
-              void updateVisibility("private", false);
-            }}
-          >
-            Make private
-          </Button>
-        )}
-        {publicLink && visibility !== "private" && (
-          <Button variant="primary" onClick={copy}>
-            Copy link
-          </Button>
-        )}
-      </div>
-      <p className="settings-feedback" role="status">
-        {notice}
+      <div className="section-kicker">PROMPT PRIVACY</div>
+      <h2>Privacy settings</h2>
+      <p className="share-attribution">
+        Configure access for <strong>{prompt.name}</strong>
       </p>
+
+      {/* Visibility radio choice cards */}
+      <div
+        className="prompt-privacy-choices"
+        role="radiogroup"
+        aria-label="Prompt visibility"
+      >
+        <label
+          className={`choice-card ${visibility === "private" ? "choice-card--selected" : ""}`}
+        >
+          <input
+            type="radio"
+            name="prompt-visibility"
+            value="private"
+            checked={visibility === "private"}
+            disabled={saving}
+            onChange={() => updateVisibility("private", false)}
+          />
+          <div className="choice-card__body">
+            <strong>Private</strong>
+            <p>Only you can view and use this prompt in your workspace.</p>
+          </div>
+        </label>
+
+        <label
+          className={`choice-card ${visibility === "public" ? "choice-card--selected" : ""}`}
+        >
+          <input
+            type="radio"
+            name="prompt-visibility"
+            value="public"
+            checked={visibility === "public"}
+            disabled={saving}
+            onChange={() => updateVisibility("public", listed)}
+          />
+          <div className="choice-card__body">
+            <strong>Public</strong>
+            <p>Anyone with the link can view and copy this prompt.</p>
+          </div>
+        </label>
+
+        <label
+          className={`choice-card ${visibility === "followers" ? "choice-card--selected" : ""}`}
+        >
+          <input
+            type="radio"
+            name="prompt-visibility"
+            value="followers"
+            checked={visibility === "followers"}
+            disabled={saving}
+            onChange={() => updateVisibility("followers", false)}
+          />
+          <div className="choice-card__body">
+            <strong>Followers only</strong>
+            <p>Only approved followers with the link can view.</p>
+          </div>
+        </label>
+      </div>
+
+      {effectiveLabel && (
+        <p className="share-audience-warning">{effectiveLabel}</p>
+      )}
+
+      {/* Community listing toggle when public */}
+      {visibility === "public" && (
+        <div className="share-community-card">
+          <div className="share-community-card__text">
+            <strong>List in Community feed</strong>
+            <p>
+              Allow discovery in community search, tags, and creator profile.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={listed}
+            disabled={saving}
+            onChange={(e) => updateVisibility("public", e.target.checked)}
+            className="share-community-card__checkbox"
+          />
+        </div>
+      )}
+
+      {/* Public / Followers link */}
+      {publicLink && visibility !== "private" ? (
+        <div className="share-link-group">
+          <label htmlFor="reactShareLink">Shareable link</label>
+          <div className="share-link-input-row">
+            <input
+              id="reactShareLink"
+              type="text"
+              readOnly
+              aria-label="Prompt link"
+              value={publicLink}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <Button variant="primary" onClick={copy}>
+              {copied ? "Copied!" : "Copy link"}
+            </Button>
+          </div>
+        </div>
+      ) : visibility === "private" ? (
+        <div className="share-private-notice">
+          <span>This prompt is private. Only you can access it.</span>
+        </div>
+      ) : null}
+
+      {notice && (
+        <p className="settings-feedback" role="status">
+          {notice}
+        </p>
+      )}
+
+      <div
+        className="dialog-actions"
+        style={{ justifyContent: "flex-end", marginTop: 20 }}
+      >
+        <Button variant="primary" onClick={close}>
+          Done
+        </Button>
+      </div>
     </AppDialog>
   );
 }
