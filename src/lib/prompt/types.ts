@@ -57,6 +57,8 @@ export type SavedPrompt = {
   updatedAt: string;
   publicId?: string | null;
   forkedFrom?: string | null;
+  visibility?: "private" | "followers" | "public";
+  listedInCommunity?: boolean;
 };
 
 export const emptyPromptData: PromptData = {

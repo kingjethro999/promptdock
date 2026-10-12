@@ -34,6 +34,7 @@ type Props = {
     prompt: SavedPrompt,
     published: boolean,
   ): Promise<SavedPrompt | undefined>;
+  onPromptUpdated?(prompt: SavedPrompt): void;
 };
 
 export default function LibraryDialogs(props: Props) {
@@ -46,6 +47,7 @@ export default function LibraryDialogs(props: Props) {
           close={() => props.setShareCandidate(null)}
           publish={props.publish}
           setPrompt={props.setShareCandidate}
+          onUpdated={props.onPromptUpdated}
         />
       )}
       {props.pasteOpen && (

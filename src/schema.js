@@ -155,4 +155,78 @@ module.exports = [
     tokens double precision NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_url text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS community_audience text NOT NULL DEFAULT 'public'",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS username_changed_at timestamptz",
+  `CREATE TABLE IF NOT EXISTS username_aliases (
+    alias text PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE INDEX IF NOT EXISTS username_aliases_user_idx ON username_aliases (user_id)",
+  `CREATE TABLE IF NOT EXISTS follows (
+    follower_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    followee_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (follower_id, followee_id),
+    CHECK (follower_id <> followee_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS follows_followee_idx ON follows (followee_id)",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES users(id) ON DELETE CASCADE",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS visibility text NOT NULL DEFAULT 'private'",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS listed_in_community boolean NOT NULL DEFAULT false",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS listed_at timestamptz",
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'prompts_id_unique'
+    ) THEN
+      ALTER TABLE prompts ADD CONSTRAINT prompts_id_unique UNIQUE (id);
+    END IF;
+  END $$;`,
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS source_prompt_id uuid REFERENCES prompts(id) ON DELETE SET NULL",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS origin text",
+  "ALTER TABLE prompts ADD COLUMN IF NOT EXISTS deleted_at timestamptz",
+  "CREATE UNIQUE INDEX IF NOT EXISTS prompts_one_save_per_source ON prompts (owner_id, source_prompt_id) WHERE origin = 'save'",
+  "CREATE INDEX IF NOT EXISTS prompts_feed_idx ON prompts (listed_at DESC, id DESC) WHERE listed_in_community AND visibility = 'public'",
+  "CREATE INDEX IF NOT EXISTS prompts_owner_idx ON prompts (owner_id, listed_at DESC, id DESC) WHERE listed_in_community",
+  "CREATE INDEX IF NOT EXISTS prompts_owner_id_idx ON prompts (owner_id)",
+  `DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_name = 'prompts' AND column_name = 'search'
+    ) THEN
+      ALTER TABLE prompts ADD COLUMN search tsvector GENERATED ALWAYS AS (
+        to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(data->>'task', ''))
+      ) STORED;
+    END IF;
+  END $$;`,
+  "CREATE INDEX IF NOT EXISTS prompts_search_gin ON prompts USING gin (search)",
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('community_backfill_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE users SET display_name = username, username = lower(username)
+    WHERE EXISTS (SELECT 1 FROM marker) AND display_name IS NULL AND username IS NOT NULL`,
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('community_prompts_visibility_backfill_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE prompts SET
+      visibility = CASE WHEN public_id IS NOT NULL THEN 'public' ELSE 'private' END,
+      listed_in_community = false
+    WHERE EXISTS (SELECT 1 FROM marker)`,
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('backfill_prompts_owner_id_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE prompts SET owner_id = u.id
+    FROM users u
+    WHERE EXISTS (SELECT 1 FROM marker)
+      AND prompts.owner_id IS NULL
+      AND prompts.owner_key = encode(sha256(u.id::text::bytea), 'hex')`,
+  `WITH marker AS (INSERT INTO schema_migrations (key) VALUES ('community_legacy_public_prompts_listed_v1')
+    ON CONFLICT DO NOTHING RETURNING key)
+    UPDATE prompts SET
+      listed_in_community = true,
+      listed_at = COALESCE(listed_at, published_at, updated_at, now())
+    WHERE EXISTS (SELECT 1 FROM marker)
+      AND visibility = 'public'
+      AND listed_in_community = false`,
 ];

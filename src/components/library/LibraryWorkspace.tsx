@@ -25,6 +25,7 @@ export default function LibraryWorkspace({
   const library = useLibrary();
   const {
     prompts,
+    setPrompts,
     total,
     q,
     setQ,
@@ -276,6 +277,11 @@ export default function LibraryWorkspace({
         shareCandidate={shareCandidate}
         setShareCandidate={setShareCandidate}
         publish={share}
+        onPromptUpdated={(updated) => {
+          setPrompts((prev) =>
+            prev.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        }}
       />
     </div>
   );

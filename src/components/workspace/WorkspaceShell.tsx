@@ -26,10 +26,12 @@ export default function WorkspaceShell({ user, admin, children }: Props) {
   }, [user.id]);
   const label =
     {
-      "/workspace": "Idea to prompt",
+      "/workspace": "New Prompt",
       "/library": "My library",
+      "/community": "Community",
       "/settings": "Settings",
-    }[pathname] || "PromptDock";
+    }[pathname] ||
+    (pathname.startsWith("/community") ? "Community" : "PromptDock");
 
   return (
     <div className="app-shell react-app-shell">
