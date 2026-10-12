@@ -1682,8 +1682,24 @@ select.search-select-native {
   font-weight: 800;
   color: #809281;
 }
+button.visibility-badge {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: opacity 0.15s ease;
+}
+button.visibility-badge:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
 .visibility-badge.is-public {
   color: #42844b;
+}
+.visibility-badge.is-followers {
+  color: #7c3aed;
 }
 .library-share-button {
   border: 0;

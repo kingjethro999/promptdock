@@ -1,17 +1,18 @@
-const { chromium } = require('playwright');
-const fs = require('fs');
+const { chromium } = require("playwright");
+const fs = require("fs");
 
-const QA_DIR = '/home/king/.gemini/antigravity-ide/brain/3f458dbb-c4f5-4ffa-b718-41bdb401e18d/qa';
+const QA_DIR =
+  "/home/king/.gemini/antigravity-ide/brain/3f458dbb-c4f5-4ffa-b718-41bdb401e18d/qa";
 if (!fs.existsSync(QA_DIR)) {
   fs.mkdirSync(QA_DIR, { recursive: true });
 }
 
 const VIEWPORTS = [
-  { name: 'wide', width: 1920, height: 1080, hasTouch: false },
-  { name: 'laptop', width: 1366, height: 768, hasTouch: false },
-  { name: 'tablet', width: 820, height: 1180, hasTouch: true },
-  { name: 'mobile', width: 390, height: 844, hasTouch: true },
-  { name: 'mobile-landscape', width: 844, height: 390, hasTouch: true },
+  { name: "wide", width: 1920, height: 1080, hasTouch: false },
+  { name: "laptop", width: 1366, height: 768, hasTouch: false },
+  { name: "tablet", width: 820, height: 1180, hasTouch: true },
+  { name: "mobile", width: 390, height: 844, hasTouch: true },
+  { name: "mobile-landscape", width: 844, height: 390, hasTouch: true },
 ];
 
 async function settle(page, timeout = 4000) {
@@ -31,7 +32,7 @@ async function settle(page, timeout = 4000) {
         tick();
       }),
     null,
-    { timeout }
+    { timeout },
   );
 }
 
@@ -51,7 +52,7 @@ async function measureFrames(page, action) {
     try {
       new PerformanceObserver((l) => {
         for (const e of l.getEntries()) w.__f.loaf += e.duration;
-      }).observe({ type: 'long-animation-frame', buffered: true });
+      }).observe({ type: "long-animation-frame", buffered: true });
     } catch {}
     let last = performance.now();
     const loop = (t) => {
@@ -82,7 +83,7 @@ async function measureFrames(page, action) {
 
 async function runSmoothScrollQa() {
   const browser = await chromium.launch({
-    executablePath: '/usr/bin/google-chrome',
+    executablePath: "/usr/bin/google-chrome",
     headless: true,
   });
 
@@ -103,23 +104,23 @@ async function runSmoothScrollQa() {
       hasTouch: vp.hasTouch,
     });
     const page = await context.newPage();
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
     await settle(page);
 
     // Test: No horizontal overflow
     const overflowCheck = await page.evaluate(() => {
       const W = document.documentElement.clientWidth;
-      const offenders = [...document.querySelectorAll('body *')]
+      const offenders = [...document.querySelectorAll("body *")]
         .filter((el) => {
-          if (getComputedStyle(el).position === 'fixed') return false;
+          if (getComputedStyle(el).position === "fixed") return false;
           let p = el.parentElement;
           while (p && p !== document.body) {
             const cs = getComputedStyle(p);
             if (
-              cs.overflow === 'hidden' ||
-              cs.overflowX === 'hidden' ||
-              cs.overflow === 'clip' ||
-              cs.contain.includes('paint')
+              cs.overflow === "hidden" ||
+              cs.overflowX === "hidden" ||
+              cs.overflow === "clip" ||
+              cs.contain.includes("paint")
             ) {
               return false;
             }
@@ -128,9 +129,11 @@ async function runSmoothScrollQa() {
           return el.getBoundingClientRect().right > W + 1;
         })
         .slice(0, 10)
-        .map((el) => el.tagName + '.' + el.className);
+        .map((el) => el.tagName + "." + el.className);
       return {
-        hasNoOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        hasNoOverflow:
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
         offenders,
       };
     });
@@ -138,18 +141,22 @@ async function runSmoothScrollQa() {
     // Test: Keyboard scrolling
     let keyboardOk = true;
     if (!vp.hasTouch) {
-      await page.locator('body').click({ position: { x: 5, y: 5 } });
+      await page.locator("body").click({ position: { x: 5, y: 5 } });
       const y0 = await page.evaluate(() => scrollY);
-      await page.keyboard.press('Space');
+      await page.keyboard.press("Space");
       await settle(page);
       const y1 = await page.evaluate(() => scrollY);
-      await page.keyboard.press('PageDown');
+      await page.keyboard.press("PageDown");
       await settle(page);
       const y2 = await page.evaluate(() => scrollY);
-      await page.keyboard.press('End');
+      await page.keyboard.press("End");
       await settle(page);
-      const atBottom = await page.evaluate(() => Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 4);
-      await page.keyboard.press('Home');
+      const atBottom = await page.evaluate(
+        () =>
+          Math.ceil(scrollY + innerHeight) >=
+          document.documentElement.scrollHeight - 4,
+      );
+      await page.keyboard.press("Home");
       await settle(page);
       const atTop = await page.evaluate(() => scrollY < 4);
       keyboardOk = y1 > y0 && y2 > y1 && atBottom && atTop;
@@ -162,14 +169,19 @@ async function runSmoothScrollQa() {
     for (let i = 0; i < aCount; i++) {
       const a = anchors.nth(i);
       if (!(await a.isVisible())) continue;
-      const href = await a.getAttribute('href');
+      const href = await a.getAttribute("href");
       await a.click();
       await settle(page);
       const res = await page.evaluate((h) => {
         const el = document.querySelector(h);
         if (!el) return null;
-        const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-        const atBottom = Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 4;
+        const pad =
+          parseFloat(
+            getComputedStyle(document.documentElement).scrollPaddingTop,
+          ) || 0;
+        const atBottom =
+          Math.ceil(scrollY + innerHeight) >=
+          document.documentElement.scrollHeight - 4;
         return {
           delta: Math.abs(el.getBoundingClientRect().top - pad),
           atBottom,
@@ -195,17 +207,23 @@ async function runSmoothScrollQa() {
   }
 
   // 2. Reduced Motion
-  console.log('Testing reduced motion...');
+  console.log("Testing reduced motion...");
   {
     const rmContext = await browser.newContext({
       viewport: { width: 1366, height: 768 },
-      reducedMotion: 'reduce',
+      reducedMotion: "reduce",
     });
     const rmPage = await rmContext.newPage();
-    await rmPage.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-    const smoothData = await rmPage.evaluate(() => document.documentElement.dataset.smoothScroll ?? 'off');
-    const hasLenis = await rmPage.evaluate(() => document.documentElement.classList.contains('lenis'));
-    const behavior = await rmPage.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior);
+    await rmPage.goto("http://localhost:3000", { waitUntil: "networkidle" });
+    const smoothData = await rmPage.evaluate(
+      () => document.documentElement.dataset.smoothScroll ?? "off",
+    );
+    const hasLenis = await rmPage.evaluate(() =>
+      document.documentElement.classList.contains("lenis"),
+    );
+    const behavior = await rmPage.evaluate(
+      () => getComputedStyle(document.documentElement).scrollBehavior,
+    );
     report.reducedMotion = {
       smoothData,
       hasLenis,
@@ -215,7 +233,7 @@ async function runSmoothScrollQa() {
   }
 
   // 3. Touch
-  console.log('Testing touch mode...');
+  console.log("Testing touch mode...");
   {
     const touchContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -223,25 +241,30 @@ async function runSmoothScrollQa() {
       isMobile: true,
     });
     const touchPage = await touchContext.newPage();
-    await touchPage.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-    const hasLenis = await touchPage.evaluate(() => document.documentElement.classList.contains('lenis'));
+    await touchPage.goto("http://localhost:3000", { waitUntil: "networkidle" });
+    const hasLenis = await touchPage.evaluate(() =>
+      document.documentElement.classList.contains("lenis"),
+    );
     report.touch = { hasLenis };
     await touchContext.close();
   }
 
   // 4. Modal Lock Without Layout Shift
-  console.log('Testing modal lock...');
+  console.log("Testing modal lock...");
   {
     const context = await browser.newContext({
       viewport: { width: 1366, height: 768 },
     });
     const page = await context.newPage();
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
     const modalBtn = page.locator("[data-testid='open-modal']").first();
     await modalBtn.scrollIntoViewIfNeeded();
     await settle(page);
 
-    const before = await page.evaluate(() => ({ y: scrollY, w: document.documentElement.clientWidth }));
+    const before = await page.evaluate(() => ({
+      y: scrollY,
+      w: document.documentElement.clientWidth,
+    }));
     await modalBtn.click();
     await page.waitForTimeout(400);
 
@@ -250,8 +273,11 @@ async function runSmoothScrollQa() {
     await page.mouse.wheel(0, 600);
     await page.waitForTimeout(400);
 
-    const during = await page.evaluate(() => ({ y: scrollY, w: document.documentElement.clientWidth }));
-    await page.keyboard.press('Escape');
+    const during = await page.evaluate(() => ({
+      y: scrollY,
+      w: document.documentElement.clientWidth,
+    }));
+    await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
 
     await page.mouse.wheel(0, -400);
@@ -269,24 +295,28 @@ async function runSmoothScrollQa() {
   }
 
   // 5. Frame Timing (Standard vs 4x CPU Throttling)
-  console.log('Testing frame timing...');
+  console.log("Testing frame timing...");
   {
     const context = await browser.newContext({
       viewport: { width: 1366, height: 768 },
     });
     const page = await context.newPage();
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
     await settle(page);
 
-    const standardFrames = await measureFrames(page, () => wheelScroll(page, 90));
+    const standardFrames = await measureFrames(page, () =>
+      wheelScroll(page, 90),
+    );
 
     // Throttled 4x
     const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
     await settle(page, 8000);
 
-    const throttledFrames = await measureFrames(page, () => wheelScroll(page, 90));
+    const throttledFrames = await measureFrames(page, () =>
+      wheelScroll(page, 90),
+    );
 
     report.frameTiming = {
       standard: standardFrames,
@@ -296,23 +326,26 @@ async function runSmoothScrollQa() {
   }
 
   // 6. Pinned Sequence Lock Check
-  console.log('Testing pinned sequence lock...');
+  console.log("Testing pinned sequence lock...");
   {
     const context = await browser.newContext({
       viewport: { width: 1366, height: 768 },
     });
     const page = await context.newPage();
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
+    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
     await settle(page);
 
-    const pin = page.locator('.pin-spacer').first();
+    const pin = page.locator(".pin-spacer").first();
     const count = await pin.count();
     if (count > 0) {
       // Scroll into active pinned zone
       await page.evaluate(() => {
-        const p = document.querySelector('.pin-spacer');
+        const p = document.querySelector(".pin-spacer");
         if (p) {
-          window.scrollTo(0, p.getBoundingClientRect().top + window.scrollY + 120);
+          window.scrollTo(
+            0,
+            p.getBoundingClientRect().top + window.scrollY + 120,
+          );
         }
       });
       await settle(page);
@@ -322,7 +355,7 @@ async function runSmoothScrollQa() {
         await page.mouse.wheel(0, 40);
         await page.waitForTimeout(30);
         const top = await page.evaluate(() => {
-          const child = document.querySelector('.pin-spacer > *');
+          const child = document.querySelector(".pin-spacer > *");
           return child ? child.getBoundingClientRect().top : 0;
         });
         tops.push(top);
@@ -338,7 +371,10 @@ async function runSmoothScrollQa() {
     await context.close();
   }
 
-  console.log('Smooth Scroll QA Complete! Report:', JSON.stringify(report, null, 2));
+  console.log(
+    "Smooth Scroll QA Complete! Report:",
+    JSON.stringify(report, null, 2),
+  );
   await browser.close();
 }
 

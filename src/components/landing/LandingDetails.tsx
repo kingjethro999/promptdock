@@ -120,8 +120,8 @@ export function LandingDetails() {
           <Reveal kind="rise" delay={0.1}>
             <p>
               Connect your Groq or Gemini key in settings, pick the model you
-              prefer, and keep shaping prompts in the same workspace. Your key is
-              encrypted on the server and never shown again after saving.
+              prefer, and keep shaping prompts in the same workspace. Your key
+              is encrypted on the server and never shown again after saving.
             </p>
           </Reveal>
           <Reveal kind="rise" delay={0.15}>

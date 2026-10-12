@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { LandingDetails, LandingFooter, LandingProof } from "./LandingDetails";
 import LandingHero from "./LandingHero";
+import LandingCommunity from "./LandingCommunity";
 import ActionLink from "@/components/ui/ActionLink";
 import { Reveal } from "@/components/motion/Reveal";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
@@ -33,6 +34,7 @@ export default function LandingPage() {
           <nav aria-label="Landing navigation">
             <AnchorLink href="#how-it-works">How it works</AnchorLink>
             <AnchorLink href="#features">Features</AnchorLink>
+            <AnchorLink href="#community">Community</AnchorLink>
             <AnchorLink href="#your-keys">Your keys</AnchorLink>
           </nav>
           <div className="landing-header-actions">
@@ -111,6 +113,9 @@ export default function LandingPage() {
           {/* Features, BYOK, FAQ, and Sponsor */}
           <LandingDetails />
 
+          {/* Community Discovery */}
+          <LandingCommunity />
+
           {/* Final CTA */}
           <section className="landing-final">
             <Reveal kind="rise">
@@ -120,8 +125,8 @@ export default function LandingPage() {
                 </span>
                 <h2>What have you been thinking about?</h2>
                 <p>
-                  Bring the half-formed idea. Leave with a prompt that knows where
-                  to focus.
+                  Bring the half-formed idea. Leave with a prompt that knows
+                  where to focus.
                 </p>
               </div>
             </Reveal>

@@ -23,8 +23,18 @@ export function getFonts() {
     loadFont("Inter-Regular.ttf"),
     loadFont("Inter-SemiBold.ttf"),
   ]).then(([reg, semi]) => [
-    { name: "Inter", data: reg, weight: 400 as const, style: "normal" as const },
-    { name: "Inter", data: semi, weight: 600 as const, style: "normal" as const },
+    {
+      name: "Inter",
+      data: reg,
+      weight: 400 as const,
+      style: "normal" as const,
+    },
+    {
+      name: "Inter",
+      data: semi,
+      weight: 600 as const,
+      style: "normal" as const,
+    },
   ]);
   return cache;
 }

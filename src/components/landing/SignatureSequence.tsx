@@ -98,7 +98,12 @@ export default function SignatureSequence() {
               if (i === 0) return;
               tl.to(
                 surface,
-                { rotateY: -6 * i, z: 30 * i, duration: 1, ease: "power1.inOut" },
+                {
+                  rotateY: -6 * i,
+                  z: 30 * i,
+                  duration: 1,
+                  ease: "power1.inOut",
+                },
                 i - 1,
               )
                 .to(
@@ -163,14 +168,19 @@ export default function SignatureSequence() {
             <div className="sequence__surface-head">
               <span className="sequence__surface-dot" />
               <span>THE WORKSPACE IN MOTION</span>
-              <span className="sequence__surface-badge">PROMPTDOCK ARCHITECTURE</span>
+              <span className="sequence__surface-badge">
+                PROMPTDOCK ARCHITECTURE
+              </span>
             </div>
             <div className="sequence__surface-body">
               <div className="sequence__surface-pill">✦ DYNAMIC SYNTHESIS</div>
               <div className="sequence__surface-content">
-                <strong>“Turn rough thoughts into crystal-clear prompts.”</strong>
+                <strong>
+                  “Turn rough thoughts into crystal-clear prompts.”
+                </strong>
                 <p>
-                  Zero friction capture → structural prioritization → platform-agnostic output.
+                  Zero friction capture → structural prioritization →
+                  platform-agnostic output.
                 </p>
               </div>
               <div className="sequence__surface-foot">

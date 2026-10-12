@@ -2,24 +2,28 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { database } from "@/server/database";
+import { getPromptForViewer } from "@/lib/community/queries";
+import { getViewer } from "@/lib/community/viewer";
 import { clean } from "@/lib/og/text";
 import { buildPrompt } from "@/lib/prompt/format";
+import type { PromptData } from "@/lib/prompt/types";
 import ShareActions from "@/components/share/ShareActions";
 import { sharedPromptStructuredData } from "@/lib/seo/structured-data";
 
-const getPrompt = cache((id: string) => database.getPublicPrompt(id));
+const getPrompt = cache((id: string, viewerId: string | null) =>
+  getPromptForViewer(id, viewerId),
+);
 
 type Props = { params: Promise<{ publicId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { publicId } = await params;
-  const prompt = await getPrompt(publicId).catch(() => null);
+  const prompt = await getPrompt(publicId, null).catch(() => null);
   if (!prompt) {
     return { title: "Shared prompt", robots: { index: false } };
   }
 
-  const owner = clean(prompt.ownerUsername, 40);
+  const owner = clean(prompt.displayName || prompt.username, 40);
   const title = owner
     ? `${owner} wants to share a prompt with you`
     : `${clean(prompt.name, 90)}`;
@@ -58,11 +62,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharedPromptPage({ params }: Props) {
   const { publicId } = await params;
-  const item = await getPrompt(publicId).catch(() => null);
+  const viewer = await getViewer();
+  const item = await getPrompt(publicId, viewer?.id ?? null).catch(() => null);
   if (!item) notFound();
 
-  const prompt = buildPrompt(item.data);
-  const owner = item.ownerUsername || "A PromptDock member";
+  const prompt = buildPrompt(item.data as unknown as PromptData);
+  const owner = item.displayName || item.username || "A PromptDock member";
   const origin = (
     process.env.APP_URL || "https://thepromptdock.vercel.app"
   ).replace(/\/$/, "");
@@ -71,7 +76,7 @@ export default async function SharedPromptPage({ params }: Props) {
     publicId: item.publicId,
     name: item.name,
     description: clean(item.data?.task || "A shared PromptDock prompt", 180),
-    ownerUsername: item.ownerUsername,
+    ownerUsername: item.username,
     updatedAt: item.updatedAt,
   });
 

@@ -24,8 +24,6 @@ export default function ProfileSettings({
   admin: boolean;
 }) {
   const router = useRouter();
-  const [username, setUsername] = useState(user.username || "");
-  const [usernameStatus, setUsernameStatus] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
@@ -33,12 +31,12 @@ export default function ProfileSettings({
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [noticeArea, setNoticeArea] = useState<
-    "username" | "password" | "sessions" | "delete"
+    "password" | "sessions" | "delete"
   >("sessions");
   const [deletePassword, setDeletePassword] = useState("");
 
   function showNotice(
-    area: "username" | "password" | "sessions" | "delete",
+    area: "password" | "sessions" | "delete",
     message: string,
   ) {
     setNoticeArea(area);
@@ -51,42 +49,6 @@ export default function ProfileSettings({
       .catch(() => showNotice("sessions", "Could not load active sessions."))
       .finally(() => setSessionsLoading(false));
   }, []);
-  useEffect(() => {
-    if (!username || username === user.username) {
-      setUsernameStatus("");
-      return;
-    }
-    const timer = setTimeout(
-      () =>
-        api<{ available: boolean }>(
-          `/api/auth/username-check?username=${encodeURIComponent(username)}`,
-        )
-          .then((result) =>
-            setUsernameStatus(
-              result.available
-                ? "Username available"
-                : "That username is taken",
-            ),
-          )
-          .catch((error) => setUsernameStatus(error.message)),
-      350,
-    );
-    return () => clearTimeout(timer);
-  }, [username, user.username]);
-
-  async function saveUsername(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      await json("/api/auth/username", "PUT", { username });
-      showNotice("username", "Username saved.");
-      router.refresh();
-    } catch (error) {
-      showNotice(
-        "username",
-        error instanceof Error ? error.message : "Could not save username.",
-      );
-    }
-  }
 
   async function changePassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -169,29 +131,13 @@ export default function ProfileSettings({
           Open admin console ↗
         </Link>
       )}
-      <form className="react-profile-username-form" onSubmit={saveUsername}>
-        <label className="react-field">
-          <span>Username</span>
-          <input
-            required
-            minLength={3}
-            maxLength={24}
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-          <small>
-            Shown when you share a prompt. 3-24 letters, numbers, or
-            underscores.
-          </small>
-          <small role="status">
-            {usernameStatus || "This is your current username."}
-          </small>
-        </label>
-        <Button type="submit">Save username</Button>
-      </form>
-      <p className="settings-feedback" role="status">
-        {noticeArea === "username" ? notice : ""}
-      </p>
+      <div className="account-username-preview">
+        <span>Username: </span>
+        <strong>@{user.username || "unset"}</strong>.{" "}
+        <a href="#profile" className="account-username-link">
+          Edit it in your public profile
+        </a>
+      </div>
       <form onSubmit={changePassword}>
         <label className="react-field">
           <span>Current password</span>

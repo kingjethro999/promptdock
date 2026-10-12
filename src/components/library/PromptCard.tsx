@@ -37,11 +37,18 @@ export default function PromptCard({
       <h3>{prompt.name}</h3>
       <p>{prompt.data.task}</p>
       <div className="library-sharing">
-        <span
-          className={`visibility-badge${prompt.publicId ? " is-public" : ""}`}
+        <button
+          type="button"
+          className={`visibility-badge${prompt.visibility === "public" ? " is-public" : prompt.visibility === "followers" ? " is-followers" : ""}`}
+          onClick={() => onShare(prompt)}
+          title="Change privacy (Public, Followers, or Private)"
         >
-          {prompt.publicId ? "● Public" : "○ Private"}
-        </span>
+          {prompt.visibility === "public"
+            ? "● Public"
+            : prompt.visibility === "followers"
+              ? "● Followers"
+              : "○ Private"}
+        </button>
         <button
           className="library-share-button"
           type="button"
