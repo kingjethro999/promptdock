@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui";
 import type { CommunityCreatorCard } from "@/lib/community/types";
-import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
+import { avatarFallback } from "@/lib/community/username";
 import FollowButton from "./FollowButton";
 
 export default function CreatorCard({
@@ -12,7 +12,6 @@ export default function CreatorCard({
   creator: CommunityCreatorCard;
 }) {
   const fallback = avatarFallback(creator.username);
-  const gravatar = getGravatarUrl(creator.username, 96);
 
   return (
     <article className="creator-card">
@@ -21,23 +20,27 @@ export default function CreatorCard({
           href={`/${creator.username}`}
           className="creator-card-profile-link"
         >
-          <img
-            src={creator.avatarUrl || gravatar}
-            alt={creator.displayName}
-            className="creator-card-avatar"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              const fb =
-                e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                  ".creator-avatar-fallback",
-                );
-              if (fb) fb.style.display = "inline-flex";
-            }}
-          />
+          {creator.avatarUrl ? (
+            <img
+              src={creator.avatarUrl}
+              alt={creator.displayName}
+              className="creator-card-avatar"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const fb =
+                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                    ".creator-avatar-fallback",
+                  );
+                if (fb) fb.style.display = "inline-flex";
+              }}
+            />
+          ) : null}
           <span
             className="creator-card-avatar creator-avatar-fallback"
             data-tone={fallback.tone}
-            style={{ display: "none" }}
+            style={{
+              display: creator.avatarUrl ? "none" : "inline-flex",
+            }}
             aria-hidden="true"
           >
             {fallback.letter}
