@@ -3,6 +3,7 @@
 import { LinkButton, Icon } from "@/components/ui";
 import type { PublicProfile } from "@/lib/community/types";
 import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
+import { BannerPreset } from "@/components/profile/BannerPreset";
 import FollowButton from "./FollowButton";
 
 type ViewProps = {
@@ -17,6 +18,7 @@ type EditProps = {
     displayName: string;
     avatarUrl: string | null;
     bannerUrl: string | null;
+    bannerPreset?: string | null;
     bio: string | null;
   };
   onPickBanner(): void;
@@ -34,6 +36,9 @@ export default function ProfileHeader(props: Props) {
     ? props.draft.displayName || props.draft.username
     : props.profile.displayName;
   const bannerUrl = isEdit ? props.draft.bannerUrl : props.profile.bannerUrl;
+  const bannerPreset = isEdit
+    ? props.draft.bannerPreset
+    : props.profile.bannerPreset;
   const avatarUrl = isEdit ? props.draft.avatarUrl : props.profile.avatarUrl;
   const bio = isEdit ? props.draft.bio : props.profile.bio;
 
@@ -51,6 +56,8 @@ export default function ProfileHeader(props: Props) {
       >
         {bannerUrl ? (
           <img src={bannerUrl} alt="" loading="lazy" />
+        ) : bannerPreset ? (
+          <BannerPreset id={bannerPreset} />
         ) : isEdit ? (
           <div className="profile-banner-empty">
             <Icon name="image" size={24} />
@@ -106,10 +113,7 @@ export default function ProfileHeader(props: Props) {
 
           <div className="profile-actions">
             {!isEdit && props.profile.isOwner ? (
-              <LinkButton
-                href="/settings#profile"
-                variant="secondary"
-              >
+              <LinkButton href="/settings#profile" variant="secondary">
                 Edit Profile
               </LinkButton>
             ) : !isEdit ? (

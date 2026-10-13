@@ -46,6 +46,7 @@ export const RESERVED = new Set([
   "dev",
   "updates",
   "copyright",
+  "welcome",
   "feed",
   "feed.xml",
   "llms.txt",

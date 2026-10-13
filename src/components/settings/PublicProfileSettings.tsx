@@ -11,12 +11,15 @@ import LiquidButton, {
   type LiquidButtonStatus,
 } from "@/components/ui/LiquidButton";
 
+import { BANNER_PRESETS } from "@/lib/profile/banner-presets";
+
 type ProfileData = {
   id: string;
   username: string;
   displayName: string;
   avatarUrl: string | null;
   bannerUrl: string | null;
+  bannerPreset: string | null;
   bio: string | null;
   communityAudience: "public" | "followers";
   usernameChangedAt: string | null;
@@ -39,6 +42,7 @@ export default function PublicProfileSettings() {
   const [audience, setAudience] = useState<"public" | "followers">("public");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [bannerPreset, setBannerPreset] = useState<string | null>(null);
 
   const [usernameStatus, setUsernameStatus] = useState<string>("");
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
@@ -58,6 +62,7 @@ export default function PublicProfileSettings() {
           setAudience(data.communityAudience || "public");
           setAvatarUrl(data.avatarUrl);
           setBannerUrl(data.bannerUrl);
+          setBannerPreset(data.bannerPreset || null);
         }
       })
       .catch(() => {})
@@ -149,8 +154,12 @@ export default function PublicProfileSettings() {
       if (!cloudRes.ok) throw new Error("Direct upload failed");
       const cloudData = await cloudRes.json();
 
-      if (kind === "avatar") setAvatarUrl(cloudData.secure_url);
-      else setBannerUrl(cloudData.secure_url);
+      if (kind === "avatar") {
+        setAvatarUrl(cloudData.secure_url);
+      } else {
+        setBannerUrl(cloudData.secure_url);
+        setBannerPreset(null);
+      }
 
       setFeedback("Image uploaded. Remember to save your profile.");
       setSaveStatus("idle");
@@ -175,6 +184,7 @@ export default function PublicProfileSettings() {
           bio: bio || null,
           avatarUrl,
           bannerUrl,
+          bannerPreset,
           communityAudience: audience,
         }),
       });
@@ -259,6 +269,7 @@ export default function PublicProfileSettings() {
                   displayName: displayName || username || "Display Name",
                   avatarUrl,
                   bannerUrl,
+                  bannerPreset,
                   bio,
                 }}
                 onPickBanner={() => bannerInputRef.current?.click()}
@@ -287,9 +298,7 @@ export default function PublicProfileSettings() {
             <TextField
               label="Username"
               value={username}
-              onChange={(e) =>
-                setUsername(e.target.value.toLowerCase().trim())
-              }
+              onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
               placeholder="username"
               startAdornment="@"
               maxLength={30}
@@ -313,6 +322,36 @@ export default function PublicProfileSettings() {
               placeholder="What do you build? What prompts do you care about?"
               maxLength={280}
             />
+
+            <div className="profile-editor__presets">
+              <span className="profile-editor__field-label">Cover theme</span>
+              <div className="banner-step__grid">
+                {BANNER_PRESETS.map((p) => {
+                  const isSelected = bannerPreset === p.id && !bannerUrl;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`banner-step__swatch ${isSelected ? "is-selected" : ""}`}
+                      style={{ backgroundColor: p.color }}
+                      onClick={() => {
+                        setBannerPreset(p.id);
+                        setBannerUrl(null);
+                      }}
+                    >
+                      <span className="banner-step__swatch-label">
+                        {p.label}
+                      </span>
+                      {isSelected && (
+                        <span className="banner-step__swatch-check">
+                          <Icon name="check" size={14} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="profile-editor__audience-section">
               <span className="profile-editor__field-label">
@@ -348,6 +387,13 @@ export default function PublicProfileSettings() {
         {/* Bottom Save Bar */}
         <div className="profile-editor__footer">
           <div className="profile-editor__footer-left">
+            <Link
+              href="/welcome?next=/settings"
+              className="profile-editor__view-link"
+              style={{ marginRight: 16 }}
+            >
+              Guided profile setup
+            </Link>
             {profile?.username && (
               <Link
                 href={`/${profile.username}`}
