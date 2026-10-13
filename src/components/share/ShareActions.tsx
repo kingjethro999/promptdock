@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui";
 import { api } from "@/lib/client/api";
 
 export default function ShareActions({
@@ -52,17 +53,25 @@ export default function ShareActions({
 
   return (
     <div className="shared-actions">
-      <button className="shared-copy" type="button" onClick={copy}>
-        ▣ Copy prompt ↗
-      </button>
-      <button
+      <Button
+        className="shared-copy"
+        variant="secondary"
+        leadingIcon="copy"
+        trailingIcon="arrow-up-right"
+        onClick={copy}
+      >
+        Copy prompt
+      </Button>
+      <Button
         className="shared-save"
-        type="button"
+        variant="primary"
+        leadingIcon="bookmark"
         disabled={busy}
+        loading={busy}
         onClick={save}
       >
-        ♡ Save to my library
-      </button>
+        Save to my library
+      </Button>
       {notice && (
         <p role="status" className="shared-feedback">
           {notice}

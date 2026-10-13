@@ -6,6 +6,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { RevealHeading } from "@/components/motion/RevealHeading";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import type { CommunityPromptCard as CardType } from "@/lib/community/types";
+import { Glyph, Icon } from "@/components/ui";
 import CommunityPromptCard from "@/components/community/CommunityPromptCard";
 
 export default function LandingCommunity() {
@@ -61,7 +62,7 @@ export default function LandingCommunity() {
             style={{ margin: "24px 0 32px" }}
           >
             <div className="empty-state-icon" aria-hidden="true">
-              ✳
+              <Glyph name="spark" size={32} />
             </div>
             <h4 className="community-empty-title">
               Be the first to share your craft
@@ -81,7 +82,12 @@ export default function LandingCommunity() {
             className="landing-primary-cta"
             style={{ display: "inline-flex", textDecoration: "none" }}
           >
-            Explore Community <span>↗</span>
+            Explore Community{" "}
+            <Icon
+              name="arrow-up-right"
+              size={14}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
           </Link>
         </div>
       </Reveal>

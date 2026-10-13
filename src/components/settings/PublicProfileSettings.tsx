@@ -6,6 +6,7 @@ import { validateUsername } from "@/lib/community/username";
 import { decode } from "@/lib/community/image";
 import ProfileHeader from "@/components/community/ProfileHeader";
 import ImageCropDialog from "@/components/community/ImageCropDialog";
+import { TextField, TextArea, ChoiceCard, Icon } from "@/components/ui";
 import LiquidButton, {
   type LiquidButtonStatus,
 } from "@/components/ui/LiquidButton";
@@ -275,56 +276,43 @@ export default function PublicProfileSettings() {
               Profile Details
             </span>
 
-            <label className="react-field">
-              <span>Display name</span>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your name or handle"
-                maxLength={50}
-              />
-            </label>
+            <TextField
+              label="Display name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name or handle"
+              maxLength={50}
+            />
 
-            <label className="react-field">
-              <span>Username</span>
-              <div className="username-input-wrap">
-                <span className="username-input-prefix">@</span>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) =>
-                    setUsername(e.target.value.toLowerCase().trim())
-                  }
-                  placeholder="username"
-                  maxLength={30}
-                />
-              </div>
-              {usernameStatus && (
-                <small
-                  className={`username-feedback ${
-                    usernameStatus.includes("available")
-                      ? "username-feedback--ok"
-                      : "username-feedback--err"
-                  }`}
-                  role="status"
-                >
-                  {usernameStatus}
-                </small>
-              )}
-            </label>
+            <TextField
+              label="Username"
+              value={username}
+              onChange={(e) =>
+                setUsername(e.target.value.toLowerCase().trim())
+              }
+              placeholder="username"
+              startAdornment="@"
+              maxLength={30}
+              error={
+                usernameStatus && !usernameStatus.includes("available")
+                  ? usernameStatus
+                  : null
+              }
+              hint={
+                usernameStatus && usernameStatus.includes("available")
+                  ? usernameStatus
+                  : undefined
+              }
+            />
 
-            <label className="react-field">
-              <span>Bio</span>
-              <textarea
-                className="profile-editor__bio-input"
-                rows={4}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="What do you build? What prompts do you care about?"
-                maxLength={280}
-              />
-            </label>
+            <TextArea
+              label="Bio"
+              rows={4}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="What do you build? What prompts do you care about?"
+              maxLength={280}
+            />
 
             <div className="profile-editor__audience-section">
               <span className="profile-editor__field-label">
@@ -335,42 +323,23 @@ export default function PublicProfileSettings() {
                 role="radiogroup"
                 aria-label="Audience"
               >
-                <label
-                  className={`choice-card ${audience === "public" ? "choice-card--selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="profile-audience"
-                    value="public"
-                    checked={audience === "public"}
-                    onChange={() => setAudience("public")}
-                  />
-                  <div className="choice-card__body">
-                    <strong>Public</strong>
-                    <p>
-                      Visible to anyone with the link and listed in the
-                      community feed.
-                    </p>
-                  </div>
-                </label>
+                <ChoiceCard
+                  name="profile-audience"
+                  value="public"
+                  checked={audience === "public"}
+                  onChange={() => setAudience("public")}
+                  title="Public"
+                  description="Visible to anyone with the link and listed in the community feed."
+                />
 
-                <label
-                  className={`choice-card ${audience === "followers" ? "choice-card--selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="profile-audience"
-                    value="followers"
-                    checked={audience === "followers"}
-                    onChange={() => setAudience("followers")}
-                  />
-                  <div className="choice-card__body">
-                    <strong>Followers only</strong>
-                    <p>
-                      Only approved followers can see your profile and prompts.
-                    </p>
-                  </div>
-                </label>
+                <ChoiceCard
+                  name="profile-audience"
+                  value="followers"
+                  checked={audience === "followers"}
+                  onChange={() => setAudience("followers")}
+                  title="Followers only"
+                  description="Only approved followers can see your profile and prompts."
+                />
               </div>
             </div>
           </div>
@@ -386,7 +355,12 @@ export default function PublicProfileSettings() {
                 rel="noreferrer"
                 className="profile-editor__view-link"
               >
-                View public profile ↗
+                View public profile{" "}
+                <Icon
+                  name="arrow-up-right"
+                  size={14}
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                />
               </Link>
             )}
             {feedback && (

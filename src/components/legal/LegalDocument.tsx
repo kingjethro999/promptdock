@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Glyph } from "@/components/ui";
 
 type Page = "privacy" | "terms" | "copyright";
 
@@ -15,7 +16,7 @@ export default async function LegalDocument({ page }: { page: Page }) {
     <div className="legal-page-body">
       <header className="legal-header">
         <Link className="legal-brand" href="/">
-          <span aria-hidden="true">✳</span> prompt<em>dock</em>
+          <Glyph name="spark" size={14} /> prompt<em>dock</em>
         </Link>
         <nav aria-label="Legal pages">
           <Link

@@ -147,6 +147,46 @@
   transform: translateY(1px) scale(0.985);
 }
 
+/* Quiet / Ghost Variant */
+.liquid-button--quiet {
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  box-shadow: none;
+  --liquid-wave-back: rgba(190, 211, 181, 0.24);
+  --liquid-wave-front: rgba(213, 248, 118, 0.32);
+}
+
+.liquid-button--quiet[data-liquid-state="hover"] {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.liquid-button--quiet[data-liquid-state="pressed"] {
+  transform: translateY(1px) scale(0.985);
+}
+
+/* Danger Variant */
+.liquid-button--danger {
+  background: #d9383a;
+  color: #ffffff;
+  border: 1px solid #c22b2d;
+  box-shadow: 0 10px 24px -6px rgba(217, 56, 58, 0.32);
+  --liquid-wave-back: rgba(255, 120, 120, 0.45);
+  --liquid-wave-front: rgba(255, 200, 200, 0.65);
+}
+
+.liquid-button--danger[data-liquid-state="hover"] {
+  background: #e64547;
+  box-shadow: 0 14px 30px -8px rgba(217, 56, 58, 0.42);
+  transform: translateY(-1px);
+}
+
+.liquid-button--danger[data-liquid-state="pressed"] {
+  background: #c22b2d;
+  transform: translateY(1px) scale(0.985);
+}
+
 /* --------------------------------------------------------------------------
    Disabled States: Genuinely Unavailable vs Actively Processing
    -------------------------------------------------------------------------- */

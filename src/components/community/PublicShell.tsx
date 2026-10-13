@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Icon, Glyph, LinkButton } from "@/components/ui";
 
 export default function PublicShell({
   children,
@@ -70,23 +71,15 @@ export default function PublicShell({
             >
               Sign in
             </Link>
-            <Link href="/workspace" className="community-nav-cta">
-              <span>New Prompt</span>
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="7" y1="17" x2="17" y2="7" />
-                <polyline points="7 7 17 7 17 17" />
-              </svg>
-            </Link>
+            <LinkButton
+              href="/workspace"
+              variant="primary"
+              size="sm"
+              trailingIcon="arrow-up-right"
+              className="community-nav-cta"
+            >
+              New Prompt
+            </LinkButton>
 
             <button
               type="button"
@@ -95,38 +88,7 @@ export default function PublicShell({
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? (
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="4" y1="6" x2="20" y2="6" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="18" x2="20" y2="18" />
-                </svg>
-              )}
+              <Icon name={mobileMenuOpen ? "x" : "menu"} size={18} />
             </button>
           </div>
         </div>
@@ -139,21 +101,7 @@ export default function PublicShell({
             onClick={() => setMobileMenuOpen(false)}
             className="community-mobile-link active"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-              <path d="M2 12h20" />
-            </svg>
+            <Icon name="globe" size={16} />
             <span>Community Feed</span>
           </Link>
           <div className="community-mobile-divider" />
@@ -162,21 +110,7 @@ export default function PublicShell({
             onClick={() => setMobileMenuOpen(false)}
             className="community-mobile-link"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              <polyline points="10 17 15 12 10 7" />
-              <line x1="15" y1="12" x2="3" y2="12" />
-            </svg>
+            <Icon name="user" size={16} />
             <span>Sign in</span>
           </Link>
           <Link
@@ -184,20 +118,7 @@ export default function PublicShell({
             onClick={() => setMobileMenuOpen(false)}
             className="community-mobile-link"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Icon name="plus" size={16} />
             <span>Create Prompt</span>
           </Link>
         </div>
@@ -208,7 +129,7 @@ export default function PublicShell({
       <footer className="community-public-footer">
         <div className="community-public-footer-inner">
           <div className="community-public-footer-brand">
-            <span style={{ color: "#7ea747" }}>✳</span>
+            <Glyph name="spark" size={16} className="text-accent" />
             <span>promptdock</span>
           </div>
           <nav

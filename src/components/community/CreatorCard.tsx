@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@/components/ui";
 import type { CommunityCreatorCard } from "@/lib/community/types";
 import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
 import FollowButton from "./FollowButton";
@@ -68,7 +69,12 @@ export default function CreatorCard({
           {creator.followerCount === 1 ? "follower" : "followers"}
         </span>
         <Link href={`/${creator.username}`} className="creator-card-view-btn">
-          View profile →
+          View profile{" "}
+          <Icon
+            name="arrow-right"
+            size={14}
+            style={{ display: "inline-block", verticalAlign: "middle" }}
+          />
         </Link>
       </div>
     </article>

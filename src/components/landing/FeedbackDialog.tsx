@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import SearchSelect from "@/components/ui/SearchSelect";
-import Button from "@/components/ui/Button";
+import {
+  Button,
+  IconButton,
+  Select,
+  TextArea,
+  TextField,
+} from "@/components/ui";
 import { json } from "@/lib/client/api";
 import { useScrollLock } from "@/components/scroll/useScrollLock";
 
@@ -61,18 +66,18 @@ export default function FeedbackDialog({
             data-lenis-prevent
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              className="react-modal-close"
-              type="button"
+            <IconButton
+              icon="x"
               aria-label="Close"
+              variant="ghost"
+              size="sm"
+              className="react-modal-close"
               onClick={() => setOpen(false)}
-            >
-              ×
-            </button>
+            />
             <span className="section-kicker">HELP SHAPE PROMPTDOCK</span>
             <h2 id="feedbackTitle">What did you notice?</h2>
             <form onSubmit={send}>
-              <SearchSelect
+              <Select
                 label="Feedback type"
                 value={kind}
                 options={[
@@ -82,24 +87,21 @@ export default function FeedbackDialog({
                 ]}
                 onChange={setKind}
               />
-              <label className="react-field">
-                <span>Your message</span>
-                <textarea
-                  required
-                  maxLength={10000}
-                  rows={6}
-                  value={message}
-                  onChange={(event) => setMessage(event.target.value)}
-                />
-              </label>
-              <label className="react-field">
-                <span>Email, optional</span>
-                <input
-                  type="email"
-                  value={contactEmail}
-                  onChange={(event) => setContactEmail(event.target.value)}
-                />
-              </label>
+              <TextArea
+                label="Your message"
+                required
+                maxLength={10000}
+                rows={5}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+              />
+              <TextField
+                label="Email, optional"
+                type="email"
+                autoComplete="email"
+                value={contactEmail}
+                onChange={(event) => setContactEmail(event.target.value)}
+              />
               {notice && (
                 <p role="status" className="settings-feedback">
                   {notice}

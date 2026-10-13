@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import BootScreen from "@/components/ui/BootScreen";
 import TopLoader from "@/components/ui/TopLoader";
 import "../styles/shared/styles.css";
@@ -79,7 +80,9 @@ export default async function RootLayout({
             }}
           />
         </noscript>
-        <script
+        <Script
+          id="motion-failsafe"
+          strategy="afterInteractive"
           nonce={nonce}
           dangerouslySetInnerHTML={{
             __html:

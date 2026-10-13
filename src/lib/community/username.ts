@@ -43,6 +43,7 @@ export const RESERVED = new Set([
   "null",
   "undefined",
   "auth",
+  "dev",
   "updates",
   "copyright",
   "feed",

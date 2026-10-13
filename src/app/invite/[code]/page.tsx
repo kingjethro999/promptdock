@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { Glyph, Icon } from "@/components/ui";
 import { clean } from "@/lib/og/text";
 import { referrals } from "@/server/referrals";
 
@@ -60,7 +61,7 @@ export default async function InvitePage({ params }: Props) {
     <div className="react-invite-page">
       <header>
         <Link href="/" className="landing-logo">
-          ✳ prompt<span>dock</span>
+          <Glyph name="spark" size={14} /> prompt<span>dock</span>
         </Link>
         <Link href="/auth?mode=login">Sign in</Link>
       </header>
@@ -75,7 +76,12 @@ export default async function InvitePage({ params }: Props) {
           className="landing-primary-cta"
           href={`/auth?mode=register&ref=${encodeURIComponent(code)}`}
         >
-          Create your workspace ↗
+          Create your workspace{" "}
+          <Icon
+            name="arrow-up-right"
+            size={14}
+            style={{ display: "inline-block", verticalAlign: "middle" }}
+          />
         </Link>
         <p>
           Already have an account? <Link href="/auth?mode=login">Sign in</Link>
