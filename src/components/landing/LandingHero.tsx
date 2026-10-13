@@ -6,6 +6,7 @@ import { getPreset, type RevealKind } from "@/components/motion/presets";
 import { useMotionEnv } from "@/components/motion/env";
 import ActionLink from "@/components/ui/ActionLink";
 import { AnchorLink } from "@/components/scroll/AnchorLink";
+import { Glyph, Icon } from "@/components/ui";
 import LandingDemo from "./LandingDemo";
 
 const group = {
@@ -46,7 +47,10 @@ export default function LandingHero() {
           data-reveal-item="rise"
         >
           <span className="evolution-badge__pill">
-            <span className="evolution-badge__sparkle">✦</span> EVOLUTION
+            <span className="evolution-badge__sparkle">
+              <Glyph name="star" size={12} />
+            </span>{" "}
+            EVOLUTION
           </span>
           <span>A whole new look. Same workspace.</span>
         </m.div>
@@ -56,7 +60,7 @@ export default function LandingHero() {
           className="landing-eyebrow"
           data-reveal-item="rise"
         >
-          <span>✳</span> THE IDEA-TO-PROMPT WORKSPACE
+          <Glyph name="spark" size={14} /> THE IDEA-TO-PROMPT WORKSPACE
         </m.div>
 
         {/* LCP element: transform-only settle (y 14 -> 0), opacity stays 1 so it is measured on the first paint */}
@@ -88,10 +92,20 @@ export default function LandingHero() {
             className="landing-primary-cta"
             href="/auth?mode=register"
           >
-            Create your workspace <span>↗</span>
+            Create your workspace{" "}
+            <Icon
+              name="arrow-up-right"
+              size={14}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
           </ActionLink>
           <AnchorLink className="landing-secondary-cta" href="#how-it-works">
-            See how it works <span>↓</span>
+            See how it works{" "}
+            <Icon
+              name="arrow-down"
+              size={14}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
           </AnchorLink>
         </m.div>
 
@@ -100,7 +114,10 @@ export default function LandingHero() {
           className="landing-hero-note"
           data-reveal-item="rise"
         >
-          <span className="landing-note-stars">✳ ✳ ✳</span>
+          <span className="landing-note-stars">
+            <Glyph name="spark" size={12} /> <Glyph name="spark" size={12} />{" "}
+            <Glyph name="spark" size={12} />
+          </span>
           <span>From first thought to useful prompt, in one place.</span>
         </m.div>
       </div>

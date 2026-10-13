@@ -10,8 +10,13 @@ import {
   signInWithProvider,
   type FirebaseProvider,
 } from "@/lib/client/firebase";
-import Button from "@/components/ui/Button";
-import ActionLink from "@/components/ui/ActionLink";
+import {
+  Button,
+  LinkButton,
+  TextField,
+  PasswordField,
+  Glyph,
+} from "@/components/ui";
 
 type Mode = "login" | "register" | "forgot" | "verify" | "reset";
 const validModes = new Set<Mode>([
@@ -37,7 +42,6 @@ export default function AuthForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -66,37 +70,31 @@ export default function AuthForm() {
     const generated = chars.join("");
     setPassword(generated);
     setConfirm(generated);
-    setVisible(true);
   }
 
   async function continueWith(provider: FirebaseProvider) {
-    if (busy || oauthBusy) return;
+    if (oauthBusy || busy) return;
     setOauthBusy(provider);
     setError("");
     setNotice("");
     try {
-      const result = await signInWithProvider(provider);
-      const idToken = await result.user.getIdToken();
-      await json(`/api/auth/firebase`, "POST", {
-        idToken,
-        provider,
-        referralCode:
-          params.get("ref") ||
-          sessionStorage.getItem("promptdock.referral") ||
-          undefined,
-      });
+      const idToken = await signInWithProvider(provider);
+      await json("/api/auth/firebase", "POST", { idToken });
       router.replace(nextPage);
       router.refresh();
     } catch (issue) {
-      const code = issue instanceof Error ? issue.message : "";
-      setError(
-        code.includes("popup-closed") || code.includes("cancelled")
-          ? "Provider sign-in was cancelled."
-          : code.includes("popup-blocked")
-            ? "Sign-in popup was blocked by your browser. Please allow popups for PromptDock and retry."
-            : code || "Could not continue with that provider.",
-      );
-    } finally {
+      const message =
+        issue instanceof Error
+          ? issue.message
+          : `Could not sign in with ${provider === "google" ? "Google" : "GitHub"}.`;
+      if (
+        message.includes("auth/popup-closed-by-user") ||
+        message.includes("cancelled")
+      ) {
+        setOauthBusy(null);
+        return;
+      }
+      setError(message);
       setOauthBusy(null);
     }
   }
@@ -106,22 +104,27 @@ export default function AuthForm() {
       setUsernameStatus("");
       return;
     }
+    let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const result = await api<{ available: boolean; message?: string }>(
-          `/api/auth/username-check?username=${encodeURIComponent(username)}`,
+        const res = await api<{ available?: boolean }>(
+          `/api/auth/username-check?username=${encodeURIComponent(username.trim())}`,
         );
-        setUsernameStatus(
-          result.message ||
-            (result.available ? "Username available" : "Username taken"),
-        );
-      } catch (issue) {
-        setUsernameStatus(
-          issue instanceof Error ? issue.message : "Could not check username.",
-        );
+        if (!cancelled) {
+          setUsernameStatus(
+            res.available
+              ? "Available"
+              : "That handle is taken or reserved.",
+          );
+        }
+      } catch {
+        if (!cancelled) setUsernameStatus("");
       }
-    }, 350);
-    return () => clearTimeout(timer);
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [mode, username]);
 
   useEffect(() => {
@@ -199,7 +202,9 @@ export default function AuthForm() {
       <main className="auth-page">
         <section className="auth-story" aria-label="About PromptDock">
           <Link className="auth-brand" href="/" aria-label="PromptDock home">
-            <span className="auth-brand-mark">✳</span>
+            <span className="auth-brand-mark">
+              <Glyph name="spark" size={16} />
+            </span>
             <span>
               prompt<span>dock</span>
               <small>YOUR AI WORKSPACE</small>
@@ -216,17 +221,17 @@ export default function AuthForm() {
             </p>
           </div>
           <div className="auth-story-note">
-            <span>✦</span> Start free. Bring your own model keys when you are
+            <span><Glyph name="star" size={14} /></span> Start free. Bring your own model keys when you are
             ready.
           </div>
         </section>
         <section className="auth-panel" aria-labelledby="authTitle">
           <Link className="auth-back" href="/">
-            ← Back to PromptDock
+            <Glyph name="arrow-right" size={14} style={{ transform: "rotate(180deg)", display: "inline-block" }} /> Back to PromptDock
           </Link>
           <div className="auth-card">
             <span className="auth-card-mark" aria-hidden="true">
-              ✳
+              <Glyph name="spark" size={20} />
             </span>
             <h1 id="authTitle">{title}</h1>
             <p>
@@ -250,7 +255,7 @@ export default function AuthForm() {
                           (provider) => (
                             <Button
                               key={provider}
-                              type="button"
+                              variant="secondary"
                               className="auth-provider-button"
                               disabled={busy || Boolean(oauthBusy)}
                               onClick={() => continueWith(provider)}
@@ -277,23 +282,25 @@ export default function AuthForm() {
                   )}
                 {mode !== "reset" && (
                   <div className="auth-form-field">
-                    <label htmlFor="authEmail">Email</label>
-                    <input
+                    <TextField
                       id="authEmail"
+                      label="Email"
                       required
                       type="email"
                       maxLength={254}
                       value={email}
                       autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
                       onChange={(event) => setEmail(event.target.value)}
                     />
                   </div>
                 )}
                 {mode === "register" && (
                   <div className="auth-form-field">
-                    <label htmlFor="authUsername">Username</label>
-                    <input
+                    <TextField
                       id="authUsername"
+                      label="Username"
                       required
                       minLength={3}
                       maxLength={24}
@@ -301,70 +308,51 @@ export default function AuthForm() {
                       value={username}
                       autoComplete="username"
                       placeholder="e.g. kingjethro"
+                      hint={usernameStatus || "3–24 letters, numbers, or underscores."}
                       onChange={(event) => setUsername(event.target.value)}
-                      aria-describedby="authUsernameFeedback"
                     />
-                    <small>3–24 letters, numbers, or underscores.</small>
-                    <span
-                      className="auth-page-status"
-                      id="authUsernameFeedback"
-                      role="status"
-                    >
-                      {usernameStatus}
-                    </span>
                   </div>
                 )}
                 {(mode === "login" ||
                   mode === "register" ||
                   mode === "reset") && (
                   <div className="auth-form-field">
-                    <label htmlFor="authPassword">
-                      {mode === "reset" ? "New password" : "Password"}
-                    </label>
-                    <div className="auth-password-field">
-                      <input
-                        id="authPassword"
-                        required
-                        minLength={mode === "login" ? 1 : 12}
-                        maxLength={200}
-                        type={visible ? "text" : "password"}
-                        value={password}
-                        autoComplete={
-                          mode === "login" ? "current-password" : "new-password"
-                        }
-                        onChange={(event) => setPassword(event.target.value)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setVisible(!visible)}
-                      >
-                        {visible ? "Hide" : "Show"}
-                      </button>
-                    </div>
+                    <PasswordField
+                      id="authPassword"
+                      label={mode === "reset" ? "New password" : "Password"}
+                      required
+                      minLength={mode === "login" ? 1 : 12}
+                      maxLength={200}
+                      value={password}
+                      autoComplete={
+                        mode === "login" ? "current-password" : "new-password"
+                      }
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
                     {mode === "register" && (
-                      <button
-                        className="auth-generate-password"
-                        type="button"
-                        onClick={generatePassword}
-                      >
-                        Generate password
-                      </button>
+                      <div style={{ marginTop: "6px" }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          leadingIcon="sparkles"
+                          onClick={generatePassword}
+                        >
+                          Generate strong password
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
                 {(mode === "register" || mode === "reset") && (
                   <div className="auth-form-field">
-                    <label htmlFor="authConfirm">Confirm password</label>
-                    <div className="auth-password-field">
-                      <input
-                        id="authConfirm"
-                        required
-                        type={visible ? "text" : "password"}
-                        value={confirm}
-                        autoComplete="new-password"
-                        onChange={(event) => setConfirm(event.target.value)}
-                      />
-                    </div>
+                    <PasswordField
+                      id="authConfirm"
+                      label="Confirm password"
+                      required
+                      value={confirm}
+                      autoComplete="new-password"
+                      onChange={(event) => setConfirm(event.target.value)}
+                    />
                   </div>
                 )}
                 {mode === "login" && (
@@ -379,12 +367,12 @@ export default function AuthForm() {
                   {notice}
                 </p>
                 <div className="auth-page-actions">
-                  <ActionLink
-                    className="secondary-button"
+                  <LinkButton
+                    variant="secondary"
                     href={mode === "login" ? registerHref : loginHref}
                   >
                     {mode === "login" ? "Create account" : "Sign in"}
-                  </ActionLink>
+                  </LinkButton>
                   <Button
                     variant="primary"
                     type="submit"
@@ -418,9 +406,9 @@ export default function AuthForm() {
                 >
                   {error || notice || "Checking your link…"}
                 </p>
-                <ActionLink className="primary-button" href={loginHref}>
+                <LinkButton variant="primary" href={loginHref}>
                   Sign in
-                </ActionLink>
+                </LinkButton>
               </>
             )}
           </div>

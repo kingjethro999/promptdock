@@ -55,7 +55,7 @@
   color: #3c5941;
 }
 .react-settings-card .search-select-trigger,
-.react-settings-card .react-field input {
+.react-settings-card .react-field input:not([type="radio"]):not([type="checkbox"]):not(.ui-check):not(.ui-radio) {
   min-height: 44px;
   background: #fafcf8;
   font-size: 12px;

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LinkButton, Icon } from "@/components/ui";
 import type { PublicProfile } from "@/lib/community/types";
 import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
 import FollowButton from "./FollowButton";
@@ -53,40 +53,14 @@ export default function ProfileHeader(props: Props) {
           <img src={bannerUrl} alt="" loading="lazy" />
         ) : isEdit ? (
           <div className="profile-banner-empty">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-            </svg>
+            <Icon name="image" size={24} />
             <span>Add a cover image</span>
           </div>
         ) : null}
 
         {isEdit && bannerUrl && (
           <div className="profile-banner-overlay" aria-hidden="true">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-              <circle cx="12" cy="13" r="3" />
-            </svg>
+            <Icon name="camera" size={18} />
             <span>Change cover</span>
           </div>
         )}
@@ -125,32 +99,19 @@ export default function ProfileHeader(props: Props) {
 
             {isEdit && (
               <div className="profile-avatar-edit-badge" aria-hidden="true">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                  <circle cx="12" cy="13" r="3" />
-                </svg>
+                <Icon name="camera" size={14} />
               </div>
             )}
           </div>
 
           <div className="profile-actions">
             {!isEdit && props.profile.isOwner ? (
-              <Link
+              <LinkButton
                 href="/settings#profile"
-                className="community-btn"
-                style={{ minHeight: 44, padding: "8px 18px", fontSize: 14 }}
+                variant="secondary"
               >
                 Edit Profile
-              </Link>
+              </LinkButton>
             ) : !isEdit ? (
               <FollowButton
                 username={props.profile.username}

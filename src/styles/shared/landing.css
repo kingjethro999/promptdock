@@ -1040,7 +1040,7 @@ body.booting {
   color: #3c5941;
   margin: 20px 0 7px;
 }
-.settings-card input {
+.settings-card input:not([type="radio"]):not([type="checkbox"]):not(.ui-check):not(.ui-radio) {
   width: 100%;
   height: 44px;
   border: 1px solid #dce7da;
@@ -1050,7 +1050,7 @@ body.booting {
   font-size: 12px;
   color: #29402f;
 }
-.settings-card input:focus {
+.settings-card input:not([type="radio"]):not([type="checkbox"]):not(.ui-check):not(.ui-radio):focus {
   outline: 3px solid #d5f0be;
   border-color: #8ac077;
 }

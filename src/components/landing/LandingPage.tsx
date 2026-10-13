@@ -13,6 +13,7 @@ import { ScrollProvider } from "@/components/scroll/ScrollProvider";
 import { ScrollProgress } from "@/components/scroll/ScrollProgress";
 import { SmartHeader } from "@/components/scroll/SmartHeader";
 import { AnchorLink } from "@/components/scroll/AnchorLink";
+import { Glyph, Icon } from "@/components/ui";
 
 const SignatureSequence = dynamic(() => import("./SignatureSequence"), {
   ssr: false,
@@ -29,7 +30,10 @@ export default function LandingPage() {
         {/* Directional Smart Header */}
         <SmartHeader>
           <Link className="landing-logo" href="/" aria-label="PromptDock home">
-            <span className="landing-logo-mark">✳</span> prompt<span>dock</span>
+            <span className="landing-logo-mark">
+              <Glyph name="spark" size={14} />
+            </span>{" "}
+            prompt<span>dock</span>
           </Link>
           <nav aria-label="Landing navigation">
             <AnchorLink href="#how-it-works">How it works</AnchorLink>
@@ -45,7 +49,12 @@ export default function LandingPage() {
               className="landing-small-cta"
               href="/auth?mode=register"
             >
-              Get started <span>↗</span>
+              Get started{" "}
+              <Icon
+                name="arrow-up-right"
+                size={14}
+                style={{ display: "inline-block", verticalAlign: "middle" }}
+              />
             </ActionLink>
           </div>
         </SmartHeader>
@@ -77,7 +86,9 @@ export default function LandingPage() {
             <Stagger as="div" className="landing-step-grid">
               <StaggerItem as="article" kind="rise">
                 <span className="landing-step-number">01</span>
-                <div className="landing-step-icon">✎</div>
+                <div className="landing-step-icon">
+                  <Glyph name="pencil" size={24} />
+                </div>
                 <h3>Say it naturally</h3>
                 <p>
                   Type a messy thought or dictate it. A sentence is enough to
@@ -87,7 +98,9 @@ export default function LandingPage() {
 
               <StaggerItem as="article" kind="rise">
                 <span className="landing-step-number">02</span>
-                <div className="landing-step-icon">✳</div>
+                <div className="landing-step-icon">
+                  <Glyph name="spark" size={24} />
+                </div>
                 <h3>See what matters</h3>
                 <p>
                   AI understands the goal, ranks the focus areas, and flags
@@ -97,7 +110,9 @@ export default function LandingPage() {
 
               <StaggerItem as="article" kind="rise">
                 <span className="landing-step-number">03</span>
-                <div className="landing-step-icon">↗</div>
+                <div className="landing-step-icon">
+                  <Glyph name="arrow-up-right" size={24} />
+                </div>
                 <h3>Make it yours</h3>
                 <p>
                   Save what works, share it, or copy it into your favorite AI
@@ -135,7 +150,12 @@ export default function LandingPage() {
                 className="landing-primary-cta"
                 href="/auth?mode=register"
               >
-                Start with an idea <span>↗</span>
+                Start with an idea{" "}
+                <Icon
+                  name="arrow-up-right"
+                  size={14}
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                />
               </ActionLink>
             </Reveal>
           </section>

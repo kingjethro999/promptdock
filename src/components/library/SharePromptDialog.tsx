@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppDialog from "@/components/ui/AppDialog";
-import Button from "@/components/ui/Button";
+import { Button, ChoiceCard, Switch } from "@/components/ui";
 import type { SavedPrompt } from "@/lib/prompt/types";
 import {
   effectiveVisibility,
@@ -150,56 +150,35 @@ export default function SharePromptDialog({
         role="radiogroup"
         aria-label="Prompt visibility"
       >
-        <label
-          className={`choice-card ${visibility === "private" ? "choice-card--selected" : ""}`}
-        >
-          <input
-            type="radio"
-            name="prompt-visibility"
-            value="private"
-            checked={visibility === "private"}
-            disabled={saving}
-            onChange={() => updateVisibility("private", false)}
-          />
-          <div className="choice-card__body">
-            <strong>Private</strong>
-            <p>Only you can view and use this prompt in your workspace.</p>
-          </div>
-        </label>
+        <ChoiceCard
+          name="prompt-visibility"
+          value="private"
+          checked={visibility === "private"}
+          disabled={saving}
+          onChange={() => updateVisibility("private", false)}
+          title="Private"
+          description="Only you can view and use this prompt in your workspace."
+        />
 
-        <label
-          className={`choice-card ${visibility === "public" ? "choice-card--selected" : ""}`}
-        >
-          <input
-            type="radio"
-            name="prompt-visibility"
-            value="public"
-            checked={visibility === "public"}
-            disabled={saving}
-            onChange={() => updateVisibility("public", listed)}
-          />
-          <div className="choice-card__body">
-            <strong>Public</strong>
-            <p>Anyone with the link can view and copy this prompt.</p>
-          </div>
-        </label>
+        <ChoiceCard
+          name="prompt-visibility"
+          value="public"
+          checked={visibility === "public"}
+          disabled={saving}
+          onChange={() => updateVisibility("public", listed)}
+          title="Public"
+          description="Anyone with the link can view and copy this prompt."
+        />
 
-        <label
-          className={`choice-card ${visibility === "followers" ? "choice-card--selected" : ""}`}
-        >
-          <input
-            type="radio"
-            name="prompt-visibility"
-            value="followers"
-            checked={visibility === "followers"}
-            disabled={saving}
-            onChange={() => updateVisibility("followers", false)}
-          />
-          <div className="choice-card__body">
-            <strong>Followers only</strong>
-            <p>Only approved followers with the link can view.</p>
-          </div>
-        </label>
+        <ChoiceCard
+          name="prompt-visibility"
+          value="followers"
+          checked={visibility === "followers"}
+          disabled={saving}
+          onChange={() => updateVisibility("followers", false)}
+          title="Followers only"
+          description="Only approved followers with the link can view."
+        />
       </div>
 
       {effectiveLabel && (
@@ -215,12 +194,11 @@ export default function SharePromptDialog({
               Allow discovery in community search, tags, and creator profile.
             </p>
           </div>
-          <input
-            type="checkbox"
+          <Switch
             checked={listed}
             disabled={saving}
             onChange={(e) => updateVisibility("public", e.target.checked)}
-            className="share-community-card__checkbox"
+            aria-label="List in Community feed"
           />
         </div>
       )}

@@ -8,6 +8,7 @@ import { clean } from "@/lib/og/text";
 import { buildPrompt } from "@/lib/prompt/format";
 import type { PromptData } from "@/lib/prompt/types";
 import ShareActions from "@/components/share/ShareActions";
+import { Glyph, Icon } from "@/components/ui";
 import { sharedPromptStructuredData } from "@/lib/seo/structured-data";
 
 const getPrompt = cache((id: string, viewerId: string | null) =>
@@ -90,15 +91,22 @@ export default async function SharedPromptPage({ params }: Props) {
       />
       <header className="shared-header">
         <Link className="shared-brand" href="/">
-          <span>✳</span> prompt<em>dock</em>
+          <Glyph name="spark" size={14} /> prompt<em>dock</em>
         </Link>
         <Link href="/workspace" className="shared-home-link">
-          Create your own prompt ↗
+          Create your own prompt{" "}
+          <Icon
+            name="arrow-up-right"
+            size={13}
+            style={{ display: "inline-block", verticalAlign: "middle" }}
+          />
         </Link>
       </header>
       <main className="shared-main">
         <div className="shared-topline">
-          <span>✳ PUBLIC PROMPT</span>
+          <span>
+            <Glyph name="spark" size={12} /> PUBLIC PROMPT
+          </span>
           <span>View and copy freely</span>
         </div>
         <section className="shared-hero">
@@ -115,7 +123,7 @@ export default async function SharedPromptPage({ params }: Props) {
             </div>
           </div>
           <div className="shared-symbol" aria-hidden="true">
-            ✳
+            <Glyph name="spark" size={32} />
           </div>
         </section>
         <section className="shared-content">
@@ -128,7 +136,9 @@ export default async function SharedPromptPage({ params }: Props) {
             <ShareActions prompt={prompt} publicId={item.publicId} />
           </div>
           <aside className="shared-side">
-            <div className="shared-side-icon">↗</div>
+            <div className="shared-side-icon">
+              <Glyph name="arrow-up-right" size={24} />
+            </div>
             <h2>Make it yours.</h2>
             <p>
               Copy this prompt into an AI platform. Sign in to keep a separate
@@ -144,9 +154,18 @@ export default async function SharedPromptPage({ params }: Props) {
         </section>
       </main>
       <footer className="shared-footer">
-        <span>✳ promptdock</span>
+        <span>
+          <Glyph name="spark" size={14} /> promptdock
+        </span>
         <nav>
-          <Link href="/">Start with your idea ↗</Link>
+          <Link href="/">
+            Start with your idea{" "}
+            <Icon
+              name="arrow-up-right"
+              size={13}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
+          </Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/copyright">Copyright</Link>

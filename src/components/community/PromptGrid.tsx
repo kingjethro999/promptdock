@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import Button from "@/components/ui/Button";
+import {
+  Button,
+  LinkButton,
+  Select,
+  SearchInput,
+  Glyph,
+} from "@/components/ui";
 import type { Page } from "@/lib/community/types";
 import { canonicalKey, type Sort } from "@/lib/community/filters";
 import { useCommunityFeed } from "./useCommunityFeed";
@@ -95,24 +100,27 @@ export default function PromptGrid({
     <div>
       {showFilters && (
         <div className="community-filters">
-          <input
-            type="search"
-            value={draftQ}
-            onChange={(e) => setDraftQ(e.target.value)}
-            placeholder="Search prompts by title, keywords or @creator…"
-            className="community-search-input"
-            aria-label="Search prompts"
-          />
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <SearchInput
+              value={draftQ}
+              onChange={(e) => setDraftQ(e.target.value)}
+              onClear={() => setDraftQ("")}
+              placeholder="Search prompts by title, keywords or @creator…"
+              aria-label="Search prompts"
+            />
+          </div>
 
-          <select
-            value={sortParam}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="community-sort-select"
-            aria-label="Sort prompts"
-          >
-            <option value="new">Newest first</option>
-            <option value="old">Oldest first</option>
-          </select>
+          <div style={{ minWidth: 160 }}>
+            <Select
+              value={sortParam}
+              onChange={(val) => handleSortChange(val as Sort)}
+              options={[
+                { value: "new", label: "Newest first" },
+                { value: "old", label: "Oldest first" },
+              ]}
+              aria-label="Sort prompts"
+            />
+          </div>
         </div>
       )}
 
@@ -125,7 +133,7 @@ export default function PromptGrid({
                 key={tag}
                 type="button"
                 onClick={() => toggleTag(tag)}
-                className={`community-tag-chip ${active ? "active" : ""}`}
+                className={`ui-btn ui-btn--sm community-tag-chip ${active ? "active" : ""}`}
                 aria-pressed={active}
               >
                 #{tag}
@@ -143,7 +151,9 @@ export default function PromptGrid({
         </div>
       ) : status === "rate_limited" ? (
         <div className="empty-state" role="alert">
-          <div className="empty-state-icon">✳</div>
+          <div className="empty-state-icon">
+            <Glyph name="spark" size={32} />
+          </div>
           <h3>Too many requests</h3>
           <p>
             You’ve reached the hourly rate limit for exploring prompts. Please
@@ -155,7 +165,9 @@ export default function PromptGrid({
         </div>
       ) : status === "error" ? (
         <div className="empty-state" role="alert">
-          <div className="empty-state-icon">✳</div>
+          <div className="empty-state-icon">
+            <Glyph name="spark" size={32} />
+          </div>
           <h3>Could not load community prompts</h3>
           <p>
             We had trouble reaching the server. Please check your connection and
@@ -167,7 +179,9 @@ export default function PromptGrid({
         </div>
       ) : items.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">✳</div>
+          <div className="empty-state-icon">
+            <Glyph name="spark" size={32} />
+          </div>
           <h3>
             {hasActiveFilters
               ? "No matching prompts found"
@@ -183,9 +197,13 @@ export default function PromptGrid({
               Clear filters
             </Button>
           ) : (
-            <Link href="/workspace">
-              <Button variant="primary">Create a prompt ↗</Button>
-            </Link>
+            <LinkButton
+              href="/workspace"
+              variant="primary"
+              trailingIcon="arrow-up-right"
+            >
+              Create a prompt
+            </LinkButton>
           )}
         </div>
       ) : (

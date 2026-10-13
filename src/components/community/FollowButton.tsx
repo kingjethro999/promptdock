@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui";
 
 type Props = {
   username: string;
@@ -68,14 +69,12 @@ export default function FollowButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant={s.following ? "secondary" : "primary"}
       onClick={toggle}
-      className={`community-btn${s.following ? "" : " community-btn-primary"}`}
       aria-pressed={s.following}
-      style={{ minHeight: 44, padding: "8px 18px", fontSize: 14 }}
     >
       {s.following ? "Following" : "Follow"} · {s.count}
-    </button>
+    </Button>
   );
 }

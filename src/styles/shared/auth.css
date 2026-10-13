@@ -86,6 +86,16 @@
   margin-right: 8px;
   color: #d7f477;
 }
+.auth-panel,
+.auth-card {
+  --ui-bg: #ffffff;
+  --ui-fg: #20352a;
+  --ui-fg-muted: #788b7d;
+  --ui-border: #d2e0cf;
+  --ui-border-hover: #88b65e;
+  --ui-focus-ring: rgba(136, 182, 94, 0.25);
+  --ui-radius-md: 9px;
+}
 .auth-panel {
   min-height: 0;
   overflow-y: auto;
@@ -139,7 +149,7 @@
   font-size: 12px;
   font-weight: 800;
 }
-.auth-card input {
+.auth-card input:not(.ui-input) {
   width: 100%;
   min-height: 46px;
   border: 1px solid #d2e0cf;
@@ -148,10 +158,35 @@
   color: #20352a;
   padding: 0 13px;
 }
-.auth-card input:focus {
+.auth-card input:not(.ui-input):focus {
   border-color: #88b65e;
   box-shadow: 0 0 0 3px #dff1c9;
   outline: 0;
+}
+.auth-card .ui-control {
+  background: #ffffff !important;
+  border: 1px solid #d2e0cf !important;
+  border-radius: 9px !important;
+  min-height: 46px;
+}
+.auth-card .ui-control:focus-within {
+  border-color: #88b65e !important;
+  box-shadow: 0 0 0 3px #dff1c9 !important;
+}
+.auth-card .ui-control .ui-input {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: #20352a !important;
+}
+.auth-card .auth-provider-button {
+  background: #ffffff !important;
+  border-color: #d2e0cf !important;
+  color: #20352a !important;
+}
+.auth-card .auth-provider-button:hover:not(:disabled) {
+  background: #f7faf5 !important;
+  border-color: #88b65e !important;
 }
 .auth-card small {
   display: block;

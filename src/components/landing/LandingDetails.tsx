@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FeedbackDialog from "./FeedbackDialog";
 import ActionLink from "@/components/ui/ActionLink";
+import { Glyph, Icon } from "@/components/ui";
 import { Reveal } from "@/components/motion/Reveal";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { RevealHeading } from "@/components/motion/RevealHeading";
@@ -62,7 +63,9 @@ export function LandingDetails() {
 
         <Stagger as="div" className="landing-feature-grid">
           <StaggerItem as="article" className="feature-main" kind="depth">
-            <span>✳ IDEA TO PROMPT</span>
+            <span>
+              <Glyph name="spark" size={12} /> IDEA TO PROMPT
+            </span>
             <h3>Start before you know exactly what you want.</h3>
             <p>
               PromptDock turns unstructured intent into a goal, a suggested
@@ -70,9 +73,21 @@ export function LandingDetails() {
             </p>
             <div className="feature-visual">
               <span>rough idea</span>
-              <i>→</i>
+              <i>
+                <Icon
+                  name="arrow-right"
+                  size={14}
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                />
+              </i>
               <span>clear direction</span>
-              <i>→</i>
+              <i>
+                <Icon
+                  name="arrow-right"
+                  size={14}
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                />
+              </i>
               <span>ready-to-use prompt</span>
             </div>
           </StaggerItem>
@@ -87,7 +102,9 @@ export function LandingDetails() {
           </StaggerItem>
 
           <StaggerItem as="article" kind="rise">
-            <span className="feature-symbol">▦</span>
+            <span className="feature-symbol">
+              <Glyph name="grid" size={18} />
+            </span>
             <h3>Save and share</h3>
             <p>
               Keep prompts in your library. Make one public so anyone can copy
@@ -96,7 +113,9 @@ export function LandingDetails() {
           </StaggerItem>
 
           <StaggerItem as="article" kind="rise">
-            <span className="feature-symbol">⌘</span>
+            <span className="feature-symbol">
+              <Glyph name="command" size={18} />
+            </span>
             <h3>Keep control</h3>
             <p>
               Fine-tune the details, copy the final prompt, or export it as
@@ -108,7 +127,8 @@ export function LandingDetails() {
 
       <section className="landing-keys" id="your-keys">
         <Reveal kind="depth" className="landing-keys-orbit">
-          ✳<span>YOUR MODEL</span>
+          <Glyph name="spark" size={14} />
+          <span>YOUR MODEL</span>
           <small>YOUR KEY</small>
         </Reveal>
 
@@ -129,7 +149,12 @@ export function LandingDetails() {
               className="landing-outline-cta"
               href="/auth?mode=register"
             >
-              Set up your workspace <span>↗</span>
+              Set up your workspace{" "}
+              <Icon
+                name="arrow-up-right"
+                size={14}
+                style={{ display: "inline-block", verticalAlign: "middle" }}
+              />
             </ActionLink>
           </Reveal>
         </div>
@@ -219,25 +244,46 @@ export function LandingFooter() {
             className="sponsor-card-link"
             href="https://github.com/sponsors/kingjethro999"
           >
-            Sponsor on GitHub <span>↗</span>
+            Sponsor on GitHub{" "}
+            <Icon
+              name="arrow-up-right"
+              size={14}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
           </ActionLink>
         </Reveal>
       </section>
 
       <footer className="landing-footer">
-        <span className="landing-footer-brand">✳ promptdock</span>
+        <span className="landing-footer-brand">
+          <Glyph name="spark" size={14} /> promptdock
+        </span>
         <span className="landing-footer-tagline">
           Ideas deserve a clearer path.
         </span>
         <div className="landing-footer-actions">
           <FeedbackDialog />
-          <Link href="/auth?mode=login">Sign in ↗</Link>
+          <Link href="/auth?mode=login">
+            Sign in{" "}
+            <Icon
+              name="arrow-up-right"
+              size={13}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
+          </Link>
         </div>
         <nav
           className="landing-footer-legal"
           aria-label="Legal and community links"
         >
-          <a href="https://www.tiktok.com/@thepromptdock">TikTok ↗</a>
+          <a href="https://www.tiktok.com/@thepromptdock">
+            TikTok{" "}
+            <Icon
+              name="arrow-up-right"
+              size={13}
+              style={{ display: "inline-block", verticalAlign: "middle" }}
+            />
+          </a>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/copyright">Copyright</Link>

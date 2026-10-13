@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button, LinkButton } from "@/components/ui";
 import type { CommunityPromptCard as CardType } from "@/lib/community/types";
 import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
 import { copyPromptText } from "@/lib/community/copy";
@@ -128,73 +129,37 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
       )}
 
       <div className="community-card-actions">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          leadingIcon={copied ? "check" : "copy"}
           onClick={handleCopy}
-          className="community-btn"
           aria-label="Copy prompt text"
         >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-          </svg>
-          <span>{copied ? "Copied" : "Copy"}</span>
-        </button>
+          {copied ? "Copied" : "Copy"}
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          leadingIcon="bookmark"
           onClick={handleSave}
           disabled={saving}
-          className="community-btn"
           aria-label="Save prompt to your library"
         >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-          </svg>
-          <span>{saved ? "Saved" : saving ? "Saving…" : "Save"}</span>
-        </button>
+          {saved ? "Saved" : saving ? "Saving…" : "Save"}
+        </Button>
 
-        <Link
+        <LinkButton
           href={`/workspace?remix=${card.publicId}`}
-          className="community-btn community-btn-primary"
+          variant="primary"
+          size="sm"
+          leadingIcon="zap"
           style={{ marginLeft: "auto" }}
           aria-label="Remix this prompt"
         >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-          <span>Remix</span>
-        </Link>
+          Remix
+        </LinkButton>
       </div>
 
       <div

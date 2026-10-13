@@ -22,7 +22,14 @@ export type LiquidButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "children"
 > & {
-  variant?: "primary" | "secondary" | "quiet" | "outline" | "accent";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "quiet"
+    | "outline"
+    | "accent"
+    | "ghost"
+    | "danger";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
   status?: LiquidButtonStatus;
@@ -35,7 +42,7 @@ export type LiquidButtonProps = Omit<
 };
 
 export default function LiquidButton({
-  variant = "primary",
+  variant: rawVariant = "primary",
   size = "md",
   loading: externalLoading,
   status: externalStatus,
@@ -61,6 +68,7 @@ export default function LiquidButton({
   const [internalState, setInternalState] =
     useState<LiquidInteractiveState>("idle");
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const variant = rawVariant === "ghost" ? "quiet" : rawVariant;
 
   // Distinguish genuine unavailable state vs active processing state
   const isExternalLoading =
