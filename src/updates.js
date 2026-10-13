@@ -1,5 +1,15 @@
 module.exports = [
   {
+    id: "release-2026-10-community",
+    version: "v0.11.0",
+    date: "October 12, 2026",
+    title: "Community is here",
+    summary:
+      "Discover prompts other people share, and follow the people behind them.",
+    body: "Browse prompts other creators chose to share, save the ones you like, and remix them into something of your own. Your own prompts stay completely private until you explicitly choose to share them.",
+    walkthrough: "release-2026-10-community",
+  },
+  {
     id: "firebase-github-linking-resolution",
     version: "v0.10.5",
     date: "October 8, 2026",

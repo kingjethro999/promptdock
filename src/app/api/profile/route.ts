@@ -5,6 +5,8 @@ import { assertOwnedAsset } from "@/lib/community/uploads";
 import { validateUsername, normalizeUsername } from "@/lib/community/username";
 import { HttpError } from "@/lib/community/save";
 import type { Audience } from "@/lib/community/access";
+import { PRESET_IDS } from "@/lib/profile/banner-presets";
+import { cleanDisplayName, cleanBio } from "@/lib/profile/validate";
 
 const db = require("../../../database");
 
@@ -17,7 +19,7 @@ export async function GET() {
     await db.ensureSchema();
     const { rows } = await db.pool.query(
       `SELECT id, username, display_name AS "displayName", avatar_url AS "avatarUrl",
-              banner_url AS "bannerUrl", bio, community_audience AS "communityAudience",
+              banner_url AS "bannerUrl", banner_preset AS "bannerPreset", bio, community_audience AS "communityAudience",
               username_changed_at AS "usernameChangedAt"
        FROM users WHERE id = $1::uuid`,
       [viewer.id],
@@ -41,11 +43,12 @@ export async function PATCH(req: Request) {
     await rateLimit(`profile:${viewer.id}`, { limit: 20, windowSec: 60 });
 
     const body = (await req.json().catch(() => ({}))) as {
-      displayName?: string;
+      displayName?: string | null;
       username?: string;
       bio?: string | null;
       avatarUrl?: string | null;
       bannerUrl?: string | null;
+      bannerPreset?: string | null;
       communityAudience?: Audience;
     };
 
@@ -58,25 +61,30 @@ export async function PATCH(req: Request) {
     if (body.bannerUrl) {
       assertOwnedAsset(body.bannerUrl, viewer.id);
     }
+    if (body.bannerPreset !== undefined && body.bannerPreset !== null) {
+      if (!PRESET_IDS.has(body.bannerPreset)) {
+        throw new HttpError(400, "invalid_preset");
+      }
+    }
 
-    // Clean text fields
-    const displayName =
-      typeof body.displayName === "string"
-        ? body.displayName
-            .replace(/[\x00-\x1F\x7F]/g, "")
-            .trim()
-            .slice(0, 60)
-        : undefined;
+    // Clean text fields using shared profile validation
+    let displayName: string | null | undefined = undefined;
+    if ("displayName" in body) {
+      const r = cleanDisplayName(body.displayName);
+      if (!r.ok) {
+        throw new HttpError(400, `invalid_display_name_${r.reason}`);
+      }
+      displayName = r.value;
+    }
 
-    const bio =
-      typeof body.bio === "string"
-        ? body.bio
-            .replace(/[\x00-\x1F\x7F]/g, "")
-            .trim()
-            .slice(0, 160)
-        : body.bio === null
-          ? null
-          : undefined;
+    let bio: string | null | undefined = undefined;
+    if ("bio" in body) {
+      const r = cleanBio(body.bio);
+      if (!r.ok) {
+        throw new HttpError(400, `invalid_bio_${r.reason}`);
+      }
+      bio = r.value;
+    }
 
     const audience: Audience | undefined =
       body.communityAudience === "followers"
@@ -174,7 +182,20 @@ export async function PATCH(req: Request) {
         updates.push(`avatar_url = ${addParam(body.avatarUrl)}`);
       }
       if (body.bannerUrl !== undefined) {
-        updates.push(`banner_url = ${addParam(body.bannerUrl)}`);
+        if (body.bannerUrl !== null) {
+          updates.push(`banner_url = ${addParam(body.bannerUrl)}`);
+          updates.push(`banner_preset = NULL`);
+        } else {
+          updates.push(`banner_url = NULL`);
+        }
+      }
+      if (body.bannerPreset !== undefined) {
+        if (body.bannerPreset !== null) {
+          updates.push(`banner_preset = ${addParam(body.bannerPreset)}`);
+          updates.push(`banner_url = NULL`);
+        } else {
+          updates.push(`banner_preset = NULL`);
+        }
       }
       if (audience !== undefined) {
         updates.push(`community_audience = ${addParam(audience)}`);
@@ -189,7 +210,7 @@ export async function PATCH(req: Request) {
 
       const updated = await client.query(
         `SELECT id, username, display_name AS "displayName", avatar_url AS "avatarUrl",
-                banner_url AS "bannerUrl", bio, community_audience AS "communityAudience"
+                banner_url AS "bannerUrl", banner_preset AS "bannerPreset", bio, community_audience AS "communityAudience"
          FROM users WHERE id = $1::uuid`,
         [viewer.id],
       );

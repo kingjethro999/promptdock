@@ -229,4 +229,15 @@ module.exports = [
     WHERE EXISTS (SELECT 1 FROM marker)
       AND visibility = 'public'
       AND listed_in_community = false`,
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_preset text CHECK (banner_preset IS NULL OR banner_preset ~ '^[a-z]{2,16}$')",
+  `CREATE TABLE IF NOT EXISTS user_experiences (
+    user_id        uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    experience_id  text NOT NULL CHECK (char_length(experience_id) <= 80),
+    status         text NOT NULL CHECK (status IN ('shown','completed','skipped','dismissed')),
+    step_reached   smallint NOT NULL DEFAULT 0 CHECK (step_reached BETWEEN 0 AND 20),
+    first_shown_at timestamptz NOT NULL DEFAULT now(),
+    updated_at     timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, experience_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS user_experiences_recent_idx ON user_experiences (user_id, first_shown_at DESC)",
 ];

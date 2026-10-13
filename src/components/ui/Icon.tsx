@@ -46,6 +46,8 @@ import {
   Folder,
   Globe,
   Zap,
+  Shuffle,
+  RotateCw,
 } from "lucide-react";
 
 export const ICONS = {
@@ -95,6 +97,8 @@ export const ICONS = {
   folder: Folder,
   globe: Globe,
   zap: Zap,
+  shuffle: Shuffle,
+  refresh: RotateCw,
 } as const;
 
 export type IconName = keyof typeof ICONS;

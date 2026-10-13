@@ -43,6 +43,7 @@ export default function IdeaCard({
       <div className="idea-input-wrap">
         <textarea
           id="ideaInput"
+          data-tour="composer"
           rows={5}
           maxLength={100000}
           value={idea}

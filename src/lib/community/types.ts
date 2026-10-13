@@ -16,6 +16,7 @@ export type CommunityPromptCard = {
 export type PublicProfile = PublicCreator & {
   bio: string | null;
   bannerUrl: string | null;
+  bannerPreset?: string | null;
   followerCount: number;
   isOwner: boolean;
   following?: boolean;
