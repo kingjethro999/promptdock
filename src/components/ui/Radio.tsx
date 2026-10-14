@@ -1,10 +1,17 @@
 "use client";
 
-import React, { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from "react";
+import React, {
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
 import { cx } from "./cx";
 
-export interface RadioProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+export interface RadioProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "type"
+> {
   label?: ReactNode;
   hint?: ReactNode;
   fieldClassName?: string;

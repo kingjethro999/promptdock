@@ -8,20 +8,23 @@ const db = require("../src/database");
 async function main() {
   await db.ensureSchema();
   const tokenBytes = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(tokenBytes).digest("hex");
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(tokenBytes)
+    .digest("hex");
   const userId = crypto.randomUUID();
   const username = "tester_" + Math.random().toString(36).substring(2, 7);
 
   await db.pool.query(
     `INSERT INTO users (id, email, username, display_name, email_verified_at, created_at)
      VALUES ($1, $2, $3, $4, now(), now())`,
-    [userId, `${username}@example.com`, username, "Tester User"]
+    [userId, `${username}@example.com`, username, "Tester User"],
   );
 
   await db.pool.query(
     `INSERT INTO sessions (token_hash, user_id, expires_at)
      VALUES ($1, $2, now() + interval '1 day')`,
-    [tokenHash, userId]
+    [tokenHash, userId],
   );
 
   const browser = await chromium.launch({
@@ -54,7 +57,9 @@ async function main() {
       const page = await context.newPage();
 
       // Go to /welcome
-      await page.goto("http://localhost:3000/welcome", { waitUntil: "domcontentloaded" });
+      await page.goto("http://localhost:3000/welcome", {
+        waitUntil: "domcontentloaded",
+      });
       await page.evaluate((t) => {
         document.documentElement.setAttribute("data-theme", t);
         if (t === "dark") document.documentElement.classList.add("dark");
@@ -64,7 +69,10 @@ async function main() {
 
       // Screenshot Step 1 (Name)
       await page.screenshot({
-        path: path.join(__dirname, `../qa/profile-setup/step1-${vp.name}-${theme}.png`),
+        path: path.join(
+          __dirname,
+          `../qa/profile-setup/step1-${vp.name}-${theme}.png`,
+        ),
       });
 
       // Advance to Step 2 (Photo)
@@ -73,29 +81,43 @@ async function main() {
         await continueBtn.click();
         await page.waitForTimeout(1000);
         await page.screenshot({
-          path: path.join(__dirname, `../qa/profile-setup/step2-${vp.name}-${theme}.png`),
+          path: path.join(
+            __dirname,
+            `../qa/profile-setup/step2-${vp.name}-${theme}.png`,
+          ),
         });
 
         // Advance to Step 3 (Cover)
-        const nextBtn = page.locator("button:has-text('Continue'), button:has-text('Skip for now')");
+        const nextBtn = page.locator(
+          "button:has-text('Continue'), button:has-text('Skip for now')",
+        );
         await nextBtn.first().click();
         await page.waitForTimeout(600);
         await page.screenshot({
-          path: path.join(__dirname, `../qa/profile-setup/step3-${vp.name}-${theme}.png`),
+          path: path.join(
+            __dirname,
+            `../qa/profile-setup/step3-${vp.name}-${theme}.png`,
+          ),
         });
 
         // Advance to Step 4 (Bio)
         await nextBtn.first().click();
         await page.waitForTimeout(600);
         await page.screenshot({
-          path: path.join(__dirname, `../qa/profile-setup/step4-${vp.name}-${theme}.png`),
+          path: path.join(
+            __dirname,
+            `../qa/profile-setup/step4-${vp.name}-${theme}.png`,
+          ),
         });
 
         // Advance to Step 5 (Done)
         await nextBtn.first().click();
         await page.waitForTimeout(600);
         await page.screenshot({
-          path: path.join(__dirname, `../qa/profile-setup/step5-${vp.name}-${theme}.png`),
+          path: path.join(
+            __dirname,
+            `../qa/profile-setup/step5-${vp.name}-${theme}.png`,
+          ),
         });
       }
 
@@ -109,13 +131,13 @@ async function main() {
     `INSERT INTO user_experiences (user_id, experience_id, status, step_reached)
      VALUES ($1, 'profile-setup-v1', 'completed', 5)
      ON CONFLICT (user_id, experience_id) DO UPDATE SET status = 'completed'`,
-    [userId]
+    [userId],
   );
 
   for (const theme of ["light", "dark"]) {
     await db.pool.query(
       `DELETE FROM user_experiences WHERE user_id = $1 AND experience_id = 'welcome-v1'`,
-      [userId]
+      [userId],
     );
 
     const context = await browser.newContext({
@@ -154,7 +176,10 @@ async function main() {
         await nextBtn.click();
         await page.waitForTimeout(800);
         await page.screenshot({
-          path: path.join(__dirname, `../qa/onboarding/tour-step2-spotlight-${theme}.png`),
+          path: path.join(
+            __dirname,
+            `../qa/onboarding/tour-step2-spotlight-${theme}.png`,
+          ),
         });
       }
     } catch (e) {
@@ -168,7 +193,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

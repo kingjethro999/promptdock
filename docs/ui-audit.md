@@ -3,6 +3,7 @@
 ## 1. Executive Summary
 
 PromptDock currently contains three coexisting generations of UI controls:
+
 1. **Original workspace controls**: `react-field`, `react-password-field`, `search-select`, and `LiquidButton`.
 2. **Community & recent features**: `community-btn`, `community-search-input`, raw `<input type="radio">`, and occasional inline `style={{}}`.
 3. **Glyphs**: Text glyphs such as `✳`, `↗`, `✦`, `⚙`, `✎`, `✓`, `☰`, `→` used directly in templates.
@@ -16,41 +17,44 @@ This consolidation pass creates a unified UI kit in `src/components/ui/`, promot
 ## 2. Route Inventory
 
 ### A. Unauthenticated Routes (Public Surface)
-| Route | Component File | Description |
-|---|---|---|
-| `/` | `src/app/page.tsx` | Landing page, hero, live demo, footer, and feedback modal |
-| `/auth` | `src/app/auth/page.tsx` | Sign in & Sign up tabbed form, Google/GitHub OAuth triggers |
-| `/community` | `src/app/community/page.tsx` | Community Explorer (Prompts tab + Creators tab, search & filters) |
-| `/:username` | `src/app/[username]/page.tsx` | Public creator profile, prompt grid, follower counts, follow action |
-| `/p/:publicId` | `src/app/p/[publicId]/page.tsx` | Shared prompt view, copy/save/remix actions |
-| `/invite/:code` | `src/app/invite/[code]/page.tsx` | Referral invitation landing with crawlable previews |
-| `/updates` | `src/app/updates/page.tsx` | Product changelog and release notes |
-| `/updates/:id` | `src/app/updates/[id]/page.tsx` | Single release update view |
-| `/privacy` | `src/app/privacy/page.tsx` | Legal privacy policy |
-| `/terms` | `src/app/terms/page.tsx` | Legal terms of service |
-| `/copyright` | `src/app/copyright/page.tsx` | Legal copyright policy |
-| `404 / Error` | `src/app/not-found.tsx` | Not found error page |
+
+| Route           | Component File                   | Description                                                         |
+| --------------- | -------------------------------- | ------------------------------------------------------------------- |
+| `/`             | `src/app/page.tsx`               | Landing page, hero, live demo, footer, and feedback modal           |
+| `/auth`         | `src/app/auth/page.tsx`          | Sign in & Sign up tabbed form, Google/GitHub OAuth triggers         |
+| `/community`    | `src/app/community/page.tsx`     | Community Explorer (Prompts tab + Creators tab, search & filters)   |
+| `/:username`    | `src/app/[username]/page.tsx`    | Public creator profile, prompt grid, follower counts, follow action |
+| `/p/:publicId`  | `src/app/p/[publicId]/page.tsx`  | Shared prompt view, copy/save/remix actions                         |
+| `/invite/:code` | `src/app/invite/[code]/page.tsx` | Referral invitation landing with crawlable previews                 |
+| `/updates`      | `src/app/updates/page.tsx`       | Product changelog and release notes                                 |
+| `/updates/:id`  | `src/app/updates/[id]/page.tsx`  | Single release update view                                          |
+| `/privacy`      | `src/app/privacy/page.tsx`       | Legal privacy policy                                                |
+| `/terms`        | `src/app/terms/page.tsx`         | Legal terms of service                                              |
+| `/copyright`    | `src/app/copyright/page.tsx`     | Legal copyright policy                                              |
+| `404 / Error`   | `src/app/not-found.tsx`          | Not found error page                                                |
 
 ### B. Authenticated Routes (App Surface)
-| Route | Component File | Description |
-|---|---|---|
-| `/workspace` | `src/app/(workspace)/workspace/page.tsx` | Main idea-to-prompt builder, interactive drawer |
-| `/library` | `src/app/(workspace)/library/page.tsx` | User's prompt library, cards, sharing modal, backup import/export |
-| `/settings` | `src/app/(workspace)/settings/page.tsx` | Account preferences, Public Profile editor, AI provider keys |
-| `/admin` | `src/app/admin/page.tsx` | Admin management, feedback review, analytics |
+
+| Route        | Component File                           | Description                                                       |
+| ------------ | ---------------------------------------- | ----------------------------------------------------------------- |
+| `/workspace` | `src/app/(workspace)/workspace/page.tsx` | Main idea-to-prompt builder, interactive drawer                   |
+| `/library`   | `src/app/(workspace)/library/page.tsx`   | User's prompt library, cards, sharing modal, backup import/export |
+| `/settings`  | `src/app/(workspace)/settings/page.tsx`  | Account preferences, Public Profile editor, AI provider keys      |
+| `/admin`     | `src/app/admin/page.tsx`                 | Admin management, feedback review, analytics                      |
 
 ---
 
 ## 3. Evidence & Count Audit (Command Outputs)
 
-| Metric | Total in `src` | Unauthenticated Routes | Authenticated Routes | UI Kit Internal |
-|---|---|---|---|---|
-| **Raw form controls** (`<input>`, `<select>`, `<textarea>`, `<button>`, `<option>`) | **130** | 24 | 99 | 7 |
-| **Native `<select>`** | **1** | 1 (`PromptGrid.tsx:107`) | 0 | 0 |
-| **Inline `style={{}}` attributes** | **48** | 22 | 25 | 1 |
-| **Legacy control classes** (`community-btn`, `community-search-input`, `primary-button`, etc.) | **111** (all files) / **36** (in TSX) | 13 | 23 | 0 |
+| Metric                                                                                         | Total in `src`                        | Unauthenticated Routes   | Authenticated Routes | UI Kit Internal |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------ | -------------------- | --------------- |
+| **Raw form controls** (`<input>`, `<select>`, `<textarea>`, `<button>`, `<option>`)            | **130**                               | 24                       | 99                   | 7               |
+| **Native `<select>`**                                                                          | **1**                                 | 1 (`PromptGrid.tsx:107`) | 0                    | 0               |
+| **Inline `style={{}}` attributes**                                                             | **48**                                | 22                       | 25                   | 1               |
+| **Legacy control classes** (`community-btn`, `community-search-input`, `primary-button`, etc.) | **111** (all files) / **36** (in TSX) | 13                       | 23                   | 0               |
 
 ### Command Proof:
+
 ```bash
 # Raw controls in TSX
 grep -rnE "<(input|select|textarea|button|option)\b" src --include=*.tsx | wc -l
@@ -73,32 +77,36 @@ grep -rnE "community-(btn|search-input)|primary-button|secondary-button|text-but
 
 ## 4. Control Species Inventory
 
-| Species | Occurrences (File:Line) | Type | Focus Ring | Disabled / Invalid | Dark Theme | Keyboard Accessible | Action |
-|---|---|---|---|---|---|---|---|
-| **Text input** | `src/components/auth/AuthForm.tsx:141`<br>`src/components/settings/PublicProfileSettings.tsx:244` | Native `<input>` | Partial | Inconsistent | Partial | Yes | **Rebuild / Promote** to `TextField` |
-| **Password input** | `src/components/auth/AuthForm.tsx:165` | Native `<input type="password">` | Partial | Yes | Yes | Yes | **Promote** to `PasswordField` with `IconButton` eye toggle |
-| **Search box** | `src/components/community/CommunityExplorer.tsx:64`<br>`src/components/library/LibraryWorkspace.tsx:150` | Native `<input type="search">` | Custom | No | Yes | Yes | **Promote** to `SearchInput` with SVG clear button and `/` shortcut |
-| **Dropdown / Select** | `src/components/community/PromptGrid.tsx:107`<br>`src/components/ui/SearchSelect.tsx` | 1 Native `<select>`, 1 Custom Listbox | OS / Yes | Partial | Partial | Partial (no portal, no coarse sheet) | **Rebuild** into `Select` with portal, full keyboard contract, and bottom sheet |
-| **Textarea** | `src/components/landing/LandingFeedbackModal.tsx:84`<br>`src/components/settings/PublicProfileSettings.tsx:288` | Native `<textarea>` | Partial | No | Yes | Yes | **Promote** to `TextArea` with auto-grow |
-| **Checkbox** | `src/components/library/SharePromptDialog.tsx:120` | Native `<input type="checkbox">` | Default OS | Yes | Partial | Yes | **Promote** to styled `Checkbox` (44px touch target) |
-| **Radio / Choice cards** | `src/components/settings/PublicProfileSettings.tsx:326`<br>`src/components/library/SharePromptDialog.tsx:96` | Raw `<input type="radio">` | Inconsistent | Yes | Yes | Yes | **Promote** to `Radio` and `ChoiceCard` |
-| **Switch** | `src/components/library/SharePromptDialog.tsx:180` | Native checkbox | Custom | Yes | Yes | Yes | **Promote** to `Switch` (`role="switch"`) |
-| **File button** | `src/components/settings/PublicProfileSettings.tsx:190` | Raw `<input type="file">` | None | Partial | Yes | Partial | **Promote** to `FileButton` (styled trigger over hidden input) |
-| **Button (Primary/Sec/Ghost)** | `src/components/ui/LiquidButton.tsx`<br>`src/components/ui/Button.tsx` | Custom component | Yes | Yes | Yes | Yes | **Promote & Unify** to kit `Button` and `IconButton` |
-| **Link styled as button** | `src/components/landing/LandingPage.tsx:120` | Next.js `<Link>` with button classes | Yes | N/A | Yes | Yes | **Promote** to `LinkButton` |
+| Species                        | Occurrences (File:Line)                                                                                         | Type                                  | Focus Ring   | Disabled / Invalid | Dark Theme | Keyboard Accessible                  | Action                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------ | ------------------ | ---------- | ------------------------------------ | ------------------------------------------------------------------------------- |
+| **Text input**                 | `src/components/auth/AuthForm.tsx:141`<br>`src/components/settings/PublicProfileSettings.tsx:244`               | Native `<input>`                      | Partial      | Inconsistent       | Partial    | Yes                                  | **Rebuild / Promote** to `TextField`                                            |
+| **Password input**             | `src/components/auth/AuthForm.tsx:165`                                                                          | Native `<input type="password">`      | Partial      | Yes                | Yes        | Yes                                  | **Promote** to `PasswordField` with `IconButton` eye toggle                     |
+| **Search box**                 | `src/components/community/CommunityExplorer.tsx:64`<br>`src/components/library/LibraryWorkspace.tsx:150`        | Native `<input type="search">`        | Custom       | No                 | Yes        | Yes                                  | **Promote** to `SearchInput` with SVG clear button and `/` shortcut             |
+| **Dropdown / Select**          | `src/components/community/PromptGrid.tsx:107`<br>`src/components/ui/SearchSelect.tsx`                           | 1 Native `<select>`, 1 Custom Listbox | OS / Yes     | Partial            | Partial    | Partial (no portal, no coarse sheet) | **Rebuild** into `Select` with portal, full keyboard contract, and bottom sheet |
+| **Textarea**                   | `src/components/landing/LandingFeedbackModal.tsx:84`<br>`src/components/settings/PublicProfileSettings.tsx:288` | Native `<textarea>`                   | Partial      | No                 | Yes        | Yes                                  | **Promote** to `TextArea` with auto-grow                                        |
+| **Checkbox**                   | `src/components/library/SharePromptDialog.tsx:120`                                                              | Native `<input type="checkbox">`      | Default OS   | Yes                | Partial    | Yes                                  | **Promote** to styled `Checkbox` (44px touch target)                            |
+| **Radio / Choice cards**       | `src/components/settings/PublicProfileSettings.tsx:326`<br>`src/components/library/SharePromptDialog.tsx:96`    | Raw `<input type="radio">`            | Inconsistent | Yes                | Yes        | Yes                                  | **Promote** to `Radio` and `ChoiceCard`                                         |
+| **Switch**                     | `src/components/library/SharePromptDialog.tsx:180`                                                              | Native checkbox                       | Custom       | Yes                | Yes        | Yes                                  | **Promote** to `Switch` (`role="switch"`)                                       |
+| **File button**                | `src/components/settings/PublicProfileSettings.tsx:190`                                                         | Raw `<input type="file">`             | None         | Partial            | Yes        | Partial                              | **Promote** to `FileButton` (styled trigger over hidden input)                  |
+| **Button (Primary/Sec/Ghost)** | `src/components/ui/LiquidButton.tsx`<br>`src/components/ui/Button.tsx`                                          | Custom component                      | Yes          | Yes                | Yes        | Yes                                  | **Promote & Unify** to kit `Button` and `IconButton`                            |
+| **Link styled as button**      | `src/components/landing/LandingPage.tsx:120`                                                                    | Next.js `<Link>` with button classes  | Yes          | N/A                | Yes        | Yes                                  | **Promote** to `LinkButton`                                                     |
 
 ---
 
 ## 5. Glyphs vs. Emojis Architecture
 
 ### The User Invariant
-> *"As for the glyphs, do not remove them, create an SVG fallback depending on the device, do not remove them completely. Glyphs are not emojis."*
+
+> _"As for the glyphs, do not remove them, create an SVG fallback depending on the device, do not remove them completely. Glyphs are not emojis."_
 
 ### Why System Emojis Break Glyphs
+
 On iOS and Android, characters like `✳` (U+2733, Eight-Spoked Asterisk) and `↗` (U+2197, North East Arrow) frequently fall back to system emoji fonts (Apple Color Emoji, Noto Color Emoji), which render them as colored, multicolored illustrations instead of monochromatic brand glyphs matching `currentColor`.
 
 ### Solution: `Glyph` Component
+
 The new `src/components/ui/Glyph.tsx` supports both:
+
 1. **Direct SVG rendering** with identical vector stroke geometry (e.g. `spark`, `star`, `arrow-up-right`, `command`, `pencil`), guaranteeing crisp monochrome rendering in `currentColor` on mobile.
 2. **Preservation of text glyphs** where desired, wrapped with clean font inheritance.
 
@@ -107,6 +115,7 @@ The new `src/components/ui/Glyph.tsx` supports both:
 ## 6. Design Tokens & Form Sizing
 
 ### Existing Tokens:
+
 - Radii: `var(--existing-radius-field)` / 9px–10px standard.
 - Colors:
   - Surface: `--community-surface` (#ffffff light / #14221c dark)
@@ -117,6 +126,7 @@ The new `src/components/ui/Glyph.tsx` supports both:
   - Accent: `--community-accent` (#86b432 light / #c7f464 dark)
 
 ### UI Kit Tokens (`src/styles/next/ui-kit.css`):
+
 ```css
 :root {
   color-scheme: light;
@@ -134,7 +144,8 @@ The new `src/components/ui/Glyph.tsx` supports both:
   --ui-on-accent: #ffffff;
 }
 
-[data-theme="dark"], .dark {
+[data-theme="dark"],
+.dark {
   color-scheme: dark;
   --ui-bg: #14221c;
   --ui-fg: #f7f8f3;

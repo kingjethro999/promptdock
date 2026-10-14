@@ -2,11 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 test("Community Legacy Public Links Suite", async (suite) => {
-  const {
-    effectiveVisibility,
-    canView,
-    visibleToViewerSql,
-  } = await import("../src/lib/community/access.ts");
+  const { effectiveVisibility, canView, visibleToViewerSql } =
+    await import("../src/lib/community/access.ts");
 
   await suite.test(
     "Legacy prompts with null visibility or null audience default to public",
@@ -97,10 +94,13 @@ test("Community Legacy Public Links Suite", async (suite) => {
     },
   );
 
-  await suite.test("visibleToViewerSql handles NULL values with COALESCE", () => {
-    const sql = visibleToViewerSql("$1");
-    // Assert SQL contains COALESCE so legacy rows with null fields are not filtered out
-    assert.ok(sql.includes("COALESCE(p.visibility, 'public')"));
-    assert.ok(sql.includes("COALESCE(u.community_audience, 'public')"));
-  });
+  await suite.test(
+    "visibleToViewerSql handles NULL values with COALESCE",
+    () => {
+      const sql = visibleToViewerSql("$1");
+      // Assert SQL contains COALESCE so legacy rows with null fields are not filtered out
+      assert.ok(sql.includes("COALESCE(p.visibility, 'public')"));
+      assert.ok(sql.includes("COALESCE(u.community_audience, 'public')"));
+    },
+  );
 });

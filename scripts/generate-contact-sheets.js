@@ -2,25 +2,119 @@ const path = require("node:path");
 const { chromium } = require("playwright");
 
 const USERNAMES = [
-  "alex", "sam", "jordan", "chen", "佐藤", "ivan", "elena", "fatima", "amara", "lucas",
-  "kai", "tariq", "mateo", "yuki", "zoe", "aiden", "priya", "kwame", "leila", "max",
-  "charlotte", "dev_master", "builder-99", "design_guru", "code-ninja", "prompt_pro", "al", "bo", "cy", "di",
-  "verylongusernamethatexceedstwentyfivechars", "alpha_beta_gamma", "researcher_42", "synth-wave", "nordic-coder",
-  "tokyo-night", "sahara_wind", "mountain_peak", "ocean_breeze", "forest_green",
-  "ai_architect", "prompt_craft", "pixel_artist", "data_miner", "vector_mind",
-  "zero_one", "bit_stream", "quantum_leap", "cyber_sage", "neo_matrix",
-  "apollo", "artemis", "hermes", "athena", "zeus", "helios", "selene", "ares", "poseidon", "hades",
-  "curie", "turing", "lovelace", "hopper", "newton", "galileo", "darwin", "feynman", "hawking", "tesla",
-  "ruby", "rust", "python", "golang", "swift", "kotlin", "typescript", "clojure", "elixir", "haskell",
-  "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliet", "kilo", "lima", "mike",
-  "november", "oscar", "papa", "quebec", "romeo", "sierra", "tango", "uniform", "victor", "whiskey"
+  "alex",
+  "sam",
+  "jordan",
+  "chen",
+  "佐藤",
+  "ivan",
+  "elena",
+  "fatima",
+  "amara",
+  "lucas",
+  "kai",
+  "tariq",
+  "mateo",
+  "yuki",
+  "zoe",
+  "aiden",
+  "priya",
+  "kwame",
+  "leila",
+  "max",
+  "charlotte",
+  "dev_master",
+  "builder-99",
+  "design_guru",
+  "code-ninja",
+  "prompt_pro",
+  "al",
+  "bo",
+  "cy",
+  "di",
+  "verylongusernamethatexceedstwentyfivechars",
+  "alpha_beta_gamma",
+  "researcher_42",
+  "synth-wave",
+  "nordic-coder",
+  "tokyo-night",
+  "sahara_wind",
+  "mountain_peak",
+  "ocean_breeze",
+  "forest_green",
+  "ai_architect",
+  "prompt_craft",
+  "pixel_artist",
+  "data_miner",
+  "vector_mind",
+  "zero_one",
+  "bit_stream",
+  "quantum_leap",
+  "cyber_sage",
+  "neo_matrix",
+  "apollo",
+  "artemis",
+  "hermes",
+  "athena",
+  "zeus",
+  "helios",
+  "selene",
+  "ares",
+  "poseidon",
+  "hades",
+  "curie",
+  "turing",
+  "lovelace",
+  "hopper",
+  "newton",
+  "galileo",
+  "darwin",
+  "feynman",
+  "hawking",
+  "tesla",
+  "ruby",
+  "rust",
+  "python",
+  "golang",
+  "swift",
+  "kotlin",
+  "typescript",
+  "clojure",
+  "elixir",
+  "haskell",
+  "delta",
+  "echo",
+  "foxtrot",
+  "golf",
+  "hotel",
+  "india",
+  "juliet",
+  "kilo",
+  "lima",
+  "mike",
+  "november",
+  "oscar",
+  "papa",
+  "quebec",
+  "romeo",
+  "sierra",
+  "tango",
+  "uniform",
+  "victor",
+  "whiskey",
 ];
 
 async function main() {
   const { Avatar, Style } = await import("@dicebear/core");
-  const lorelei = (await import("@dicebear/styles/lorelei.json", { with: { type: "json" } })).default;
-  const notionists = (await import("@dicebear/styles/notionists.json", { with: { type: "json" } })).default;
-  const shapes = (await import("@dicebear/styles/shapes.json", { with: { type: "json" } })).default;
+  const lorelei = (
+    await import("@dicebear/styles/lorelei.json", { with: { type: "json" } })
+  ).default;
+  const notionists = (
+    await import("@dicebear/styles/notionists.json", { with: { type: "json" } })
+  ).default;
+  const shapes = (
+    await import("@dicebear/styles/shapes.json", { with: { type: "json" } })
+  ).default;
 
   const STYLES = [
     { id: "lorelei", style: new Style(lorelei) },
@@ -32,9 +126,18 @@ async function main() {
     headless: true,
     executablePath: "/usr/bin/google-chrome",
   });
-  const page = await browser.newPage({ viewport: { width: 1200, height: 1200 } });
+  const page = await browser.newPage({
+    viewport: { width: 1200, height: 1200 },
+  });
 
-  const BRAND_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
+  const BRAND_COLORS = [
+    "#3b82f6",
+    "#10b981",
+    "#8b5cf6",
+    "#f59e0b",
+    "#ec4899",
+    "#06b6d4",
+  ];
 
   for (const item of STYLES) {
     const svgs = USERNAMES.map((user, i) => {
@@ -108,18 +211,25 @@ async function main() {
 <body>
   <h1>Contact Sheet: ${item.id} (${theme} theme) - 100 seeds</h1>
   <div class="grid">
-    ${svgs.map(s => `
+    ${svgs
+      .map(
+        (s) => `
       <div class="item">
         <div class="avatar-box">${s.svg}</div>
         <div class="name">${s.user}</div>
       </div>
-    `).join("")}
+    `,
+      )
+      .join("")}
   </div>
 </body>
 </html>`;
 
       await page.setContent(html);
-      const outPath = path.join(__dirname, `../qa/avatars/contact-${item.id}-${theme}.png`);
+      const outPath = path.join(
+        __dirname,
+        `../qa/avatars/contact-${item.id}-${theme}.png`,
+      );
       await page.screenshot({ path: outPath, fullPage: true });
       console.log(`Rendered ${outPath}`);
     }
@@ -129,7 +239,7 @@ async function main() {
   console.log("Contact sheets successfully generated!");
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
