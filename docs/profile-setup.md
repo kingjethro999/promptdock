@@ -2,13 +2,13 @@
 
 ## Audit & Design Decisions
 
-| Capability | Exists? (File) | Decision | Reason |
-|---|---|---|---|
-| User registration & auth | Yes (`src/components/auth/AuthForm.tsx`, `src/auth.js`) | **Extend** | Redirection safety net in workspace layout routes new accounts directly to `/welcome`. |
-| Profile update API | Yes (`src/app/api/profile/route.ts`) | **Extend** | Added `bannerPreset` column and validation with mutual exclusivity against `banner_url`. |
-| Image crop dialog | Yes (`src/components/community/ImageCropDialog.tsx`) | **Reuse** | Reused for avatar and custom banner image cropping. |
-| Signed asset upload | Yes (`src/app/api/profile/assets/sign`, Cloudinary) | **Reuse** | Reused to store rasterized avatars and custom covers as authentic first-party URLs. |
-| Avatar Generation | No | **Build New** (`AvatarPicker` with DiceBear 10) | Replaces third-party runtime avatar lookups with client-side deterministic CC0 SVG avatars. |
+| Capability               | Exists? (File)                                          | Decision                                        | Reason                                                                                      |
+| ------------------------ | ------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| User registration & auth | Yes (`src/components/auth/AuthForm.tsx`, `src/auth.js`) | **Extend**                                      | Redirection safety net in workspace layout routes new accounts directly to `/welcome`.      |
+| Profile update API       | Yes (`src/app/api/profile/route.ts`)                    | **Extend**                                      | Added `bannerPreset` column and validation with mutual exclusivity against `banner_url`.    |
+| Image crop dialog        | Yes (`src/components/community/ImageCropDialog.tsx`)    | **Reuse**                                       | Reused for avatar and custom banner image cropping.                                         |
+| Signed asset upload      | Yes (`src/app/api/profile/assets/sign`, Cloudinary)     | **Reuse**                                       | Reused to store rasterized avatars and custom covers as authentic first-party URLs.         |
+| Avatar Generation        | No                                                      | **Build New** (`AvatarPicker` with DiceBear 10) | Replaces third-party runtime avatar lookups with client-side deterministic CC0 SVG avatars. |
 
 ## Flow Overview
 
@@ -43,17 +43,17 @@ The `/welcome` stage is an interactive, step-by-step onboarding experience that 
 
 ```sql
 -- Profile setup funnel conversion
-SELECT status, count(*) 
-FROM user_experiences 
-WHERE experience_id = 'profile-setup-v1' 
+SELECT status, count(*)
+FROM user_experiences
+WHERE experience_id = 'profile-setup-v1'
 GROUP BY status;
 
 -- Profiles with customized fields
-SELECT 
+SELECT
   count(*) FILTER (WHERE avatar_url IS NOT NULL) AS with_photo,
   count(*) FILTER (WHERE banner_url IS NOT NULL OR banner_preset IS NOT NULL) AS with_cover,
   count(*) FILTER (WHERE bio IS NOT NULL AND bio <> '') AS with_bio,
   count(*) AS total_users
-FROM users 
+FROM users
 WHERE created_at >= '2026-10-12T00:00:00Z';
 ```

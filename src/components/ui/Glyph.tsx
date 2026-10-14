@@ -1,6 +1,15 @@
 import React from "react";
 
-export type GlyphName = "spark" | "star" | "arrow-up-right" | "arrow-right" | "check" | "command" | "gear" | "pencil" | "grid";
+export type GlyphName =
+  | "spark"
+  | "star"
+  | "arrow-up-right"
+  | "arrow-right"
+  | "check"
+  | "command"
+  | "gear"
+  | "pencil"
+  | "grid";
 
 export interface GlyphProps extends React.SVGProps<SVGSVGElement> {
   name?: GlyphName;

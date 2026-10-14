@@ -177,8 +177,9 @@ test("onboarding eligibility picks welcome for fresh users and release for retur
     return (
       ok
         .filter((e) => e.type === "release")
-        .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt))[0] ??
-      null
+        .sort(
+          (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt),
+        )[0] ?? null
     );
   }
 

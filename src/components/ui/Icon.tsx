@@ -109,12 +109,7 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
 }
 
-export function Icon({
-  name,
-  size = 18,
-  className,
-  ...rest
-}: IconProps) {
+export function Icon({ name, size = 18, className, ...rest }: IconProps) {
   const Component = ICONS[name];
   if (!Component) {
     return null;

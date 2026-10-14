@@ -39,7 +39,10 @@ export function ChoiceCard({
       htmlFor={fid}
       className={cx("ui-choice-card", className)}
       data-checked={checked ? "true" : undefined}
-      style={{ opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+      style={{
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
     >
       <input
         id={fid}

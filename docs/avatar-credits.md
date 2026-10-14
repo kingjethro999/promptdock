@@ -5,11 +5,11 @@ In strict adherence to the project licensing policy, only **CC0 1.0 Universal (P
 
 ## Included Styles
 
-| Style ID | Style Label | License | Creator / Artist | Source |
-|---|---|---|---|---|
-| `lorelei` | Portrait | CC0 1.0 Universal | Lisa Wischofsky | [dicebear.com/styles/lorelei](https://www.dicebear.com/styles/lorelei/) |
-| `notionists` | Sketch | CC0 1.0 Universal | Micah Lanier | [dicebear.com/styles/notionists](https://www.dicebear.com/styles/notionists/) |
-| `shapes` | Abstract | CC0 1.0 Universal | Florian Körner | [dicebear.com/styles/shapes](https://www.dicebear.com/styles/shapes/) |
+| Style ID     | Style Label | License           | Creator / Artist | Source                                                                        |
+| ------------ | ----------- | ----------------- | ---------------- | ----------------------------------------------------------------------------- |
+| `lorelei`    | Portrait    | CC0 1.0 Universal | Lisa Wischofsky  | [dicebear.com/styles/lorelei](https://www.dicebear.com/styles/lorelei/)       |
+| `notionists` | Sketch      | CC0 1.0 Universal | Micah Lanier     | [dicebear.com/styles/notionists](https://www.dicebear.com/styles/notionists/) |
+| `shapes`     | Abstract    | CC0 1.0 Universal | Florian Körner   | [dicebear.com/styles/shapes](https://www.dicebear.com/styles/shapes/)         |
 
 ## Generation & Privacy Architecture
 

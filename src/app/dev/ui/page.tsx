@@ -22,10 +22,27 @@ import {
 } from "@/components/ui";
 
 const sampleOptions = [
-  { value: "gpt-4o", label: "OpenAI GPT-4o", description: "Flagship omni model" },
-  { value: "claude-3-7-sonnet", label: "Claude 3.7 Sonnet", description: "Hybrid reasoning" },
-  { value: "gemini-2-5-pro", label: "Gemini 2.5 Pro", description: "Deep analysis" },
-  { value: "deepseek-r1", label: "DeepSeek R1", description: "Open weights reasoning", disabled: true },
+  {
+    value: "gpt-4o",
+    label: "OpenAI GPT-4o",
+    description: "Flagship omni model",
+  },
+  {
+    value: "claude-3-7-sonnet",
+    label: "Claude 3.7 Sonnet",
+    description: "Hybrid reasoning",
+  },
+  {
+    value: "gemini-2-5-pro",
+    label: "Gemini 2.5 Pro",
+    description: "Deep analysis",
+  },
+  {
+    value: "deepseek-r1",
+    label: "DeepSeek R1",
+    description: "Open weights reasoning",
+    disabled: true,
+  },
 ];
 
 export default function DevUIGalleryPage() {
@@ -36,9 +53,13 @@ export default function DevUIGalleryPage() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [textVal, setTextVal] = useState("PromptDock Creator");
   const [passwordVal, setPasswordVal] = useState("SecretPassword123!");
-  const [textAreaVal, setTextAreaVal] = useState("Generate an autonomous workflow...");
+  const [textAreaVal, setTextAreaVal] = useState(
+    "Generate an autonomous workflow...",
+  );
   const [searchVal, setSearchVal] = useState("community");
-  const [selectVal, setSelectVal] = useState<string | null>("claude-3-7-sonnet");
+  const [selectVal, setSelectVal] = useState<string | null>(
+    "claude-3-7-sonnet",
+  );
   const [checked, setChecked] = useState(true);
   const [radioVal, setRadioVal] = useState("option1");
   const [choiceVal, setChoiceVal] = useState("public");
@@ -78,11 +99,20 @@ export default function DevUIGalleryPage() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 4px" }}>
+            <h1
+              style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 4px" }}
+            >
               PromptDock UI Kit Gallery
             </h1>
-            <p style={{ margin: 0, fontSize: "14px", color: "var(--ui-placeholder)" }}>
-              Dev-only surface demonstrating every primitive across themes and states
+            <p
+              style={{
+                margin: 0,
+                fontSize: "14px",
+                color: "var(--ui-placeholder)",
+              }}
+            >
+              Dev-only surface demonstrating every primitive across themes and
+              states
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -99,10 +129,19 @@ export default function DevUIGalleryPage() {
 
         {/* 1. Buttons */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             1. Buttons & Icon Buttons
           </h2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px",
+              alignItems: "center",
+            }}
+          >
             <Button variant="primary" leadingIcon="sparkles">
               Primary Action
             </Button>
@@ -121,7 +160,11 @@ export default function DevUIGalleryPage() {
             <Button variant="secondary" disabled>
               Disabled Button
             </Button>
-            <LinkButton href="/community" variant="secondary" trailingIcon="arrow-up-right">
+            <LinkButton
+              href="/community"
+              variant="secondary"
+              trailingIcon="arrow-up-right"
+            >
               Link Button
             </LinkButton>
             <IconButton icon="copy" aria-label="Copy to clipboard" />
@@ -132,7 +175,9 @@ export default function DevUIGalleryPage() {
 
         {/* 2. Glyphs vs Emojis */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             2. Brand Glyphs (Adaptive Vector Geometry)
           </h2>
           <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
@@ -165,10 +210,18 @@ export default function DevUIGalleryPage() {
 
         {/* 3. Text Fields */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             3. Text Fields & Password
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "20px",
+            }}
+          >
             <TextField
               label="Standard Text Field"
               value={textVal}
@@ -197,12 +250,27 @@ export default function DevUIGalleryPage() {
 
         {/* 4. Search & Select */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             4. Search & Select Listbox
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "20px",
+            }}
+          >
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                }}
+              >
                 Search Input
               </label>
               <SearchInput
@@ -232,10 +300,18 @@ export default function DevUIGalleryPage() {
 
         {/* 5. Choice Cards, Radios, Checkbox & Switch */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             5. Selection Controls (Check, Radio, Switch, Choice Cards)
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "24px",
+            }}
+          >
             <div style={{ display: "grid", gap: "16px" }}>
               <Checkbox
                 label="List prompt in community explorer"
@@ -255,8 +331,16 @@ export default function DevUIGalleryPage() {
                 value={radioVal}
                 onChange={setRadioVal}
               >
-                <Radio value="option1" label="Personal Only" hint="Accessible only by your account" />
-                <Radio value="option2" label="Team Workspace" hint="Shared with team members" />
+                <Radio
+                  value="option1"
+                  label="Personal Only"
+                  hint="Accessible only by your account"
+                />
+                <Radio
+                  value="option2"
+                  label="Team Workspace"
+                  hint="Shared with team members"
+                />
               </RadioGroup>
             </div>
 
@@ -294,10 +378,18 @@ export default function DevUIGalleryPage() {
 
         {/* 6. Text Area & File Button */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             6. TextArea & File Button
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "20px",
+            }}
+          >
             <TextArea
               label="Prompt System Instructions"
               value={textAreaVal}
@@ -307,7 +399,14 @@ export default function DevUIGalleryPage() {
               hint="Define persona and tone constraints"
             />
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                }}
+              >
                 File Upload Trigger
               </label>
               <FileButton
@@ -323,7 +422,9 @@ export default function DevUIGalleryPage() {
 
         {/* 7. Overflow & Dialog Clipping Check */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
+          <h2
+            style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}
+          >
             7. Overflow: Hidden Card Containment
           </h2>
           <div
@@ -336,8 +437,16 @@ export default function DevUIGalleryPage() {
               maxWidth: "400px",
             }}
           >
-            <p style={{ fontSize: "13px", color: "var(--ui-placeholder)", margin: "0 0 12px" }}>
-              This card has <code>overflow: hidden</code>. The Select portal renders to <code>document.body</code> so its options are never clipped!
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--ui-placeholder)",
+                margin: "0 0 12px",
+              }}
+            >
+              This card has <code>overflow: hidden</code>. The Select portal
+              renders to <code>document.body</code> so its options are never
+              clipped!
             </p>
             <Select
               label="Select Inside Overflow Hidden"

@@ -42,7 +42,9 @@ test("cleanDisplayName and cleanBio sanitize inputs properly", () => {
       .replace(/\n{3,}/g, "\n\n")
       .trim();
     if (!v) return { ok: true, value: null };
-    return cp(v) > 160 ? { ok: false, reason: "too_long" } : { ok: true, value: v };
+    return cp(v) > 160
+      ? { ok: false, reason: "too_long" }
+      : { ok: true, value: v };
   }
 
   // Display Name tests

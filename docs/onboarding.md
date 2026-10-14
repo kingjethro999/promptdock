@@ -2,13 +2,13 @@
 
 ## Audit & Existing Platform Findings
 
-| Capability | Exists? (File) | Decision | Reason |
-|---|---|---|---|
-| Updates changelog | Yes (`src/updates.js`, `src/app/updates/`) | **Reuse** | Existing updates system already lists product releases and changelog entries. |
-| Unread indicator & tracking | Yes (`src/components/workspace/UpdatesBell.tsx`) | **Reuse & Extend** | Already maintains server-synced read IDs. We added tab-inactive check (`document.hidden`) to stop unnecessary background polling. |
-| Walkthrough spotlight & tour engine | No | **Build New** | Missing guided walkthrough experience for fresh accounts and key feature releases. |
-| User experience persistence | No | **Build New** (`user_experiences` table) | Distinct from changelog read-state: tracks whether a user completed or skipped guided walkthroughs. |
-| UI Kit primitives | Yes (`src/components/ui/`) | **Reuse** | Reuses `Button`, `IconButton`, `Icon`, `AppDialog`, and motion tokens. |
+| Capability                          | Exists? (File)                                   | Decision                                 | Reason                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Updates changelog                   | Yes (`src/updates.js`, `src/app/updates/`)       | **Reuse**                                | Existing updates system already lists product releases and changelog entries.                                                     |
+| Unread indicator & tracking         | Yes (`src/components/workspace/UpdatesBell.tsx`) | **Reuse & Extend**                       | Already maintains server-synced read IDs. We added tab-inactive check (`document.hidden`) to stop unnecessary background polling. |
+| Walkthrough spotlight & tour engine | No                                               | **Build New**                            | Missing guided walkthrough experience for fresh accounts and key feature releases.                                                |
+| User experience persistence         | No                                               | **Build New** (`user_experiences` table) | Distinct from changelog read-state: tracks whether a user completed or skipped guided walkthroughs.                               |
+| UI Kit primitives                   | Yes (`src/components/ui/`)                       | **Reuse**                                | Reuses `Button`, `IconButton`, `Icon`, `AppDialog`, and motion tokens.                                                            |
 
 ## Registry & Target IDs
 
@@ -57,24 +57,24 @@ CREATE INDEX IF NOT EXISTS user_experiences_recent_idx ON user_experiences (user
 
 ```sql
 -- Welcome tour completion funnel
-SELECT status, count(*) 
-FROM user_experiences 
-WHERE experience_id = 'welcome-v1' 
+SELECT status, count(*)
+FROM user_experiences
+WHERE experience_id = 'welcome-v1'
 GROUP BY status;
 
 -- Drop-off point by step
-SELECT step_reached, count(*) 
-FROM user_experiences 
-WHERE experience_id = 'welcome-v1' 
-  AND status IN ('skipped','dismissed') 
-GROUP BY step_reached 
+SELECT step_reached, count(*)
+FROM user_experiences
+WHERE experience_id = 'welcome-v1'
+  AND status IN ('skipped','dismissed')
+GROUP BY step_reached
 ORDER BY step_reached;
 
 -- Release announcement impressions vs completions
-SELECT experience_id, 
-       count(*) AS shown, 
-       count(*) FILTER (WHERE status = 'completed') AS completed 
-FROM user_experiences 
+SELECT experience_id,
+       count(*) AS shown,
+       count(*) FILTER (WHERE status = 'completed') AS completed
+FROM user_experiences
 GROUP BY experience_id;
 ```
 
