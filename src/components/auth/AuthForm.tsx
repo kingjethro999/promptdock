@@ -112,9 +112,7 @@ export default function AuthForm() {
         );
         if (!cancelled) {
           setUsernameStatus(
-            res.available
-              ? "Available"
-              : "That handle is taken or reserved.",
+            res.available ? "Available" : "That handle is taken or reserved.",
           );
         }
       } catch {
@@ -221,13 +219,20 @@ export default function AuthForm() {
             </p>
           </div>
           <div className="auth-story-note">
-            <span><Glyph name="star" size={14} /></span> Start free. Bring your own model keys when you are
-            ready.
+            <span>
+              <Glyph name="star" size={14} />
+            </span>{" "}
+            Start free. Bring your own model keys when you are ready.
           </div>
         </section>
         <section className="auth-panel" aria-labelledby="authTitle">
           <Link className="auth-back" href="/">
-            <Glyph name="arrow-right" size={14} style={{ transform: "rotate(180deg)", display: "inline-block" }} /> Back to PromptDock
+            <Glyph
+              name="arrow-right"
+              size={14}
+              style={{ transform: "rotate(180deg)", display: "inline-block" }}
+            />{" "}
+            Back to PromptDock
           </Link>
           <div className="auth-card">
             <span className="auth-card-mark" aria-hidden="true">
@@ -308,7 +313,10 @@ export default function AuthForm() {
                       value={username}
                       autoComplete="username"
                       placeholder="e.g. kingjethro"
-                      hint={usernameStatus || "3–24 letters, numbers, or underscores."}
+                      hint={
+                        usernameStatus ||
+                        "3–24 letters, numbers, or underscores."
+                      }
                       onChange={(event) => setUsername(event.target.value)}
                     />
                   </div>

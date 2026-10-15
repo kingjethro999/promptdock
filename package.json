@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.12.2",
+  "version": "0.12.5",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
@@ -26,6 +26,8 @@
     "node": ">=20.19"
   },
   "dependencies": {
+    "@dicebear/core": "10.7.0",
+    "@dicebear/styles": "10.6.0",
     "@gsap/react": "^2.1.2",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",

@@ -46,6 +46,8 @@ import {
   Folder,
   Globe,
   Zap,
+  Shuffle,
+  RotateCw,
 } from "lucide-react";
 
 export const ICONS = {
@@ -95,6 +97,8 @@ export const ICONS = {
   folder: Folder,
   globe: Globe,
   zap: Zap,
+  shuffle: Shuffle,
+  refresh: RotateCw,
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -105,12 +109,7 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
 }
 
-export function Icon({
-  name,
-  size = 18,
-  className,
-  ...rest
-}: IconProps) {
+export function Icon({ name, size = 18, className, ...rest }: IconProps) {
   const Component = ICONS[name];
   if (!Component) {
     return null;

@@ -2,7 +2,8 @@
 
 import { LinkButton, Icon } from "@/components/ui";
 import type { PublicProfile } from "@/lib/community/types";
-import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
+import { avatarFallback } from "@/lib/community/username";
+import { BannerPreset } from "@/components/profile/BannerPreset";
 import FollowButton from "./FollowButton";
 
 type ViewProps = {
@@ -17,6 +18,7 @@ type EditProps = {
     displayName: string;
     avatarUrl: string | null;
     bannerUrl: string | null;
+    bannerPreset?: string | null;
     bio: string | null;
   };
   onPickBanner(): void;
@@ -34,6 +36,9 @@ export default function ProfileHeader(props: Props) {
     ? props.draft.displayName || props.draft.username
     : props.profile.displayName;
   const bannerUrl = isEdit ? props.draft.bannerUrl : props.profile.bannerUrl;
+  const bannerPreset = isEdit
+    ? props.draft.bannerPreset
+    : props.profile.bannerPreset;
   const avatarUrl = isEdit ? props.draft.avatarUrl : props.profile.avatarUrl;
   const bio = isEdit ? props.draft.bio : props.profile.bio;
 
@@ -51,6 +56,8 @@ export default function ProfileHeader(props: Props) {
       >
         {bannerUrl ? (
           <img src={bannerUrl} alt="" loading="lazy" />
+        ) : bannerPreset ? (
+          <BannerPreset id={bannerPreset} />
         ) : isEdit ? (
           <div className="profile-banner-empty">
             <Icon name="image" size={24} />
@@ -75,23 +82,25 @@ export default function ProfileHeader(props: Props) {
             tabIndex={isEdit ? 0 : undefined}
             aria-label={isEdit ? "Change profile photo" : undefined}
           >
-            <img
-              src={avatarUrl || getGravatarUrl(username, 256)}
-              alt={displayName}
-              className="profile-avatar"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const fallbackEl =
-                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                    ".profile-avatar-fallback",
-                  );
-                if (fallbackEl) fallbackEl.style.display = "flex";
-              }}
-            />
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="profile-avatar"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  const fallbackEl =
+                    e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                      ".profile-avatar-fallback",
+                    );
+                  if (fallbackEl) fallbackEl.style.display = "flex";
+                }}
+              />
+            ) : null}
             <div
               className="profile-avatar profile-avatar-fallback"
               data-tone={fallback.tone}
-              style={{ display: "none" }}
+              style={{ display: avatarUrl ? "none" : "flex" }}
               aria-hidden="true"
             >
               {fallback.letter}
@@ -106,10 +115,7 @@ export default function ProfileHeader(props: Props) {
 
           <div className="profile-actions">
             {!isEdit && props.profile.isOwner ? (
-              <LinkButton
-                href="/settings#profile"
-                variant="secondary"
-              >
+              <LinkButton href="/settings#profile" variant="secondary">
                 Edit Profile
               </LinkButton>
             ) : !isEdit ? (

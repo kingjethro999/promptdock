@@ -296,7 +296,7 @@ export async function getPublicProfile(
   await db.ensureSchema();
   const { rows } = await db.pool.query(
     `SELECT u.id, u.username, COALESCE(u.display_name, u.username) AS "displayName",
-            u.avatar_url AS "avatarUrl", u.banner_url AS "bannerUrl", u.bio,
+            u.avatar_url AS "avatarUrl", u.banner_url AS "bannerUrl", u.banner_preset AS "bannerPreset", u.bio,
             u.community_audience AS "communityAudience",
             (SELECT count(*)::int FROM follows WHERE followee_id = u.id) AS "followerCount",
             EXISTS (SELECT 1 FROM follows WHERE follower_id = $2::uuid AND followee_id = u.id) AS "following"
@@ -314,6 +314,7 @@ export async function getPublicProfile(
     displayName: r.displayName,
     avatarUrl: r.avatarUrl,
     bannerUrl: r.bannerUrl,
+    bannerPreset: r.bannerPreset || null,
     bio: r.bio,
     followerCount: Number(r.followerCount) || 0,
     isOwner,
