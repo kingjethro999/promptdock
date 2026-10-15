@@ -15,7 +15,9 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
 
   const fallback = avatarFallback(card.creator.username);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const showImage = Boolean(card.creator.avatarUrl && failedUrl !== card.creator.avatarUrl);
+  const showImage = Boolean(
+    card.creator.avatarUrl && failedUrl !== card.creator.avatarUrl,
+  );
 
   async function handleCopy() {
     const ok = await copyPromptText(card.publicId);
