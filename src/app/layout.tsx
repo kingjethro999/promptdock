@@ -70,7 +70,7 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" className="booting">
+    <html lang="en" className="booting" suppressHydrationWarning>
       <head>
         <noscript>
           <style
@@ -90,7 +90,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="booting">
+      <body className="booting" suppressHydrationWarning>
         <MotionProvider>
           <BootScreen />
           <TopLoader />
