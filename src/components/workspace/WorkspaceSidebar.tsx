@@ -50,38 +50,6 @@ function CommunityIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-const nav: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  match?: (p: string) => boolean;
-}[] = [
-  {
-    href: "/workspace",
-    icon: "✦",
-    label: "New Prompt",
-    match: (p: string) => p === "/workspace",
-  },
-  {
-    href: "/library",
-    icon: "▦",
-    label: "Library",
-    match: (p: string) => p.startsWith("/library"),
-  },
-  {
-    href: "/community",
-    icon: <CommunityIcon />,
-    label: "Community",
-    match: (p: string) => p.startsWith("/community") || isProfilePath(p),
-  },
-  {
-    href: "/settings",
-    icon: "⚙",
-    label: "Settings",
-    match: (p: string) => p.startsWith("/settings"),
-  },
-];
-
 export default function WorkspaceSidebar({
   open,
   close,
@@ -123,27 +91,60 @@ export default function WorkspaceSidebar({
       <BrandMark compact />
       <div className="sidebar-label">WORKSPACE</div>
       <nav className="main-nav" aria-label="Main navigation">
-        {nav.map((item) => {
-          const isActive = item.match
-            ? item.match(pathname)
-            : pathname === item.href;
-          return (
-            <Link
-              href={item.href}
-              onClick={close}
-              key={item.href}
-              className={`nav-item${isActive ? " active" : ""}`}
-            >
-              <span className="nav-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-              {item.href === "/library" && libraryCount !== null && (
-                <span className="nav-count">{libraryCount}</span>
-              )}
-            </Link>
-          );
-        })}
+        <Link
+          href="/workspace"
+          onClick={close}
+          data-tour="nav-new-prompt"
+          className={`nav-item${pathname === "/workspace" ? " active" : ""}`}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            ✦
+          </span>
+          <span>New Prompt</span>
+        </Link>
+
+        <Link
+          href="/library"
+          onClick={close}
+          data-tour="nav-library"
+          className={`nav-item${pathname.startsWith("/library") ? " active" : ""}`}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            ▦
+          </span>
+          <span>Library</span>
+          {libraryCount !== null && (
+            <span className="nav-count">{libraryCount}</span>
+          )}
+        </Link>
+
+        <Link
+          href="/community"
+          onClick={close}
+          data-tour="nav-community"
+          className={`nav-item${
+            pathname.startsWith("/community") || isProfilePath(pathname)
+              ? " active"
+              : ""
+          }`}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            <CommunityIcon />
+          </span>
+          <span>Community</span>
+        </Link>
+
+        <Link
+          href="/settings"
+          onClick={close}
+          data-tour="nav-settings"
+          className={`nav-item${pathname.startsWith("/settings") ? " active" : ""}`}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            ⚙
+          </span>
+          <span>Settings</span>
+        </Link>
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-label sidebar-label-row">

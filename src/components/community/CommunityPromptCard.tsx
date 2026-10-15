@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button, LinkButton } from "@/components/ui";
 import type { CommunityPromptCard as CardType } from "@/lib/community/types";
-import { avatarFallback, getGravatarUrl } from "@/lib/community/username";
+import { avatarFallback } from "@/lib/community/username";
 import { copyPromptText } from "@/lib/community/copy";
 
 export default function CommunityPromptCard({ card }: { card: CardType }) {
@@ -69,26 +69,27 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
           href={`/${card.creator.username}`}
           className="community-card-creator"
         >
-          <img
-            src={
-              card.creator.avatarUrl ||
-              getGravatarUrl(card.creator.username, 72)
-            }
-            alt=""
-            className="community-avatar-small"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              const fb =
-                e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                  ".community-avatar-fallback",
-                );
-              if (fb) fb.style.display = "inline-flex";
-            }}
-          />
+          {card.creator.avatarUrl ? (
+            <img
+              src={card.creator.avatarUrl}
+              alt=""
+              className="community-avatar-small"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const fb =
+                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                    ".community-avatar-fallback",
+                  );
+                if (fb) fb.style.display = "inline-flex";
+              }}
+            />
+          ) : null}
           <span
             className="community-avatar-small community-avatar-fallback"
             data-tone={fallback.tone}
-            style={{ display: "none" }}
+            style={{
+              display: card.creator.avatarUrl ? "none" : "inline-flex",
+            }}
             aria-hidden="true"
           >
             {fallback.letter}

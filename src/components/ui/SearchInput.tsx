@@ -11,8 +11,10 @@ import { Icon } from "./Icon";
 import { IconButton } from "./Button";
 import { cx } from "./cx";
 
-export interface SearchInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"> {
+export interface SearchInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "type" | "size"
+> {
   onClear?: () => void;
   enableSlashHotkey?: boolean;
   fieldClassName?: string;

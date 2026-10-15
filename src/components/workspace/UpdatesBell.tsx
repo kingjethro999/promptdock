@@ -23,7 +23,10 @@ export default function UpdatesBell() {
 
   useEffect(() => {
     let active = true;
+    let inFlight = false;
     async function refresh() {
+      if (document.hidden || inFlight) return;
+      inFlight = true;
       try {
         const payload = await api<Payload>("/api/updates");
         if (!active) return;
@@ -40,6 +43,8 @@ export default function UpdatesBell() {
         setRead(payload.readIds || []);
       } catch {
         /* Keep the last successfully loaded updates. */
+      } finally {
+        inFlight = false;
       }
     }
     refresh();

@@ -28,7 +28,10 @@ async function main() {
       const page = await context.newPage();
 
       try {
-        await page.goto("http://localhost:3000/dev/ui", { waitUntil: "networkidle", timeout: 15000 });
+        await page.goto("http://localhost:3000/dev/ui", {
+          waitUntil: "networkidle",
+          timeout: 15000,
+        });
         if (theme === "dark") {
           await page.evaluate(() => {
             document.documentElement.setAttribute("data-theme", "dark");
@@ -58,7 +61,7 @@ async function main() {
   console.log("All UI kit gallery screenshots captured.");
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

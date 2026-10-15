@@ -59,7 +59,10 @@ async function main() {
           });
           console.log(`Saved: ${filename}`);
         } catch (err) {
-          console.error(`Failed ${route.name} (${vp.name}, ${theme}):`, err.message);
+          console.error(
+            `Failed ${route.name} (${vp.name}, ${theme}):`,
+            err.message,
+          );
         }
       }
       await context.close();
@@ -70,7 +73,7 @@ async function main() {
   console.log("All before screenshots captured successfully.");
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

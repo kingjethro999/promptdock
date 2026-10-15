@@ -246,10 +246,17 @@ export function Select<T extends string = string>({
         close(false);
         break;
       default:
-        if (!searchable && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (
+          !searchable &&
+          e.key.length === 1 &&
+          !e.metaKey &&
+          !e.ctrlKey &&
+          !e.altKey
+        ) {
           const now = Date.now();
           const t = typed.current;
-          t.s = now - t.t > 500 ? e.key.toLowerCase() : t.s + e.key.toLowerCase();
+          t.s =
+            now - t.t > 500 ? e.key.toLowerCase() : t.s + e.key.toLowerCase();
           t.t = now;
           const i = filteredOptions.findIndex(
             (o) => !o.disabled && o.label.toLowerCase().startsWith(t.s),
@@ -288,7 +295,14 @@ export function Select<T extends string = string>({
         </div>
       )}
       {filteredOptions.length === 0 ? (
-        <div style={{ padding: "12px", textAlign: "center", color: "var(--ui-placeholder)", fontSize: "13px" }}>
+        <div
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            color: "var(--ui-placeholder)",
+            fontSize: "13px",
+          }}
+        >
           No options found
         </div>
       ) : (
@@ -316,7 +330,10 @@ export function Select<T extends string = string>({
   );
 
   return (
-    <div className={cx("ui-field", className)} data-invalid={error ? "true" : undefined}>
+    <div
+      className={cx("ui-field", className)}
+      data-invalid={error ? "true" : undefined}
+    >
       {label && (
         <span id={`${fid}-label`} className="ui-label">
           {label}
@@ -339,7 +356,9 @@ export function Select<T extends string = string>({
         onClick={() => (open ? close() : openList())}
         onKeyDown={onKeyDown}
       >
-        <span className={selected ? "ui-select__value" : "ui-select__placeholder"}>
+        <span
+          className={selected ? "ui-select__value" : "ui-select__placeholder"}
+        >
           {selected?.label ?? placeholder}
         </span>
         <Icon
@@ -378,7 +397,14 @@ export function Select<T extends string = string>({
               >
                 <div className="ui-sheet-handle" />
                 {label && (
-                  <div style={{ fontWeight: 600, fontSize: "16px", marginBottom: "12px", color: "var(--ui-fg)" }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      marginBottom: "12px",
+                      color: "var(--ui-fg)",
+                    }}
+                  >
                     {label}
                   </div>
                 )}
