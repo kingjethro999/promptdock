@@ -231,12 +231,14 @@ export default function DevUIGalleryPage() {
             <TextField
               label="Field with Error"
               value="invalid_handle!"
+              readOnly
               error="Username can only contain letters, numbers, and dashes"
             />
             <TextField
               label="Disabled Field"
               value="system_reserved"
               disabled
+              readOnly
               hint="This value is immutable"
             />
             <PasswordField

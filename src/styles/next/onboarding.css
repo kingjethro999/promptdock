@@ -269,17 +269,24 @@
 .setup__brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   color: var(--ui-fg);
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.8px;
 }
-.setup__brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.setup__brand-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+.setup__brand-text span {
+  color: var(--ui-accent);
 }
 .setup__skip-link {
   background: transparent;
