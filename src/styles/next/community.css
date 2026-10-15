@@ -28,27 +28,27 @@
 
 /* Avatar tones for fallback deterministic avatars */
 [data-tone="0"] {
-  background: #3b82f6;
+  background: #1d3a2c;
   color: #ffffff;
 }
 [data-tone="1"] {
-  background: #10b981;
+  background: #5e7467;
   color: #ffffff;
 }
 [data-tone="2"] {
-  background: #8b5cf6;
+  background: #6b7c3f;
   color: #ffffff;
 }
 [data-tone="3"] {
-  background: #f59e0b;
+  background: #3d5a47;
   color: #ffffff;
 }
 [data-tone="4"] {
-  background: #ec4899;
+  background: #4a5e54;
   color: #ffffff;
 }
 [data-tone="5"] {
-  background: #06b6d4;
+  background: #7a8b6a;
   color: #ffffff;
 }
 

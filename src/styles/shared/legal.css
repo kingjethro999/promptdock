@@ -315,3 +315,158 @@ body.legal-page-body,
     grid-column: 1 / -1;
   }
 }
+
+/* Dark theme support for legal pages */
+:root[data-theme="dark"] body.legal-page-body,
+:root[data-theme="dark"] .legal-page-body,
+.dark body.legal-page-body,
+.dark .legal-page-body {
+  background: #0e1814;
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-page-body a,
+.dark .legal-page-body a {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-page-body a:hover,
+.dark .legal-page-body a:hover {
+  color: #b4e64f;
+}
+
+:root[data-theme="dark"] .legal-header,
+.dark .legal-header {
+  background: #14221c;
+  border-bottom: 1px solid #23382e;
+}
+
+:root[data-theme="dark"] .legal-brand,
+.dark .legal-brand {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-brand span,
+.dark .legal-brand span {
+  background: #1f332a;
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-brand em,
+.dark .legal-brand em {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-header nav a,
+.dark .legal-header nav a {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-header nav a:hover,
+.dark .legal-header nav a:hover {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-header nav a[aria-current="page"],
+.dark .legal-header nav a[aria-current="page"] {
+  color: #c7f464;
+  border-bottom-color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-hero,
+.dark .legal-hero {
+  border-bottom: 1px solid #23382e;
+}
+
+:root[data-theme="dark"] .legal-hero::after,
+.dark .legal-hero::after {
+  color: #1a2f24;
+}
+
+:root[data-theme="dark"] .legal-kicker,
+.dark .legal-kicker {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-hero h1,
+.dark .legal-hero h1 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-hero h1 span,
+.dark .legal-hero h1 span {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-hero p,
+.dark .legal-hero p {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-date,
+.dark .legal-date {
+  border: 1px solid #23382e;
+  background: #14221c;
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-layout,
+.dark .legal-layout {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-toc,
+.dark .legal-toc {
+  border: 1px solid #23382e;
+  background: #14221c;
+}
+
+:root[data-theme="dark"] .legal-toc strong,
+.dark .legal-toc strong {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-toc a,
+.dark .legal-toc a {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-toc a:hover,
+.dark .legal-toc a:hover {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .legal-content section,
+.dark .legal-content section {
+  border-bottom: 1px solid #23382e;
+}
+
+:root[data-theme="dark"] .legal-content h2,
+:root[data-theme="dark"] .legal-content h3,
+.dark .legal-content h2,
+.dark .legal-content h3 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .legal-content p,
+:root[data-theme="dark"] .legal-content li,
+.dark .legal-content p,
+.dark .legal-content li {
+  color: #d6e8dc;
+}
+
+:root[data-theme="dark"] .legal-footer,
+.dark .legal-footer {
+  border-top: 1px solid #23382e;
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-footer a,
+.dark .legal-footer a {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .legal-footer a:hover,
+.dark .legal-footer a:hover {
+  color: #c7f464;
+}
