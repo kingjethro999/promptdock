@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/ui";
 import type { CommunityCreatorCard } from "@/lib/community/types";
 import { avatarFallback } from "@/lib/community/username";
@@ -12,6 +13,8 @@ export default function CreatorCard({
   creator: CommunityCreatorCard;
 }) {
   const fallback = avatarFallback(creator.username);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = Boolean(creator.avatarUrl && failedUrl !== creator.avatarUrl);
 
   return (
     <article className="creator-card">
@@ -20,31 +23,22 @@ export default function CreatorCard({
           href={`/${creator.username}`}
           className="creator-card-profile-link"
         >
-          {creator.avatarUrl ? (
+          {showImage ? (
             <img
-              src={creator.avatarUrl}
+              src={creator.avatarUrl!}
               alt={creator.displayName}
               className="creator-card-avatar"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const fb =
-                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                    ".creator-avatar-fallback",
-                  );
-                if (fb) fb.style.display = "inline-flex";
-              }}
+              onError={() => setFailedUrl(creator.avatarUrl)}
             />
-          ) : null}
-          <span
-            className="creator-card-avatar creator-avatar-fallback"
-            data-tone={fallback.tone}
-            style={{
-              display: creator.avatarUrl ? "none" : "inline-flex",
-            }}
-            aria-hidden="true"
-          >
-            {fallback.letter}
-          </span>
+          ) : (
+            <span
+              className="creator-card-avatar creator-avatar-fallback"
+              data-tone={fallback.tone}
+              aria-hidden="true"
+            >
+              {fallback.letter}
+            </span>
+          )}
           <div className="creator-card-identity">
             <span className="creator-card-name">{creator.displayName}</span>
             <span className="creator-card-username">@{creator.username}</span>

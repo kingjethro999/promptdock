@@ -14,6 +14,8 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
   const [saved, setSaved] = useState(false);
 
   const fallback = avatarFallback(card.creator.username);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = Boolean(card.creator.avatarUrl && failedUrl !== card.creator.avatarUrl);
 
   async function handleCopy() {
     const ok = await copyPromptText(card.publicId);
@@ -69,31 +71,22 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
           href={`/${card.creator.username}`}
           className="community-card-creator"
         >
-          {card.creator.avatarUrl ? (
+          {showImage ? (
             <img
-              src={card.creator.avatarUrl}
+              src={card.creator.avatarUrl!}
               alt=""
               className="community-avatar-small"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const fb =
-                  e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                    ".community-avatar-fallback",
-                  );
-                if (fb) fb.style.display = "inline-flex";
-              }}
+              onError={() => setFailedUrl(card.creator.avatarUrl)}
             />
-          ) : null}
-          <span
-            className="community-avatar-small community-avatar-fallback"
-            data-tone={fallback.tone}
-            style={{
-              display: card.creator.avatarUrl ? "none" : "inline-flex",
-            }}
-            aria-hidden="true"
-          >
-            {fallback.letter}
-          </span>
+          ) : (
+            <span
+              className="community-avatar-small community-avatar-fallback"
+              data-tone={fallback.tone}
+              aria-hidden="true"
+            >
+              {fallback.letter}
+            </span>
+          )}
           <div className="community-creator-info">
             <span className="community-creator-name">
               {card.creator.displayName}

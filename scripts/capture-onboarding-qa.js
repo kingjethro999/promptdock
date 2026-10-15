@@ -7,26 +7,6 @@ const db = require("../src/database");
 
 async function main() {
   await db.ensureSchema();
-  const tokenBytes = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(tokenBytes)
-    .digest("hex");
-  const userId = crypto.randomUUID();
-  const username = "tester_" + Math.random().toString(36).substring(2, 7);
-
-  await db.pool.query(
-    `INSERT INTO users (id, email, username, display_name, email_verified_at, created_at)
-     VALUES ($1, $2, $3, $4, now(), now())`,
-    [userId, `${username}@example.com`, username, "Tester User"],
-  );
-
-  await db.pool.query(
-    `INSERT INTO sessions (token_hash, user_id, expires_at)
-     VALUES ($1, $2, now() + interval '1 day')`,
-    [tokenHash, userId],
-  );
-
   const browser = await chromium.launch({
     headless: true,
     executablePath: "/usr/bin/google-chrome",
@@ -40,6 +20,26 @@ async function main() {
 
   for (const vp of viewports) {
     for (const theme of ["light", "dark"]) {
+      const tokenBytes = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(tokenBytes)
+        .digest("hex");
+      const userId = crypto.randomUUID();
+      const username = "tester_" + Math.random().toString(36).substring(2, 7);
+
+      await db.pool.query(
+        `INSERT INTO users (id, email, username, display_name, email_verified_at, created_at)
+         VALUES ($1, $2, $3, $4, now(), now())`,
+        [userId, `${username}@example.com`, username, "Tester User"],
+      );
+
+      await db.pool.query(
+        `INSERT INTO sessions (token_hash, user_id, expires_at)
+         VALUES ($1, $2, now() + interval '1 day')`,
+        [tokenHash, userId],
+      );
+
       const context = await browser.newContext({
         viewport: { width: vp.width, height: vp.height },
         colorScheme: theme,
@@ -112,7 +112,7 @@ async function main() {
 
         // Advance to Step 5 (Done)
         await nextBtn.first().click();
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(1500);
         await page.screenshot({
           path: path.join(
             __dirname,
@@ -127,17 +127,37 @@ async function main() {
 
   // Also capture the Workspace guided tour
   // Mark profile setup completed so user lands in workspace with pending welcome-v1 tour
+  const tourUserId = crypto.randomUUID();
+  const tourTokenBytes = crypto.randomBytes(32).toString("hex");
+  const tourTokenHash = crypto
+    .createHash("sha256")
+    .update(tourTokenBytes)
+    .digest("hex");
+  const tourUsername = "tour_" + Math.random().toString(36).substring(2, 7);
+
+  await db.pool.query(
+    `INSERT INTO users (id, email, username, display_name, email_verified_at, created_at)
+     VALUES ($1, $2, $3, $4, now(), now())`,
+    [tourUserId, `${tourUsername}@example.com`, tourUsername, "Tour User"],
+  );
+
+  await db.pool.query(
+    `INSERT INTO sessions (token_hash, user_id, expires_at)
+     VALUES ($1, $2, now() + interval '1 day')`,
+    [tourTokenHash, tourUserId],
+  );
+
   await db.pool.query(
     `INSERT INTO user_experiences (user_id, experience_id, status, step_reached)
      VALUES ($1, 'profile-setup-v1', 'completed', 5)
      ON CONFLICT (user_id, experience_id) DO UPDATE SET status = 'completed'`,
-    [userId],
+    [tourUserId],
   );
 
   for (const theme of ["light", "dark"]) {
     await db.pool.query(
       `DELETE FROM user_experiences WHERE user_id = $1 AND experience_id = 'welcome-v1'`,
-      [userId],
+      [tourUserId],
     );
 
     const context = await browser.newContext({
@@ -147,7 +167,7 @@ async function main() {
     await context.addCookies([
       {
         name: "promptdock_session",
-        value: tokenBytes,
+        value: tourTokenBytes,
         domain: "localhost",
         path: "/",
       },
