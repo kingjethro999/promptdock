@@ -48,3 +48,46 @@
   font-size: 20px;
   color: #6d806f;
 }
+
+/* Dark theme support */
+:root[data-theme="dark"] .react-update-card,
+.dark .react-update-card {
+  background: #14221c;
+  border-color: #23382e;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="dark"] .react-update-card h2,
+.dark .react-update-card h2 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .react-update-card p,
+.dark .react-update-card p {
+  color: #d6e8dc;
+}
+
+:root[data-theme="dark"] .react-update-actions button,
+.dark .react-update-actions button {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .react-update-actions button:hover,
+.dark .react-update-actions button:hover {
+  color: #b4e64f;
+}
+
+:root[data-theme="dark"] .react-update-detail h1,
+.dark .react-update-detail h1 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .react-update-summary,
+.dark .react-update-summary {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .react-update-detail p,
+.dark .react-update-detail p {
+  color: #d6e8dc;
+}

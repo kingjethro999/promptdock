@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Glyph } from "@/components/ui";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { siteUpdates } from "@/lib/server/public-data";
@@ -22,7 +23,12 @@ export default async function UpdatePage({ params }: Props) {
       <main className="updates-page">
         <header className="updates-page-header">
           <Link className="updates-page-brand" href="/">
-            ✳ prompt<span>dock</span>
+            <span className="updates-page-brand-mark">
+              <Glyph name="spark" size={14} />
+            </span>
+            <span>
+              prompt<span className="brand-accent">dock</span>
+            </span>
           </Link>
           <Link className="updates-page-back" href="/updates">
             ← All updates
