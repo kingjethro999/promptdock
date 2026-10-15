@@ -1,9 +1,9 @@
 export function cssToHex(css: string): string {
-  if (typeof document === "undefined") return "#3b82f6";
+  if (typeof document === "undefined") return "#1d3a2c";
   const c = document.createElement("canvas");
   c.width = c.height = 1;
   const ctx = c.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return "#3b82f6";
+  if (!ctx) return "#1d3a2c";
   ctx.fillStyle = "#000000";
   ctx.fillStyle = css;
   ctx.fillRect(0, 0, 1, 1);
@@ -13,7 +13,7 @@ export function cssToHex(css: string): string {
 
 export function readTones(count = 6): string[] {
   if (typeof document === "undefined") {
-    return ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
+    return ["#1d3a2c", "#5e7467", "#6b7c3f", "#3d5a47", "#4a5e54", "#7a8b6a"];
   }
   const probe = document.createElement("span");
   probe.style.cssText =
@@ -27,7 +27,7 @@ export function readTones(count = 6): string[] {
   const unique = [...new Set(out)].filter(Boolean);
   return unique.length >= 3
     ? unique
-    : ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
+    : ["#1d3a2c", "#5e7467", "#6b7c3f", "#3d5a47", "#4a5e54", "#7a8b6a"];
 }
 
 export function paletteHex(count = 6): string[] {
@@ -35,7 +35,7 @@ export function paletteHex(count = 6): string[] {
   const filtered = [...new Set(out)].filter((h) => h !== "#000000");
   return filtered.length > 0
     ? filtered
-    : ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b"];
+    : ["#1d3a2c", "#5e7467", "#6b7c3f", "#3d5a47"];
 }
 
 export const USE_BRAND_BACKGROUND = true;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Glyph } from "@/components/ui/Glyph";
 import { record } from "@/lib/onboarding/persist";
 import { PROFILE_FLOW_ID } from "@/lib/onboarding/registry";
 import { rasterize } from "@/lib/profile/avatar-gen";
@@ -198,8 +199,12 @@ export function ProfileSetup({
       <header className="setup__header">
         <div className="setup__header-inner">
           <Link href="/" className="setup__brand" aria-label="PromptDock home">
-            <span className="setup__brand-dot" />
-            <span className="setup__brand-text">PromptDock</span>
+            <span className="setup__brand-mark">
+              <Glyph name="spark" size={14} />
+            </span>
+            <span className="setup__brand-text">
+              prompt<span>dock</span>
+            </span>
           </Link>
 
           <button

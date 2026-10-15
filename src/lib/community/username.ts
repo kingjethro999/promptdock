@@ -97,12 +97,12 @@ export function avatarFallback(username: string, tones = 6) {
 }
 
 const TONE_COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#8b5cf6",
-  "#f59e0b",
-  "#ec4899",
-  "#06b6d4",
+  "#1d3a2c",
+  "#5e7467",
+  "#6b7c3f",
+  "#3d5a47",
+  "#4a5e54",
+  "#7a8b6a",
 ];
 
 /** Default deterministic avatar SVG data URI fallback for users with no profile picture (zero network, instant, reliable). */
