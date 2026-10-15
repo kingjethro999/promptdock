@@ -14,7 +14,9 @@ export default function CreatorCard({
 }) {
   const fallback = avatarFallback(creator.username);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const showImage = Boolean(creator.avatarUrl && failedUrl !== creator.avatarUrl);
+  const showImage = Boolean(
+    creator.avatarUrl && failedUrl !== creator.avatarUrl,
+  );
 
   return (
     <article className="creator-card">
