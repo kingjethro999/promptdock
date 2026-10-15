@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Glyph } from "@/components/ui";
 import { siteUpdates } from "@/lib/server/public-data";
 import UpdatesList from "@/components/updates/UpdatesList";
 import { publicMetadata } from "@/lib/seo/public-metadata";
@@ -23,8 +24,12 @@ export default async function UpdatesPage() {
       <main className="updates-page">
         <header className="updates-page-header">
           <Link className="updates-page-brand" href="/">
-            <span className="updates-page-brand-mark">✳</span> prompt
-            <span>dock</span>
+            <span className="updates-page-brand-mark">
+              <Glyph name="spark" size={14} />
+            </span>
+            <span>
+              prompt<span className="brand-accent">dock</span>
+            </span>
           </Link>
           <Link className="updates-page-back" href="/">
             ← Back to PromptDock

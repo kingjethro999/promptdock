@@ -176,3 +176,117 @@
     justify-content: space-between;
   }
 }
+
+/* Dark theme support for updates pages */
+:root[data-theme="dark"] .updates-page-body,
+.dark .updates-page-body {
+  background: #0e1814;
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .updates-page-brand,
+.dark .updates-page-brand {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .updates-page-brand > span:last-child,
+.dark .updates-page-brand > span:last-child {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .updates-page-brand-mark,
+.dark .updates-page-brand-mark {
+  background: #1f332a;
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .updates-page-back,
+.dark .updates-page-back {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .updates-page-back:hover,
+.dark .updates-page-back:hover {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .updates-page-intro h1,
+.dark .updates-page-intro h1 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .updates-page-intro p,
+.dark .updates-page-intro p {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .update-card,
+.dark .update-card {
+  border: 1px solid #23382e;
+  background: #14221c;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="dark"] .update-card h2,
+.dark .update-card h2 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .update-card p,
+.dark .update-card p {
+  color: #d6e8dc;
+}
+
+:root[data-theme="dark"] .update-meta,
+.dark .update-meta {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .update-card-link,
+.dark .update-card-link {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .update-card-link:hover,
+.dark .update-card-link:hover {
+  color: #b4e64f;
+}
+
+:root[data-theme="dark"] .update-read-button,
+.dark .update-read-button {
+  border: 1px solid #23382e;
+  background: #182824;
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .update-read-button.is-read,
+.dark .update-read-button.is-read {
+  background: rgba(199, 244, 100, 0.12);
+  border-color: rgba(199, 244, 100, 0.3);
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .updates-page-footer,
+.dark .updates-page-footer {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .updates-page-footer a,
+.dark .updates-page-footer a {
+  color: #c7f464;
+}
+
+:root[data-theme="dark"] .react-update-detail h1,
+.dark .react-update-detail h1 {
+  color: #f7f8f3;
+}
+
+:root[data-theme="dark"] .react-update-summary,
+.dark .react-update-summary {
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .react-update-detail p,
+.dark .react-update-detail p {
+  color: #d6e8dc;
+}
