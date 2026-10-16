@@ -13,10 +13,16 @@ import { interpolatePrompt } from "@/lib/prompt/variables";
 import ResearchDrawer from "./ResearchDrawer";
 import PromptVariablesForm from "./PromptVariablesForm";
 
+import SaveSplitButton from "./SaveSplitButton";
+import { Icon } from "@/components/ui/Icon";
+import type { useSavePrompt } from "@/hooks/useSavePrompt";
+
 type Props = {
   prompt: string;
   data?: PromptData | null;
-  onSave(): void;
+  onSave?: () => void;
+  save?: ReturnType<typeof useSavePrompt>;
+  onOpenDetails?: () => void;
   research?: ResearchMetadata;
 };
 
@@ -24,6 +30,8 @@ export default function PromptPreview({
   prompt,
   data,
   onSave,
+  save,
+  onOpenDetails,
   research,
 }: Props) {
   const [profile, setProfile] = useState<PromptProfile>("universal");
@@ -202,11 +210,20 @@ export default function PromptPreview({
 
       <div className="preview-actions">
         <Button variant="primary" disabled={!finalPrompt} onClick={copy}>
-          <span>▣</span> Copy prompt <span className="button-arrow"></span>
+          <Icon name="copy" size={15} /> Copy prompt{" "}
+          <span className="button-arrow"></span>
         </Button>
-        <Button disabled={!finalPrompt} onClick={onSave}>
-          ♡ &nbsp; Save
-        </Button>
+        {save ? (
+          <SaveSplitButton
+            save={save}
+            disabled={!finalPrompt}
+            onOpenDetails={onOpenDetails}
+          />
+        ) : (
+          <Button disabled={!finalPrompt} onClick={onSave}>
+            <Icon name="bookmark" size={15} /> Save
+          </Button>
+        )}
       </div>
 
       <div className="export-row">
