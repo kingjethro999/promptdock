@@ -405,3 +405,67 @@
     justify-content: flex-start;
   }
 }
+
+/* Series Context Banner */
+.shared-series-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: #edf7e2;
+  border: 1px solid #cce5b8;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.shared-series-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shared-series-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b5536;
+  text-decoration: none;
+}
+
+.shared-series-back:hover {
+  text-decoration: underline;
+}
+
+.shared-series-pill {
+  font-size: 13px;
+  color: #4b6650;
+  font-weight: 500;
+}
+
+.shared-series-title {
+  color: #1c3929;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.shared-series-title:hover {
+  text-decoration: underline;
+}
+
+.shared-series-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shared-series-nav .ui-btn {
+  font-size: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
