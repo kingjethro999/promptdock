@@ -10,12 +10,16 @@ import type { PromptData } from "@/lib/prompt/types";
 import ShareActions from "@/components/share/ShareActions";
 import { Glyph, Icon } from "@/components/ui";
 import { sharedPromptStructuredData } from "@/lib/seo/structured-data";
+import { getSeriesContext } from "@/lib/community/collections";
 
 const getPrompt = cache((id: string, viewerId: string | null) =>
   getPromptForViewer(id, viewerId),
 );
 
-type Props = { params: Promise<{ publicId: string }> };
+type Props = {
+  params: Promise<{ publicId: string }>;
+  searchParams?: Promise<{ c?: string }>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { publicId } = await params;
@@ -61,11 +65,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function SharedPromptPage({ params }: Props) {
+export default async function SharedPromptPage({
+  params,
+  searchParams,
+}: Props) {
   const { publicId } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const collectionPublicId = sp.c || null;
   const viewer = await getViewer();
   const item = await getPrompt(publicId, viewer?.id ?? null).catch(() => null);
   if (!item) notFound();
+
+  const seriesContext = collectionPublicId
+    ? await getSeriesContext(collectionPublicId, publicId, viewer?.id ?? null)
+    : null;
 
   const prompt = buildPrompt(item.data as unknown as PromptData);
   const owner = item.displayName || item.username || "A PromptDock member";
@@ -109,6 +122,59 @@ export default async function SharedPromptPage({ params }: Props) {
           </span>
           <span>View and copy freely</span>
         </div>
+        {seriesContext && (
+          <div className="shared-series-banner">
+            <div className="shared-series-info">
+              <Link
+                href={`/c/${seriesContext.collection.publicId}`}
+                className="shared-series-back"
+              >
+                <Icon name="chevron-left" size={14} /> Playlist
+              </Link>
+              <span className="shared-series-pill">
+                Part {seriesContext.rank} of {seriesContext.total} in{" "}
+                <Link
+                  href={`/c/${seriesContext.collection.publicId}`}
+                  className="shared-series-title"
+                >
+                  {seriesContext.collection.name}
+                </Link>
+              </span>
+            </div>
+            <div className="shared-series-nav">
+              {seriesContext.prevPublicId ? (
+                <Link
+                  href={`/p/${seriesContext.prevPublicId}?c=${seriesContext.collection.publicId}`}
+                  className="ui-btn ui-btn--sm"
+                >
+                  <Icon name="chevron-left" size={13} /> Prev
+                </Link>
+              ) : (
+                <span
+                  className="ui-btn ui-btn--sm"
+                  style={{ opacity: 0.4, cursor: "not-allowed" }}
+                >
+                  <Icon name="chevron-left" size={13} /> Prev
+                </span>
+              )}
+              {seriesContext.nextPublicId ? (
+                <Link
+                  href={`/p/${seriesContext.nextPublicId}?c=${seriesContext.collection.publicId}`}
+                  className="ui-btn ui-btn--sm ui-btn--primary"
+                >
+                  Next <Icon name="chevron-right" size={13} />
+                </Link>
+              ) : (
+                <span
+                  className="ui-btn ui-btn--sm"
+                  style={{ opacity: 0.4, cursor: "not-allowed" }}
+                >
+                  Next <Icon name="chevron-right" size={13} />
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <section className="shared-hero">
           <div>
             <div className="shared-eyebrow">A CLEARER WAY TO ASK</div>
