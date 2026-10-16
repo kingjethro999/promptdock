@@ -13,4 +13,6 @@ export * from "./Radio";
 export * from "./ChoiceCard";
 export * from "./Switch";
 export * from "./FileButton";
+export * from "./Popover";
+export * from "./usePopupPosition";
 export { default as LiquidButton } from "./LiquidButton";
