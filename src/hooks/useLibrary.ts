@@ -30,6 +30,7 @@ export function useLibrary() {
   const [tag, setTag] = useState("");
   const [sort, setSort] = useState("updated");
   const [offset, setOffset] = useState(0);
+  const [collection, setCollection] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,7 @@ export function useLibrary() {
         tag,
         sort,
         offset: String(offset),
+        ...(collection ? { collection } : {}),
       });
       let listing: Awaited<ReturnType<typeof listLibrary>> | undefined;
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -74,7 +76,7 @@ export function useLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [q, tag, sort, offset]);
+  }, [q, tag, sort, offset, collection]);
 
   useEffect(() => {
     void refresh();
@@ -207,6 +209,8 @@ export function useLibrary() {
     setSort,
     offset,
     setOffset,
+    collection,
+    setCollection,
     tags,
     notice,
     loading,
