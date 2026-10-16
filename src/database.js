@@ -186,21 +186,37 @@ async function listPrompts(key, options = {}) {
   const tag = normalizeTagFilter(options.tag);
   const sort = options.sort || "updated";
   if (!promptSorts[sort]) throw new Error("Invalid sort order.");
+  const collection =
+    options.collection && /^[0-9a-f-]{36}$/i.test(options.collection)
+      ? options.collection
+      : null;
   await ensureSchema();
   const pattern = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
-  const where = `owner_key = $1 AND ($2 = '' OR name ILIKE $3 ESCAPE '\\' OR idea ILIKE $3 ESCAPE '\\' OR data->>'task' ILIKE $3 ESCAPE '\\' OR EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE $3 ESCAPE '\\')) AND ($4 = '' OR tags @> ARRAY[$4]::text[])`;
+  let where = `owner_key = $1 AND ($2 = '' OR name ILIKE $3 ESCAPE '\\' OR idea ILIKE $3 ESCAPE '\\' OR data->>'task' ILIKE $3 ESCAPE '\\' OR EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE $3 ESCAPE '\\')) AND ($4 = '' OR tags @> ARRAY[$4]::text[])`;
   const params = [key, q, pattern, tag];
+  let orderBy = promptSorts[sort];
+
+  if (collection) {
+    params.push(collection);
+    const colParam = `$${params.length}`;
+    where += ` AND EXISTS (SELECT 1 FROM collection_items ci WHERE ci.prompt_id = prompts.id AND ci.collection_id = ${colParam}::uuid)`;
+    orderBy = `(SELECT ci.position FROM collection_items ci WHERE ci.collection_id = ${colParam}::uuid AND ci.prompt_id = prompts.id) ASC, (SELECT ci.added_at FROM collection_items ci WHERE ci.collection_id = ${colParam}::uuid AND ci.prompt_id = prompts.id) ASC, prompts.id ASC`;
+  }
+  const countParams = [...params];
+  params.push(offset);
+  const offsetParam = `$${params.length}`;
+
   const [result, count] = await Promise.all([
     pool.query(
       `SELECT id, name, data, idea, analysis, tags, public_id AS "publicId",
         COALESCE(visibility, CASE WHEN public_id IS NOT NULL THEN 'public' ELSE 'private' END) AS "visibility",
         COALESCE(listed_in_community, false) AS "listedInCommunity",
-        forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY ${promptSorts[sort]} LIMIT 100 OFFSET $5`,
-      [...params, offset],
+        forked_from AS "forkedFrom", updated_at AS "updatedAt" FROM prompts WHERE ${where} ORDER BY ${orderBy} LIMIT 100 OFFSET ${offsetParam}`,
+      params,
     ),
     pool.query(
       `SELECT count(*)::int AS total FROM prompts WHERE ${where}`,
-      params,
+      countParams,
     ),
   ]);
   return { prompts: result.rows, total: count.rows[0].total };

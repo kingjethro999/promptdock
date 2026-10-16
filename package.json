@@ -1,6 +1,6 @@
 {
   "name": "promptdock",
-  "version": "0.12.8",
+  "version": "0.13.6",
   "private": true,
   "description": "An idea-to-prompt workspace with voice input and optional PostgreSQL sync",
   "license": "MIT",
@@ -11,6 +11,7 @@
     "next:dev": "next dev",
     "next:start": "next start",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write 'src/app/**/*.{ts,tsx,css}' 'src/components/**/*.tsx' 'src/hooks/**/*.ts' 'src/lib/**/*.ts' 'src/stores/**/*.ts' 'src/styles/next/**/*.css' src/proxy.ts next.config.ts",
     "format:check": "prettier --check 'src/app/**/*.{ts,tsx,css}' 'src/components/**/*.tsx' 'src/hooks/**/*.ts' 'src/lib/**/*.ts' 'src/stores/**/*.ts' 'src/styles/next/**/*.css' src/proxy.ts next.config.ts",
     "legacy:dev": "node scripts/dev.js",
     "legacy:start": "npm run build:frontend && node oldui/server.js",
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
