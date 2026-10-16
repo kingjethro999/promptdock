@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import IdeaCard from "./IdeaCard";
 import FineTunePanel from "./FineTunePanel";
 import ClarificationPanel from "./ClarificationPanel";
@@ -13,8 +12,7 @@ import PromptEditor from "./PromptEditor";
 import Button from "@/components/ui/Button";
 import Masonry from "@/components/ui/Masonry";
 import { usePromptBuilder } from "@/hooks/usePromptBuilder";
-import { json } from "@/lib/client/api";
-import type { SavedPrompt } from "@/lib/prompt/types";
+import { useSavePrompt } from "@/hooks/useSavePrompt";
 
 import { useSearchParams } from "next/navigation";
 
@@ -22,12 +20,13 @@ const builderColumnWeights = [1.1, 0.9] as const;
 
 export default function PromptWorkspace() {
   const builder = usePromptBuilder();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const remixId = searchParams.get("remix");
   const [remixSourcePublicId, setRemixSourcePublicId] = useState<string | null>(
     null,
   );
+
+  const savePrompt = useSavePrompt({ remixSourcePublicId });
 
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState("");
@@ -59,7 +58,7 @@ export default function PromptWorkspace() {
       .catch(() => {});
   }, [remixId]);
 
-  async function save(event: React.FormEvent<HTMLFormElement>) {
+  async function saveDetails(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!builder.data || saving) return;
     setSaving(true);
@@ -69,30 +68,11 @@ export default function PromptWorkspace() {
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
-      const result = await json<{ prompt: SavedPrompt }>(
-        "/api/prompts",
-        "PUT",
-        {
-          id: builder.sourcePrompt?.id || crypto.randomUUID(),
-          name:
-            name.trim() ||
-            builder.sourcePrompt?.name ||
-            builder.data.task.slice(0, 90),
-          data: builder.data,
-          idea: builder.idea,
-          analysis:
-            builder.result?.interpretation ||
-            builder.sourcePrompt?.analysis ||
-            null,
-          tags: parsedTags.length
-            ? parsedTags
-            : builder.sourcePrompt?.tags || [],
-          sourcePublicId: remixSourcePublicId || undefined,
-        },
-      );
-      builder.savedPrompt(result.prompt);
+      await savePrompt.ensureSaved({
+        name: name.trim() || undefined,
+        tags: parsedTags,
+      });
       setSaveOpen(false);
-      router.push("/library");
     } catch (error) {
       setSaveError(
         error instanceof Error ? error.message : "Could not save prompt.",
@@ -183,7 +163,8 @@ export default function PromptWorkspace() {
           prompt={builder.prompt}
           data={builder.data}
           research={builder.result?.research}
-          onSave={() => {
+          save={savePrompt}
+          onOpenDetails={() => {
             setSaveError("");
             setName(builder.sourcePrompt?.name || "");
             setTags(builder.sourcePrompt?.tags.join(", ") || "");
@@ -222,10 +203,10 @@ export default function PromptWorkspace() {
             >
               ×
             </button>
-            <div className="section-kicker">YOUR LIBRARY</div>
-            <h2 id="saveTitle">Save this prompt</h2>
-            <p>Keep it in your account and open it on any device.</p>
-            <form onSubmit={save}>
+            <div className="section-kicker">PROMPT DETAILS</div>
+            <h2 id="saveTitle">Name and tags</h2>
+            <p>Customize how this prompt appears in your library.</p>
+            <form onSubmit={saveDetails}>
               <label className="react-field">
                 <span>Name</span>
                 <input
@@ -251,7 +232,7 @@ export default function PromptWorkspace() {
               )}
               <div className="react-modal-actions">
                 <Button variant="primary" type="submit" disabled={saving}>
-                  {saving ? "Saving…" : "Save prompt"}
+                  {saving ? "Saving…" : "Save details"}
                 </Button>
                 <Button onClick={() => setSaveOpen(false)}>Cancel</Button>
               </div>
