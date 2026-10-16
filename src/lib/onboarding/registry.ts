@@ -93,4 +93,27 @@ export const EXPERIENCES: Experience[] = [
       },
     ],
   },
+  {
+    id: "release-2026-10-collections",
+    type: "release",
+    priority: 60,
+    publishedAt: "2026-10-16T00:00:00Z",
+    title: "Prompt Playlists & Collections",
+    summary:
+      "Organize prompts into sequential playlists and series that can be shared step-by-step.",
+    steps: [
+      {
+        id: "intro",
+        kind: "modal",
+        title: "Playlists & Series",
+        body: "Group prompts into ordered sequences like video playlists. Walk visitors through prompt series step-by-step with dedicated navigation.",
+      },
+      {
+        id: "save-to",
+        kind: "modal",
+        title: "Save to playlists instantly",
+        body: "Click the arrow on the Save button in the workspace or any prompt card to add prompts to your collections in one tap.",
+      },
+    ],
+  },
 ];

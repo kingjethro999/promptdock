@@ -4,7 +4,6 @@ import React, {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -35,59 +34,7 @@ export interface SelectProps<T extends string = string> {
   className?: string;
 }
 
-function usePopupPosition(
-  open: boolean,
-  trigger: React.RefObject<HTMLElement | null>,
-  isCoarse: boolean,
-) {
-  const [pos, setPos] = useState<{
-    left: number;
-    width: number;
-    top?: number;
-    bottom?: number;
-    maxH: number;
-  } | null>(null);
-
-  useLayoutEffect(() => {
-    if (!open || isCoarse) {
-      setPos(null);
-      return;
-    }
-
-    let raf = 0;
-    const place = () => {
-      const r = trigger.current?.getBoundingClientRect();
-      if (!r) return;
-      const vh = window.innerHeight;
-      const below = vh - r.bottom - 12;
-      const above = r.top - 12;
-      const flip = below < 200 && above > below;
-
-      setPos({
-        left: r.left,
-        width: r.width,
-        maxH: Math.max(140, Math.min(320, flip ? above : below)),
-        ...(flip ? { bottom: vh - r.top + 6 } : { top: r.bottom + 6 }),
-      });
-    };
-
-    const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(place);
-    };
-
-    place();
-    window.addEventListener("resize", schedule);
-    window.addEventListener("scroll", schedule, true);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule, true);
-    };
-  }, [open, trigger, isCoarse]);
-
-  return pos;
-}
+import { usePopupPosition } from "./usePopupPosition";
 
 export function Select<T extends string = string>({
   label,

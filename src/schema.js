@@ -240,4 +240,30 @@ module.exports = [
     PRIMARY KEY (user_id, experience_id)
   )`,
   "CREATE INDEX IF NOT EXISTS user_experiences_recent_idx ON user_experiences (user_id, first_shown_at DESC)",
+  `CREATE TABLE IF NOT EXISTS collections (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 80),
+    description text CHECK (description IS NULL OR char_length(description) <= 300),
+    visibility text NOT NULL DEFAULT 'private' CHECK (visibility IN ('private','followers','public')),
+    listed_in_community boolean NOT NULL DEFAULT false,
+    listed_at timestamptz,
+    public_id uuid,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CHECK (NOT listed_in_community OR visibility <> 'private')
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS collections_owner_name_key ON collections (owner_id, lower(name))",
+  "CREATE UNIQUE INDEX IF NOT EXISTS collections_public_id_key ON collections (public_id) WHERE public_id IS NOT NULL",
+  "CREATE INDEX IF NOT EXISTS collections_owner_idx ON collections (owner_id, updated_at DESC)",
+  "CREATE INDEX IF NOT EXISTS collections_listed_idx ON collections (listed_at DESC, id DESC) WHERE listed_in_community AND visibility = 'public'",
+  `CREATE TABLE IF NOT EXISTS collection_items (
+    collection_id uuid NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    prompt_id uuid NOT NULL REFERENCES prompts(id) ON DELETE CASCADE,
+    position integer NOT NULL,
+    added_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (collection_id, prompt_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS collection_items_order_idx ON collection_items (collection_id, position, added_at, prompt_id)",
+  "CREATE INDEX IF NOT EXISTS collection_items_prompt_idx ON collection_items (prompt_id)",
 ];

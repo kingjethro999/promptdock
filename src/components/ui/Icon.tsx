@@ -48,6 +48,11 @@ import {
   Zap,
   Shuffle,
   RotateCw,
+  Lock,
+  FolderPlus,
+  Link as LinkIcon,
+  GripVertical,
+  ArrowUp,
 } from "lucide-react";
 
 export const ICONS = {
@@ -99,6 +104,11 @@ export const ICONS = {
   zap: Zap,
   shuffle: Shuffle,
   refresh: RotateCw,
+  lock: Lock,
+  "folder-plus": FolderPlus,
+  link: LinkIcon,
+  grip: GripVertical,
+  "arrow-up": ArrowUp,
 } as const;
 
 export type IconName = keyof typeof ICONS;
