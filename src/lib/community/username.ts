@@ -17,6 +17,7 @@ export const RESERVED = new Set([
   "api",
   "invite",
   "p",
+  "c",
   "share",
   "new",
   "admin",
