@@ -886,17 +886,17 @@ async function handleBackendRequest(request, response) {
         return;
       }
       const key = database.accountKey(user.id);
-      if (pathname === "/api/prompts" && request.method === "GET")
-        json(
-          response,
-          200,
-          await database.listPrompts(key, {
-            q: url.searchParams.get("q"),
-            offset: url.searchParams.get("offset"),
-            tag: url.searchParams.get("tag"),
-            sort: url.searchParams.get("sort") || undefined,
-          }),
-        );
+      if (pathname === "/api/prompts" && request.method === "GET") {
+        const listOpts = {
+          q: url.searchParams.get("q"),
+          offset: url.searchParams.get("offset"),
+          tag: url.searchParams.get("tag"),
+          sort: url.searchParams.get("sort") || undefined,
+        };
+        const colParam = url.searchParams.get("collection");
+        if (colParam) listOpts.collection = colParam;
+        json(response, 200, await database.listPrompts(key, listOpts));
+      }
       else if (pathname === "/api/prompts" && request.method === "PUT")
         json(response, 200, {
           prompt: await database.putPrompt(
