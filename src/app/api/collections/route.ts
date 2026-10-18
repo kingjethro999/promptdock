@@ -123,10 +123,13 @@ export async function POST(req: Request) {
       [viewer.id, name, description, visibility, listed, publicId],
     );
 
-    return Response.json(insertRes.rows[0], {
-      status: 201,
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    return Response.json(
+      { collection: insertRes.rows[0] },
+      {
+        status: 201,
+        headers: { "Cache-Control": "private, no-store" },
+      },
+    );
   } catch (err) {
     return errorResponse(err);
   }
