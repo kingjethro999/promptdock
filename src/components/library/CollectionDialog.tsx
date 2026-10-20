@@ -60,7 +60,7 @@ export default function CollectionDialog({
           collection: CollectionItem;
         }>(`/api/collections/${collection.id}`, "PATCH", {
           name: trimmed,
-          description: description.trim() || undefined,
+          description: description.trim(),
           visibility,
           listed: visibility !== "private" ? listed : false,
         });

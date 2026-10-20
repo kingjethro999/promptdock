@@ -124,9 +124,12 @@ export async function PATCH(
       if (row.publicId) revalidatePath(`/c/${row.publicId}`);
     } catch {}
 
-    return Response.json(row, {
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    return Response.json(
+      { collection: row },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+      },
+    );
   } catch (err) {
     return errorResponse(err);
   }
