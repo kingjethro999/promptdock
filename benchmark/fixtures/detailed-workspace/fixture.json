@@ -1,0 +1,207 @@
+{
+  "id": "detailed-workspace",
+  "title": "Detailed AGENTS-style workspace specification",
+  "sourceFile": "agents-spec.md",
+  "requirements": [
+    {
+      "id": "R01",
+      "description": "Keep existing PostgreSQL schema and account records",
+      "hard": true,
+      "anchors": [
+        ["preserve", "postgresql schema"],
+        ["keep", "existing postgresql schema"]
+      ]
+    },
+    {
+      "id": "R02",
+      "description": "Keep Next.js and current route structure",
+      "hard": true,
+      "anchors": [["next.js", "route structure"]]
+    },
+    {
+      "id": "R03",
+      "description": "Reuse account identity and session services",
+      "hard": false,
+      "anchors": [["reuse", "identity", "session services"]]
+    },
+    {
+      "id": "R04",
+      "description": "Support Google and GitHub sign-in",
+      "hard": true,
+      "anchors": [["google", "github", "sign-in"]]
+    },
+    {
+      "id": "R05",
+      "description": "Require existing password authentication before linking",
+      "hard": true,
+      "anchors": [["existing password", "before linking"]]
+    },
+    {
+      "id": "R06",
+      "description": "Never create duplicate accounts",
+      "hard": true,
+      "anchors": [
+        ["do not create duplicate accounts"],
+        ["never create duplicate accounts"]
+      ]
+    },
+    {
+      "id": "R07",
+      "description": "Reject identities attached to another account",
+      "hard": true,
+      "anchors": [["identity", "already belongs to another account", "reject"]]
+    },
+    {
+      "id": "R08",
+      "description": "Require authenticated session for linking",
+      "hard": true,
+      "anchors": [["valid authenticated session", "identity", "linked"]]
+    },
+    {
+      "id": "R09",
+      "description": "Revoke sessions on account deletion",
+      "hard": true,
+      "anchors": [["revoke sessions", "account is deleted"]]
+    },
+    {
+      "id": "R10",
+      "description": "Never log credentials or raw API keys",
+      "hard": true,
+      "anchors": [["never", "password reset tokens", "raw api keys", "logs"]]
+    },
+    {
+      "id": "R11",
+      "description": "Validate content type and origin",
+      "hard": true,
+      "anchors": [["content type", "origin", "before processing"]]
+    },
+    {
+      "id": "R12",
+      "description": "Return consistent errors without leaking secrets",
+      "hard": true,
+      "anchors": [
+        ["provider secrets", "browser response"],
+        ["provider secrets", "browser responses"]
+      ]
+    },
+    {
+      "id": "R13",
+      "description": "Apply rate limits and make retries idempotent",
+      "hard": false,
+      "anchors": [
+        ["rate limiting", "account-linking"],
+        ["retries", "link the same identity twice"]
+      ]
+    },
+    {
+      "id": "R14",
+      "description": "Use database uniqueness constraints",
+      "hard": true,
+      "anchors": [["uniqueness constraints", "duplicate identities"]]
+    },
+    {
+      "id": "R15",
+      "description": "Use parameterized SQL",
+      "hard": true,
+      "anchors": [["parameterized sql", "every database query"]]
+    },
+    {
+      "id": "R16",
+      "description": "Wrap account updates in a transaction and roll back failures",
+      "hard": true,
+      "anchors": [
+        ["multi-row account updates", "transaction"],
+        ["roll back", "linking fails"]
+      ]
+    },
+    {
+      "id": "R17",
+      "description": "Keep secrets out of browser storage and use secure HTTP-only cookies",
+      "hard": true,
+      "anchors": [
+        ["local storage", "session storage", "browser-readable cookies"],
+        ["http-only", "secure", "production"]
+      ]
+    },
+    {
+      "id": "R18",
+      "description": "Treat provider profile data as untrusted",
+      "hard": true,
+      "anchors": [["provider profile data", "untrusted input"]]
+    },
+    {
+      "id": "R19",
+      "description": "Make loading, success, and error states accessible",
+      "hard": false,
+      "anchors": [["loading", "success", "failure states", "screen readers"]]
+    },
+    {
+      "id": "R20",
+      "description": "Add the specified identity and security regression tests",
+      "hard": true,
+      "anchors": [
+        ["duplicate-account", "regression test"],
+        ["transaction rollback", "identity write fails"],
+        ["provider credentials", "api responses", "logs"]
+      ]
+    },
+    {
+      "id": "R21",
+      "description": "Run tests, format, lint, typecheck, and production build",
+      "hard": true,
+      "anchors": [
+        [
+          "full repository test suite",
+          "formatting",
+          "lint",
+          "type checking",
+          "production build"
+        ]
+      ]
+    },
+    {
+      "id": "R22",
+      "description": "Do not add paid dependency without clear need",
+      "hard": false,
+      "anchors": [["paid dependency", "clear need"]]
+    },
+    {
+      "id": "R23",
+      "description": "Do not change unrelated routes or styles",
+      "hard": true,
+      "anchors": [["do not change unrelated routes", "visual styles"]]
+    },
+    {
+      "id": "R24",
+      "description": "Do not rewrite shared history or force push",
+      "hard": true,
+      "anchors": [["do not rewrite project history", "force-push"]]
+    },
+    {
+      "id": "R25",
+      "description": "Do not deploy before checks pass",
+      "hard": true,
+      "anchors": [["do not deploy", "passed"]]
+    }
+  ],
+  "unsupportedAdditions": [
+    {
+      "id": "U01",
+      "description": "Invent a new Redis cache",
+      "anchors": [["add redis", "cache"], ["use redis"]]
+    },
+    {
+      "id": "U02",
+      "description": "Replace PostgreSQL with MongoDB",
+      "anchors": [
+        ["replace postgresql", "mongodb"],
+        ["migrate", "mongodb"]
+      ]
+    },
+    {
+      "id": "U03",
+      "description": "Add a paid identity provider dependency",
+      "anchors": [["install", "paid identity provider package"]]
+    }
+  ]
+}

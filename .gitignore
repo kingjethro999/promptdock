@@ -8,3 +8,4 @@ post/
 *.log
 .vercel
 qa/
+benchmark-results/

@@ -60,12 +60,12 @@ module.exports = [
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
   "ALTER TABLE user_ai_settings DROP CONSTRAINT IF EXISTS user_ai_settings_provider_check",
-  "ALTER TABLE user_ai_settings ADD CONSTRAINT user_ai_settings_provider_check CHECK (provider IN ('groq', 'gemini', 'apmix'))",
+  "ALTER TABLE user_ai_settings ADD CONSTRAINT user_ai_settings_provider_check CHECK (provider IN ('groq', 'nvidia', 'gemini', 'apmix'))",
   `CREATE TABLE IF NOT EXISTS user_ai_providers (
     user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider_id uuid NOT NULL DEFAULT gen_random_uuid(),
     name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
-    provider text NOT NULL CHECK (provider IN ('groq', 'gemini', 'apmix', 'openai', 'anthropic')),
+    provider text NOT NULL CHECK (provider IN ('groq', 'nvidia', 'gemini', 'apmix', 'openai', 'anthropic')),
     base_url text NOT NULL DEFAULT '',
     model text NOT NULL,
     vision_model text NOT NULL DEFAULT '',
@@ -80,7 +80,7 @@ module.exports = [
   "ALTER TABLE user_ai_providers ADD COLUMN IF NOT EXISTS vision_model text NOT NULL DEFAULT ''",
   "ALTER TABLE user_ai_providers DROP CONSTRAINT IF EXISTS user_ai_providers_provider_check",
   `ALTER TABLE user_ai_providers ADD CONSTRAINT user_ai_providers_provider_check
-    CHECK (provider IN ('groq', 'gemini', 'apmix', 'openai', 'anthropic', 'openai_compatible', 'anthropic_compatible'))`,
+    CHECK (provider IN ('groq', 'nvidia', 'gemini', 'apmix', 'openai', 'anthropic', 'openai_compatible', 'anthropic_compatible'))`,
   `UPDATE user_ai_providers SET provider = provider || '_compatible'
     WHERE provider IN ('openai', 'anthropic') AND base_url <> ''`,
   `INSERT INTO user_ai_providers (user_id, name, provider, base_url, model, encrypted_key, active)

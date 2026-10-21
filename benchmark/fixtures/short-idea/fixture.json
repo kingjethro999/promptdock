@@ -1,0 +1,55 @@
+{
+  "id": "short-idea",
+  "title": "Short idea with known unknowns",
+  "sourceFile": "brief.md",
+  "requirements": [
+    {
+      "id": "R01",
+      "description": "Friendly launch announcement",
+      "hard": false,
+      "anchors": [["friendly", "launch announcement"]]
+    },
+    {
+      "id": "R02",
+      "description": "Exactly two sentences",
+      "hard": true,
+      "anchors": [["two-sentence", "announcement"], ["two sentences"]]
+    },
+    {
+      "id": "R03",
+      "description": "Neighborhood book exchange",
+      "hard": true,
+      "anchors": [["neighborhood", "book exchange"]]
+    },
+    {
+      "id": "R04",
+      "description": "Bring one book and take one",
+      "hard": true,
+      "anchors": [["bring one book", "take one book"]]
+    },
+    {
+      "id": "R05",
+      "description": "Do not invent date or location",
+      "hard": true,
+      "anchors": [
+        ["do not add a date or location"],
+        ["leave the date and location open"]
+      ]
+    }
+  ],
+  "unsupportedAdditions": [
+    {
+      "id": "U01",
+      "description": "Invent a launch date",
+      "anchors": [
+        ["october", "book exchange"],
+        ["saturday", "launch"]
+      ]
+    },
+    {
+      "id": "U02",
+      "description": "Invent a location",
+      "anchors": [["community hall"], ["library courtyard"]]
+    }
+  ]
+}

@@ -23,6 +23,7 @@ const providerTypes = [
   { value: "anthropic", label: "Anthropic" },
   { value: "openai", label: "OpenAI" },
   { value: "groq", label: "Groq" },
+  { value: "nvidia", label: "NVIDIA" },
   { value: "apmix", label: "APMIX" },
   { value: "anthropic_compatible", label: "Anthropic Compatible" },
   { value: "openai_compatible", label: "OpenAI Compatible" },
@@ -134,9 +135,9 @@ export default function AiProviderSettings() {
       <span className="section-kicker">AI PROVIDER</span>
       <h2>Bring your own key</h2>
       <p>
-        Save Anthropic, OpenAI, Groq, APMIX, Gemini, or a compatible custom
-        endpoint, then choose which one is active. Keys stay encrypted on the
-        server and are never returned to your browser.
+        Save NVIDIA, Anthropic, OpenAI, Groq, APMIX, Gemini, or a compatible
+        custom endpoint, then choose which one is active. Keys stay encrypted on
+        the server and are never returned to your browser.
       </p>
       {settings?.available && (
         <p className="react-provider-status">
@@ -249,7 +250,11 @@ export default function AiProviderSettings() {
             required
             value={model}
             onChange={(event) => setModel(event.target.value)}
-            placeholder="e.g. openai/gpt-oss-120b"
+            placeholder={
+              type === "nvidia"
+                ? "nvidia/nemotron-3.5-super-vl-120b-a12b"
+                : "e.g. openai/gpt-oss-120b"
+            }
           />
         </label>
         <label className="react-field">

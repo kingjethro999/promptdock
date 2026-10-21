@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { LandingDetails, LandingFooter, LandingProof } from "./LandingDetails";
 import LandingHero from "./LandingHero";
 import LandingCommunity from "./LandingCommunity";
+import ModelsBenchmark from "./ModelsBenchmark";
 import ActionLink from "@/components/ui/ActionLink";
 import { Reveal } from "@/components/motion/Reveal";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
@@ -40,6 +41,7 @@ export default function LandingPage() {
             <AnchorLink href="#features">Features</AnchorLink>
             <AnchorLink href="#community">Community</AnchorLink>
             <AnchorLink href="#your-keys">Your keys</AnchorLink>
+            <AnchorLink href="#models">Models</AnchorLink>
           </nav>
           <div className="landing-header-actions">
             <Link className="landing-signin" href="/auth?mode=login">
@@ -127,6 +129,9 @@ export default function LandingPage() {
 
           {/* Features, BYOK, FAQ, and Sponsor */}
           <LandingDetails />
+
+          {/* Provider and model directory with transparent benchmark status */}
+          <ModelsBenchmark />
 
           {/* Community Discovery */}
           <LandingCommunity />
