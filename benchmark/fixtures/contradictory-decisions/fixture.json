@@ -8,8 +8,8 @@
       "description": "Final database choice is PostgreSQL",
       "hard": true,
       "anchors": [
-        ["final decision", "keep postgresql"],
-        ["keep postgresql", "current schema"]
+        ["use postgresql"],
+        ["postgresql", "preserve the current schema"]
       ]
     },
     {
@@ -27,7 +27,8 @@
       "hard": true,
       "anchors": [
         ["keep existing account records"],
-        ["preserve existing account records"]
+        ["preserve existing account records"],
+        ["keep all existing account records"]
       ]
     },
     {
@@ -42,7 +43,8 @@
       "hard": true,
       "anchors": [
         ["do not create duplicate accounts", "regression test"],
-        ["prevent duplicate accounts", "regression test"]
+        ["prevent duplicate accounts", "regression test"],
+        ["prevent the creation of duplicate accounts", "regression test"]
       ]
     }
   ],
@@ -50,7 +52,11 @@
     {
       "id": "U01",
       "description": "Use MongoDB",
-      "anchors": [["use mongodb"], ["migrate to mongodb"]]
+      "anchors": [
+        ["use mongodb as the database"],
+        ["switch the database to mongodb"],
+        ["adopt mongodb"]
+      ]
     }
   ]
 }

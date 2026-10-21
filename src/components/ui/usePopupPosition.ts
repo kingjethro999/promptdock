@@ -26,9 +26,7 @@ export function usePopupPosition(
   const [pos, setPos] = useState<PopupPosition | null>(null);
 
   const opts: PopupPositionOptions =
-    typeof options === "boolean"
-      ? { isCoarse: options }
-      : options || {};
+    typeof options === "boolean" ? { isCoarse: options } : options || {};
 
   const align = opts.align ?? (opts.width ? "start" : "match");
   const gap = opts.gap ?? 6;

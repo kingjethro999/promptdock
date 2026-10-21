@@ -94,38 +94,62 @@ test("Collection Visibility Oracle Table", () => {
 
   // 1. Private collection: only owner can view
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "private", viewerRole: "owner" }),
-    true
+    evalCollectionVisibility({
+      collectionVisibility: "private",
+      viewerRole: "owner",
+    }),
+    true,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "private", viewerRole: "follower" }),
-    false
+    evalCollectionVisibility({
+      collectionVisibility: "private",
+      viewerRole: "follower",
+    }),
+    false,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "private", viewerRole: "stranger" }),
-    false
+    evalCollectionVisibility({
+      collectionVisibility: "private",
+      viewerRole: "stranger",
+    }),
+    false,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "private", viewerRole: "anon" }),
-    false
+    evalCollectionVisibility({
+      collectionVisibility: "private",
+      viewerRole: "anon",
+    }),
+    false,
   );
 
   // 2. Followers collection: owner and followers can view
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "followers", viewerRole: "owner" }),
-    true
+    evalCollectionVisibility({
+      collectionVisibility: "followers",
+      viewerRole: "owner",
+    }),
+    true,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "followers", viewerRole: "follower" }),
-    true
+    evalCollectionVisibility({
+      collectionVisibility: "followers",
+      viewerRole: "follower",
+    }),
+    true,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "followers", viewerRole: "stranger" }),
-    false
+    evalCollectionVisibility({
+      collectionVisibility: "followers",
+      viewerRole: "stranger",
+    }),
+    false,
   );
   assert.equal(
-    evalCollectionVisibility({ collectionVisibility: "followers", viewerRole: "anon" }),
-    false
+    evalCollectionVisibility({
+      collectionVisibility: "followers",
+      viewerRole: "anon",
+    }),
+    false,
   );
 
   // 3. Public collection with creator audience = public: all roles can view
@@ -137,7 +161,7 @@ test("Collection Visibility Oracle Table", () => {
         viewerRole: role,
       }),
       true,
-      `Failed for role ${role} on public collection`
+      `Failed for role ${role} on public collection`,
     );
   }
 
@@ -148,7 +172,7 @@ test("Collection Visibility Oracle Table", () => {
       creatorAudience: "followers",
       viewerRole: "owner",
     }),
-    true
+    true,
   );
   assert.equal(
     evalCollectionVisibility({
@@ -156,7 +180,7 @@ test("Collection Visibility Oracle Table", () => {
       creatorAudience: "followers",
       viewerRole: "follower",
     }),
-    true
+    true,
   );
   assert.equal(
     evalCollectionVisibility({
@@ -164,7 +188,7 @@ test("Collection Visibility Oracle Table", () => {
       creatorAudience: "followers",
       viewerRole: "stranger",
     }),
-    false
+    false,
   );
   assert.equal(
     evalCollectionVisibility({
@@ -172,7 +196,7 @@ test("Collection Visibility Oracle Table", () => {
       creatorAudience: "followers",
       viewerRole: "anon",
     }),
-    false
+    false,
   );
 });
 
@@ -202,7 +226,7 @@ test("Visitor Numbering & Hidden Item Omission", () => {
   assert.equal(anonVisible.length, 3);
   assert.deepEqual(
     anonVisible.map((i) => i.rank),
-    [1, 2, 3]
+    [1, 2, 3],
   );
   // Item 3 is ranked 2, Item 5 is ranked 3. Raw position 2 and 4 never leak.
   assert.equal(anonVisible[1].id, "3");
@@ -212,7 +236,9 @@ test("Visitor Numbering & Hidden Item Omission", () => {
 
   // Follower visitor visible items
   const followerVisible = rawItems
-    .filter((item) => item.visibility === "public" || item.visibility === "followers")
+    .filter(
+      (item) => item.visibility === "public" || item.visibility === "followers",
+    )
     .map((item, index) => ({
       ...item,
       rank: index + 1,
@@ -221,7 +247,7 @@ test("Visitor Numbering & Hidden Item Omission", () => {
   assert.equal(followerVisible.length, 4);
   assert.deepEqual(
     followerVisible.map((i) => i.rank),
-    [1, 2, 3, 4]
+    [1, 2, 3, 4],
   );
 });
 
@@ -297,7 +323,10 @@ test("useSavePrompt isDirty Logic", () => {
   assert.equal(isDirty(initialData, source), false);
 
   // Data changed: dirty
-  assert.equal(isDirty({ task: "Write a letter", depth: "Quick" }, source), true);
+  assert.equal(
+    isDirty({ task: "Write a letter", depth: "Quick" }, source),
+    true,
+  );
 
   // Name changed: dirty
   assert.equal(isDirty(initialData, source, "New Name"), true);

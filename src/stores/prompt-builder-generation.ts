@@ -138,6 +138,12 @@ export async function completePromptClarification(
             sources: state.pending.researchSources,
           }
         : undefined,
+      {
+        researchMode: state.researchMode,
+        referenceUrls: state.referenceUrl.trim()
+          ? [state.referenceUrl.trim()]
+          : undefined,
+      },
     );
     if (revision !== get().revision) return;
     if (!response.data)

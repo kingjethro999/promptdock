@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T17:29:54.025Z",
+  "generatedAt": "2026-10-21T22:04:45.453Z",
   "results": [
     {
       "modelId": "nvidia-super-vl",
@@ -7,231 +7,206 @@
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
-      "latencyMs": 11312,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 4417,
       "usage": {
-        "totalTokens": 887
+        "totalTokens": 972
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0.6,
-        "hardConstraintOmissions": [
-          "R01",
-          "R03"
-        ],
-        "unsupportedAdditions": [
-          "U01"
-        ],
-        "passed": false
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
       }
     },
     {
       "modelId": "nvidia-super-vl",
       "fixtureId": "detailed-workspace",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 22099,
+      "usage": {
+        "totalTokens": 3982
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-super-vl",
+      "fixtureId": "short-idea",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 4170,
+      "usage": {
+        "totalTokens": 843
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-super-vl",
+      "fixtureId": "strict-constraints",
       "validResponse": false,
       "finishReason": "error",
       "truncated": false,
-      "latencyMs": null,
+      "errorStatus": 500,
+      "errorCode": null,
+      "latencyMs": 867,
       "usage": {
         "totalTokens": null
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 0,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": false
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "fixtureId": "contradictory-decisions",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 19510,
+      "usage": {
+        "totalTokens": 2550
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "fixtureId": "detailed-workspace",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 23686,
+      "usage": {
+        "totalTokens": 3381
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "fixtureId": "short-idea",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 37818,
+      "usage": {
+        "totalTokens": 1096
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "fixtureId": "strict-constraints",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 21452,
+      "usage": {
+        "totalTokens": 2893
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "groq-gpt-oss-120b",
+      "fixtureId": "contradictory-decisions",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 1498,
+      "usage": {
+        "totalTokens": 606
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 0,
+        "hardConstraintOmissions": ["R01", "R02", "R03", "R04", "R05"],
+        "unsupportedAdditions": [],
+        "passed": false
+      }
+    },
+    {
+      "modelId": "groq-gpt-oss-120b",
+      "fixtureId": "detailed-workspace",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 2933,
+      "usage": {
+        "totalTokens": 2153
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 0.4,
         "hardConstraintOmissions": [
-          "R01",
-          "R02",
           "R04",
-          "R05",
           "R06",
           "R07",
-          "R08",
           "R09",
           "R10",
           "R11",
-          "R12",
           "R14",
           "R15",
           "R16",
           "R17",
-          "R18",
-          "R20",
-          "R21",
-          "R23",
-          "R24",
-          "R25"
-        ],
-        "unsupportedAdditions": [],
-        "passed": false
-      }
-    },
-    {
-      "modelId": "nvidia-super-vl",
-      "fixtureId": "short-idea",
-      "validResponse": false,
-      "finishReason": "error",
-      "truncated": false,
-      "latencyMs": null,
-      "usage": {
-        "totalTokens": null
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 0,
-        "hardConstraintOmissions": [
-          "R02",
-          "R03",
-          "R04",
-          "R05"
-        ],
-        "unsupportedAdditions": [],
-        "passed": false
-      }
-    },
-    {
-      "modelId": "nvidia-super-vl",
-      "fixtureId": "strict-constraints",
-      "validResponse": false,
-      "finishReason": "error",
-      "truncated": false,
-      "latencyMs": null,
-      "usage": {
-        "totalTokens": null
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 0,
-        "hardConstraintOmissions": [
-          "R01",
-          "R02",
-          "R03",
-          "R04",
-          "R05",
-          "R06",
-          "R07",
-          "R08"
-        ],
-        "unsupportedAdditions": [],
-        "passed": false
-      }
-    },
-    {
-      "modelId": "nvidia-lightning",
-      "fixtureId": "contradictory-decisions",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 34042,
-      "usage": {
-        "totalTokens": 3300
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 1,
-        "hardConstraintOmissions": [],
-        "unsupportedAdditions": [],
-        "passed": true
-      }
-    },
-    {
-      "modelId": "nvidia-lightning",
-      "fixtureId": "detailed-workspace",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 18565,
-      "usage": {
-        "totalTokens": 2586
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 1,
-        "hardConstraintOmissions": [],
-        "unsupportedAdditions": [],
-        "passed": true
-      }
-    },
-    {
-      "modelId": "nvidia-lightning",
-      "fixtureId": "short-idea",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 40429,
-      "usage": {
-        "totalTokens": 3016
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 1,
-        "hardConstraintOmissions": [],
-        "unsupportedAdditions": [],
-        "passed": true
-      }
-    },
-    {
-      "modelId": "nvidia-lightning",
-      "fixtureId": "strict-constraints",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 21048,
-      "usage": {
-        "totalTokens": 1894
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 1,
-        "hardConstraintOmissions": [],
-        "unsupportedAdditions": [],
-        "passed": true
-      }
-    },
-    {
-      "modelId": "groq-gpt-oss-120b",
-      "fixtureId": "contradictory-decisions",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 6378,
-      "usage": {
-        "totalTokens": 594
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 0,
-        "hardConstraintOmissions": [
-          "R01",
-          "R02",
-          "R03",
-          "R04",
-          "R05"
-        ],
-        "unsupportedAdditions": [],
-        "passed": false
-      }
-    },
-    {
-      "modelId": "groq-gpt-oss-120b",
-      "fixtureId": "detailed-workspace",
-      "validResponse": true,
-      "finishReason": "stop",
-      "truncated": false,
-      "latencyMs": 3072,
-      "usage": {
-        "totalTokens": 2210
-      },
-      "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 0.48,
-        "hardConstraintOmissions": [
-          "R04",
-          "R06",
-          "R07",
-          "R09",
-          "R10",
-          "R11",
-          "R15",
-          "R17",
           "R21",
           "R23",
           "R24",
@@ -247,17 +222,16 @@
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
-      "latencyMs": 1183,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 766,
       "usage": {
         "totalTokens": 419
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0.6,
-        "hardConstraintOmissions": [
-          "R02",
-          "R05"
-        ],
+        "requirementCoverage": 0.8,
+        "hardConstraintOmissions": ["R02"],
         "unsupportedAdditions": [],
         "passed": false
       }
@@ -268,19 +242,16 @@
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
-      "latencyMs": 877,
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 924,
       "usage": {
         "totalTokens": 576
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 0.5,
-        "hardConstraintOmissions": [
-          "R03",
-          "R04",
-          "R05",
-          "R06"
-        ],
+        "hardConstraintOmissions": ["R03", "R04", "R05", "R06"],
         "unsupportedAdditions": [],
         "passed": false
       }
