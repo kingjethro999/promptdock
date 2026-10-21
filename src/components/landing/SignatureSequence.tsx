@@ -7,44 +7,18 @@ import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const storySteps = [
-  {
-    kicker: "PHASE 01 — CAPTURE",
-    title: "Say what you mean without prompt anxiety.",
-    description:
-      "Speak a messy thought or paste a quick note. PromptDock never forces you to format before you think.",
-    surfaceState: {
-      tag: "RAW INTENT",
-      content:
-        "“I want to launch a skincare line, but I don't know suppliers or budgeting.”",
-      meta: "Dictated or typed in seconds",
-    },
-  },
-  {
-    kicker: "PHASE 02 — DISTILL",
-    title: "Priorities emerge automatically.",
-    description:
-      "The workspace identifies the underlying goal, extracts constraints, and ranks focus areas so AI models spend effort where it counts.",
-    surfaceState: {
-      tag: "ANALYZED FOCUS",
-      content:
-        "Goal: Low-risk launch plan | Focus: Validation → Costing → First 100 customers",
-      meta: "3 priority branches mapped",
-    },
-  },
-  {
-    kicker: "PHASE 03 — DEPLOY",
-    title: "Take it to Claude, ChatGPT, or your own model.",
-    description:
-      "One click exports a structured prompt ready for any AI tool, or runs it directly with your own provider key.",
-    surfaceState: {
-      tag: "STRUCTURED PROMPT",
-      content:
-        "System: Direct execution | Depth: Deep | Target: Claude 3.7 / GPT-4o",
-      meta: "100% portable workspace prompt",
-    },
-  },
-];
+type StoryStep = {
+  kicker: string;
+  title: string;
+  description: string;
+  surfaceState: {
+    tag: string;
+    content: string;
+    meta: string;
+  };
+};
+
+const storySteps: StoryStep[] = [];
 
 export default function SignatureSequence() {
   const root = useRef<HTMLElement>(null);

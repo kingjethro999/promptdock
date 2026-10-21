@@ -25,6 +25,9 @@ export default function LandingPage() {
   return (
     <ScrollProvider syncGsap={true}>
       <div className="landing-page">
+        <a className="landing-skip-link" href="#top">
+          Skip to content
+        </a>
         {/* Transform-only Scroll Progress Bar */}
         <ScrollProgress />
 
@@ -43,6 +46,21 @@ export default function LandingPage() {
             <AnchorLink href="#your-keys">Your keys</AnchorLink>
             <AnchorLink href="#models">Models</AnchorLink>
           </nav>
+          <details className="landing-mobile-nav">
+            <summary>Menu</summary>
+            <nav
+              aria-label="Mobile landing navigation"
+              onClick={(event) =>
+                event.currentTarget.closest("details")?.removeAttribute("open")
+              }
+            >
+              <AnchorLink href="#how-it-works">How it works</AnchorLink>
+              <AnchorLink href="#features">Features</AnchorLink>
+              <AnchorLink href="#community">Community</AnchorLink>
+              <AnchorLink href="#models">Models</AnchorLink>
+              <Link href="/auth?mode=login">Sign in</Link>
+            </nav>
+          </details>
           <div className="landing-header-actions">
             <Link className="landing-signin" href="/auth?mode=login">
               Sign in

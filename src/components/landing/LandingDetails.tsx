@@ -11,8 +11,11 @@ import { RevealHeading } from "@/components/motion/RevealHeading";
 
 export function LandingProof() {
   return (
-    <section className="landing-proof" aria-label="Supported platforms">
-      <span>ONE WORKSPACE, EVERY AI TOOL</span>
+    <section
+      className="landing-proof"
+      aria-label="Use your prompts with popular AI tools"
+    >
+      <span>MAKE IT HERE. USE IT ANYWHERE.</span>
       <div>
         <strong>
           <Image
@@ -44,7 +47,7 @@ export function LandingProof() {
           />{" "}
           Gemini
         </strong>
-        <strong>+ wherever you prompt</strong>
+        <strong>and wherever you prompt</strong>
       </div>
     </section>
   );
@@ -210,7 +213,7 @@ export function LandingDetails() {
 export function LandingFooter() {
   return (
     <>
-      <section className="landing-sponsor" aria-labelledby="sponsorHeading">
+      <aside className="landing-sponsor" aria-label="Support PromptDock">
         <div className="landing-sponsor-copy">
           <span className="landing-kicker">SUPPORT PROMPTDOCK</span>
           <RevealHeading as="h2">
@@ -252,7 +255,7 @@ export function LandingFooter() {
             />
           </ActionLink>
         </Reveal>
-      </section>
+      </aside>
 
       <footer className="landing-footer">
         <span className="landing-footer-brand">

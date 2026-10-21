@@ -64,9 +64,9 @@ export default function LandingCommunity() {
             <div className="empty-state-icon" aria-hidden="true">
               <Glyph name="spark" size={32} />
             </div>
-            <h4 className="community-empty-title">
+            <h3 className="community-empty-title">
               Be the first to share your craft
-            </h4>
+            </h3>
             <p className="community-empty-desc">
               Prompts shared with Community discovery enabled will appear here
               for everyone to learn from and remix.

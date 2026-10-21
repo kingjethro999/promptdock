@@ -52,7 +52,7 @@ export default function LandingHero() {
             </span>{" "}
             EVOLUTION
           </span>
-          <span>A whole new look. Same workspace.</span>
+          <span>A clearer way to make your ideas useful.</span>
         </m.div>
 
         <m.div
@@ -74,13 +74,12 @@ export default function LandingHero() {
           }}
           data-reveal-item="lcp-settle"
         >
-          Great prompts start with <em>rough ideas.</em>
+          Your next great prompt starts <em>somewhere messy.</em>
         </m.h1>
 
         <m.p variants={item("rise")} data-reveal-item="rise">
-          Say what you mean in your own words. PromptDock reads the intent,
-          finds the priorities, and shapes a clear prompt you can take to any AI
-          platform.
+          Bring the thought as it is. Shape it into a focused prompt, keep what
+          works, and use it with the AI tools you already know.
         </m.p>
 
         <m.div
@@ -92,7 +91,7 @@ export default function LandingHero() {
             className="landing-primary-cta"
             href="/auth?mode=register"
           >
-            Create your workspace{" "}
+            Start shaping ideas{" "}
             <Icon
               name="arrow-up-right"
               size={14}
@@ -114,11 +113,10 @@ export default function LandingHero() {
           className="landing-hero-note"
           data-reveal-item="rise"
         >
-          <span className="landing-note-stars">
-            <Glyph name="spark" size={12} /> <Glyph name="spark" size={12} />{" "}
-            <Glyph name="spark" size={12} />
+          <span className="landing-note-stars" aria-hidden="true">
+            ✳
           </span>
-          <span>From first thought to useful prompt, in one place.</span>
+          <span>Write naturally. Refine deliberately. Prompt anywhere.</span>
         </m.div>
       </div>
 
