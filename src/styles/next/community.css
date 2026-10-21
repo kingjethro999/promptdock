@@ -296,6 +296,17 @@
   margin-top: 4px;
 }
 
+.community-card-save-feedback {
+  margin: -4px 0 0;
+  color: var(--community-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.community-card-save-feedback[role="alert"] {
+  color: var(--ui-danger);
+}
+
 .community-btn {
   display: inline-flex;
   align-items: center;

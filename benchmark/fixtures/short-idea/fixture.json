@@ -33,7 +33,16 @@
       "hard": true,
       "anchors": [
         ["do not add a date or location"],
-        ["leave the date and location open"]
+        ["leave the date and location open"],
+        ["do not invent or add a date or location"],
+        ["do not include a date or a location", "details have not been chosen"],
+        [
+          "do not include a date or location",
+          "details have not yet been chosen"
+        ],
+        ["do not include a date", "do not include a location"],
+        ["strictly omit", "date", "location"],
+        ["must not include", "date", "location"]
       ]
     }
   ],

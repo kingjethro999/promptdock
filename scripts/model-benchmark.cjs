@@ -302,13 +302,46 @@ async function requestCompletion(model, fixture, env, fetchImpl = fetch) {
     });
     const latencyMs = Date.now() - startedAt;
     if (!response.ok) {
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        // Keep status and headers even if the provider returned no JSON.
+      }
+      const rawCode = payload?.error?.code ?? payload?.code;
+      const providerCode =
+        typeof rawCode === "string" && /^[\w.-]{1,80}$/.test(rawCode)
+          ? rawCode
+          : null;
+      const rawRequestId =
+        response.headers.get("x-request-id") ||
+        response.headers.get("request-id") ||
+        response.headers.get("x-nvidia-request-id");
+      const requestId =
+        rawRequestId && /^[\w.-]{1,120}$/.test(rawRequestId)
+          ? rawRequestId
+          : null;
       const retryAfter = response.headers.get("retry-after");
-      throw new Error(
-        `${model.provider} returned HTTP ${response.status}${retryAfter ? ` (Retry-After: ${retryAfter})` : ""}.`,
+      const error = new Error(
+        `${model.provider} returned HTTP ${response.status}.`,
       );
+      error.benchmark = {
+        httpStatus: response.status,
+        providerCode,
+        requestId,
+        retryAfter:
+          retryAfter && /^[\w.-]{1,80}$/.test(retryAfter) ? retryAfter : null,
+        latencyMs,
+      };
+      throw error;
     }
     const payload = await response.json();
     return { ...parseCompletion(payload), latencyMs };
+  } catch (error) {
+    if (error instanceof Error) {
+      error.benchmark ||= { latencyMs: Date.now() - startedAt };
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -319,7 +352,12 @@ async function runBenchmark(options = {}) {
   if (String(env.CI || "").toLowerCase() === "true" || env.CI === "1") {
     throw new Error("The live model benchmark is disabled in CI.");
   }
-  const models = buildModelMatrix(env);
+  const configuredModels = buildModelMatrix(env);
+  const models = options.modelId
+    ? configuredModels.filter(({ id }) => id === options.modelId)
+    : configuredModels;
+  if (models.length === 0)
+    throw new Error(`Unknown benchmark model: ${options.modelId}`);
   const fixtures = loadFixtures(
     options.fixtureDir || DEFAULT_FIXTURE_DIR,
     options.fixtureId,
@@ -357,6 +395,7 @@ async function runBenchmark(options = {}) {
             .update(completion.text)
             .digest("hex"),
           outputCharacters: completion.text.length,
+          ...(options.retainOutput ? { output: completion.text } : {}),
         });
         process.stdout.write(`${accepted ? "PASS" : "FAIL"}\n`);
       } catch (error) {
@@ -369,7 +408,11 @@ async function runBenchmark(options = {}) {
           validResponse: false,
           finishReason: "error",
           truncated: false,
-          latencyMs: null,
+          latencyMs: error?.benchmark?.latencyMs ?? null,
+          errorStatus: error?.benchmark?.httpStatus ?? null,
+          errorCode: error?.benchmark?.providerCode ?? null,
+          errorRequestId: error?.benchmark?.requestId ?? null,
+          retryAfter: error?.benchmark?.retryAfter ?? null,
           usage: {
             promptTokens: null,
             completionTokens: null,
@@ -380,12 +423,8 @@ async function runBenchmark(options = {}) {
           scoring: {
             requirementCoverage: 0,
             coveredRequirementIds: [],
-            missingRequirementIds: (fixture.requirements || []).map(
-              ({ id }) => id,
-            ),
-            hardConstraintOmissions: (fixture.requirements || [])
-              .filter(({ hard }) => hard)
-              .map(({ id }) => id),
+            missingRequirementIds: [],
+            hardConstraintOmissions: [],
             unsupportedAdditions: [],
             passed: false,
           },
@@ -394,7 +433,11 @@ async function runBenchmark(options = {}) {
           outputSha256: null,
           outputCharacters: 0,
         });
-        process.stdout.write("ERROR\n");
+        const status = error?.benchmark?.httpStatus;
+        const code = error?.benchmark?.providerCode;
+        process.stdout.write(
+          `ERROR${status ? ` (HTTP ${status}${code ? ` ${code}` : ""})` : ""}\n`,
+        );
       }
     }
   }
@@ -481,6 +524,8 @@ function publicReport(report) {
       validResponse: result.validResponse,
       finishReason: result.finishReason,
       truncated: result.truncated,
+      errorStatus: result.errorStatus ?? null,
+      errorCode: result.errorCode ?? null,
       latencyMs: result.latencyMs,
       usage: {
         totalTokens: result.usage?.totalTokens ?? null,
@@ -503,6 +548,11 @@ function parseArguments(argv) {
     if (argument === "--fixture") {
       options.fixtureId = argv[index + 1];
       index += 1;
+    } else if (argument === "--model") {
+      options.modelId = argv[index + 1];
+      index += 1;
+    } else if (argument === "--retain-output") {
+      options.retainOutput = true;
     } else if (argument === "--output-dir") {
       options.outputDir = path.resolve(argv[index + 1]);
       index += 1;
@@ -518,7 +568,7 @@ function parseArguments(argv) {
 }
 
 function helpText() {
-  return `Usage: npm run benchmark:models -- [--fixture ID] [--output-dir PATH] [--publish]\n\nRequired environment variables:\n  NVIDIA_API_KEY\n  GROQ_API_KEY\n\nOptional environment variables:\n  AI_BENCHMARK_MAX_TOKENS (default: 16384)\n  AI_BENCHMARK_TIMEOUT_MS (default: 180000)\n  BENCHMARK_NVIDIA_SUPER_MODEL (adds the older text-only Super candidate)\n\n--publish writes a sanitized score summary to public/model-benchmark.json for the landing page.\n`;
+  return `Usage: npm run benchmark:models -- [--model ID] [--fixture ID] [--output-dir PATH] [--retain-output] [--publish]\n\nRequired environment variables:\n  NVIDIA_API_KEY\n  GROQ_API_KEY\n\nOptional environment variables:\n  AI_BENCHMARK_MAX_TOKENS (default: 16384)\n  AI_BENCHMARK_TIMEOUT_MS (default: 180000)\n  BENCHMARK_NVIDIA_SUPER_MODEL (adds the older text-only Super candidate)\n\n--retain-output stores completions only in the ignored local report.\n--publish writes a sanitized score summary to public/model-benchmark.json for the landing page.\n`;
 }
 
 async function main() {

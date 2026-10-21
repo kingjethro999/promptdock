@@ -12,6 +12,10 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
   const [copyFeedback, setCopyFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    message: string;
+    kind: "status" | "error";
+  } | null>(null);
 
   const fallback = avatarFallback(card.creator.username);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -37,6 +41,7 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
   async function handleSave() {
     if (saving || saved) return;
     setSaving(true);
+    setSaveFeedback(null);
     try {
       const res = await fetch(`/api/community/prompts/${card.publicId}/save`, {
         method: "POST",
@@ -51,9 +56,33 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
 
       if (res.ok) {
         setSaved(true);
+        setSaveFeedback({
+          kind: "status",
+          message: "Saved to your library.",
+        });
+      } else {
+        let error = "";
+        try {
+          error = (await res.json())?.error || "";
+        } catch {
+          // Use a generic message if the response has no JSON body.
+        }
+        const messages: Record<string, string> = {
+          not_found: "This prompt is no longer available.",
+          own_prompt: "You can’t save your own prompt.",
+          rate_limited: "Please wait a moment before saving again.",
+        };
+        setSaveFeedback({
+          kind: "error",
+          message:
+            messages[error] || "Couldn’t save this prompt. Please try again.",
+        });
       }
     } catch {
-      // ignore transient error
+      setSaveFeedback({
+        kind: "error",
+        message: "Couldn’t connect. Check your connection and try again.",
+      });
     } finally {
       setSaving(false);
     }
@@ -157,6 +186,15 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
           Remix
         </LinkButton>
       </div>
+
+      {saveFeedback && (
+        <p
+          className="community-card-save-feedback"
+          role={saveFeedback.kind === "error" ? "alert" : "status"}
+        >
+          {saveFeedback.message}
+        </p>
+      )}
 
       <div
         className="sr-only"

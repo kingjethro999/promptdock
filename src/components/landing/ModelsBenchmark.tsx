@@ -22,6 +22,8 @@ type BenchmarkResult = {
   modelId: string;
   validResponse: boolean;
   truncated: boolean;
+  errorStatus?: number | null;
+  errorCode?: string | null;
   latencyMs: number | null;
   usage: { totalTokens: number | null };
   estimatedCostUsd: number | null;
@@ -520,7 +522,17 @@ function benchmarkValue(key: string, results: BenchmarkResult[]) {
     const errors = results.filter(
       (result) => result.validResponse === false && result.truncated === false,
     ).length;
-    return `${passed}/${results.length} passed · ${valid} valid · ${errors} errors · ${truncated} truncated`;
+    const statuses = [
+      ...new Set(
+        results
+          .map((result) => result.errorStatus)
+          .filter((status): status is number => typeof status === "number"),
+      ),
+    ];
+    const statusSummary = statuses.length
+      ? ` (${statuses.map((status) => `HTTP ${status}`).join(", ")})`
+      : "";
+    return `${passed}/${results.length} passed · ${valid} valid · ${errors} errors${statusSummary} · ${truncated} truncated`;
   }
   if (key === "performance") {
     const latency = results.filter((result) => result.latencyMs != null);

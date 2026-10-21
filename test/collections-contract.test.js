@@ -11,7 +11,12 @@ function loadSource(file, dependencies) {
   const source = fs.readFileSync(path.join(__dirname, "..", file), "utf8");
   const { outputText } = ts.transpileModule(
     source.replaceAll("import.meta.url", '"file:///collections-test.ts"'),
-    { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React } },
+    {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        jsx: ts.JsxEmit.React,
+      },
+    },
   );
   const exports = {};
   vm.runInNewContext(outputText, {
@@ -19,7 +24,10 @@ function loadSource(file, dependencies) {
     Response,
     URL,
     require(id) {
-      assert.ok(Object.hasOwn(dependencies, id), `Unexpected dependency: ${id}`);
+      assert.ok(
+        Object.hasOwn(dependencies, id),
+        `Unexpected dependency: ${id}`,
+      );
       return dependencies[id];
     },
   });
@@ -39,7 +47,10 @@ function loadRoute(file, query) {
   return loadSource(file, {
     "node:crypto": { randomUUID: () => collection.id },
     "node:module": {
-      createRequire: () => () => ({ ensureSchema: async () => {}, pool: { query } }),
+      createRequire: () => () => ({
+        ensureSchema: async () => {},
+        pool: { query },
+      }),
     },
     "next/cache": { revalidatePath() {} },
     "@/lib/community/viewer": {
@@ -48,7 +59,11 @@ function loadRoute(file, query) {
     },
     "@/lib/community/ratelimit": { rateLimit: async () => {} },
     "@/lib/community/save": { HttpError: Error },
-    "@/lib/community/collections": { errorResponse: (err) => { throw err; } },
+    "@/lib/community/collections": {
+      errorResponse: (err) => {
+        throw err;
+      },
+    },
   });
 }
 
@@ -59,22 +74,32 @@ test("collection creation returns the envelope consumed by both creation UIs", a
     assert.ok(sql.includes("INSERT INTO collections"));
     return { rows: [collection] };
   });
-  const response = await route.POST({ json: async () => ({ name: collection.name }) });
+  const response = await route.POST({
+    json: async () => ({ name: collection.name }),
+  });
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { collection });
 });
 
 for (const [label, body, expected] of [
   ["empty description clears the stored value", { description: "" }, null],
-  ["omitted description preserves the stored value", {}, collection.description],
+  [
+    "omitted description preserves the stored value",
+    {},
+    collection.description,
+  ],
 ]) {
   test(`collection update: ${label}`, async () => {
-    const route = loadRoute("src/app/api/collections/[id]/route.ts", async (sql, values) => {
-      if (sql.includes("SELECT id")) return { rows: [collection], rowCount: 1 };
-      assert.ok(sql.includes("UPDATE collections"));
-      assert.equal(values[2], expected);
-      return { rows: [{ ...collection, description: values[2] }] };
-    });
+    const route = loadRoute(
+      "src/app/api/collections/[id]/route.ts",
+      async (sql, values) => {
+        if (sql.includes("SELECT id"))
+          return { rows: [collection], rowCount: 1 };
+        assert.ok(sql.includes("UPDATE collections"));
+        assert.equal(values[2], expected);
+        return { rows: [{ ...collection, description: values[2] }] };
+      },
+    );
     const response = await route.PATCH(
       { json: async () => body },
       { params: Promise.resolve({ id: collection.id }) },
@@ -111,7 +136,12 @@ test("editing a collection submits an explicitly empty description", async () =>
     },
   );
   const tree = CollectionDialog({
-    open: true, collection, onClose() {}, onSaved: (value) => { saved = value; },
+    open: true,
+    collection,
+    onClose() {},
+    onSaved: (value) => {
+      saved = value;
+    },
   });
   function findForm(node) {
     if (!node || typeof node !== "object") return null;

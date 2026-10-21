@@ -2,15 +2,15 @@
 
 The public model directory at `/#models` lists provider capabilities and exposes the latest published PromptDock benchmark. It leaves scores marked as not measured until a live run is published.
 
-The local benchmark compares Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, the older Nemotron 3 Super text model when configured, and Groq GPT-OSS 120B. Every candidate receives the same preservation policy, fixture, and requested output budget. Fixtures cover short ideas, contradictory decisions, strict constraints, and a detailed AGENTS-style workspace specification. Scoring uses human-authored requirement anchors, hard-constraint omissions, and unsupported additions; reports also contain completion reason, truncation status, latency, and provider-reported token usage.
+The local benchmark compares Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, the older Nemotron 3 Super text model when configured, and Groq GPT-OSS 120B. Every candidate receives the same preservation policy, fixture, and requested output budget. Fixtures cover short ideas, contradictory decisions, strict constraints, and a detailed AGENTS-style workspace specification. Scoring uses human-authored requirement anchors, hard-constraint omissions, and unsupported additions; reports also contain completion reason, truncation status, latency, and provider-reported token usage. HTTP failures are reported separately from semantic omissions, with a bounded provider error code and request ID retained only in local ignored reports.
 
 Set provider keys in a local, untracked environment and run:
 
 ```sh
-NVIDIA_API_KEY=... GROQ_API_KEY=... npm run benchmark:models -- --publish
+npm run benchmark:models -- --publish
 ```
 
-The script refuses to run when `CI` is set. Results are written to ignored `benchmark-results/` JSON and Markdown files. With `--publish`, it also updates `public/model-benchmark.json` with a sanitized score summary consumed by the landing page. That public file contains aggregate metrics only; it excludes API keys, prompt text, output text, and output hashes. Benchmark only controlled fixtures.
+The script refuses to run when `CI` is set. Results are written to ignored `benchmark-results/` JSON and Markdown files. Use `--model ID` or `--fixture ID` for a focused run. `--retain-output` stores completions in the ignored local JSON report for manual review; use it only with controlled fixtures. With `--publish`, the script also updates `public/model-benchmark.json` with a sanitized score summary consumed by the landing page. That public file contains benchmark metrics only; it excludes API keys, prompt text, output text, and output hashes. Benchmark only controlled fixtures.
 
 Optional settings:
 
@@ -21,6 +21,6 @@ Optional settings:
 - `BENCHMARK_NVIDIA_SUPER_VL_MODEL`, `BENCHMARK_NVIDIA_LIGHTNING_MODEL`, and `BENCHMARK_GROQ_MODEL` override candidate IDs.
 - `NVIDIA_BASE_URL` and `GROQ_BASE_URL` override provider base URLs for compatible deployments.
 
-The requested output budget does not guarantee that an endpoint or account will allow it. A provider error or a `finish_reason` indicating length is recorded as invalid rather than scored as a complete answer. A benchmark run is a comparison aid; review fixture quality, account quotas, and provider conditions before changing production routing.
+The requested output budget does not guarantee that an endpoint or account will allow it. A provider error or a `finish_reason` indicating length is recorded as invalid rather than scored as a complete answer. This controlled direct-completion comparison does not reproduce PromptDock's full production refinement pipeline, so use it to select candidates for further evaluation rather than as the sole basis for changing production routing. Review fixture quality, account quotas, provider conditions, and semantic equivalence manually.
 
 Provider capability details shown on the landing page are linked to provider documentation. The NVIDIA hosted model card currently advertises 262K context and text, image, and video input; NVIDIA's NIM deployment guide describes deployment configurations that can support larger contexts. Provider quotas and hosted limits can vary.

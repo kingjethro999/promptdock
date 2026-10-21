@@ -1,5 +1,6 @@
 .env
 .env.local
+/ADDENDUM.md
 node_modules/
 oldui/dist/
 .next/

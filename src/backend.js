@@ -896,8 +896,7 @@ async function handleBackendRequest(request, response) {
         const colParam = url.searchParams.get("collection");
         if (colParam) listOpts.collection = colParam;
         json(response, 200, await database.listPrompts(key, listOpts));
-      }
-      else if (pathname === "/api/prompts" && request.method === "PUT")
+      } else if (pathname === "/api/prompts" && request.method === "PUT")
         json(response, 200, {
           prompt: await database.putPrompt(
             key,
