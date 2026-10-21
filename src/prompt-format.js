@@ -56,6 +56,7 @@ function buildUniversalPrompt(data = {}) {
 
 function buildClaudePrompt(data = {}) {
   if (!data.task?.trim()) return "";
+  if (data.raw) return data.task;
   const parts = [];
   if (data.role) {
     parts.push(`<role>\nAct as ${data.role.replace(/[.\s]+$/, "")}.\n</role>`);
@@ -84,6 +85,7 @@ function buildClaudePrompt(data = {}) {
 
 function buildOpenAIPrompt(data = {}) {
   if (!data.task?.trim()) return "";
+  if (data.raw) return data.task;
   const parts = [];
   if (data.role) {
     parts.push(`# Role & Persona\nAct as ${data.role.replace(/[.\s]+$/, "")}.`);
@@ -112,6 +114,7 @@ function buildOpenAIPrompt(data = {}) {
 
 function buildReasoningPrompt(data = {}) {
   if (!data.task?.trim()) return "";
+  if (data.raw) return data.task;
   const parts = [];
   parts.push(data.task);
   if (data.role) {
@@ -134,6 +137,7 @@ function buildReasoningPrompt(data = {}) {
 
 function buildCursorRulesPrompt(data = {}) {
   if (!data.task?.trim()) return "";
+  if (data.raw) return data.task;
   const roleText = data.role
     ? ` specialized as ${data.role.replace(/[.\s]+$/, "")}`
     : "";

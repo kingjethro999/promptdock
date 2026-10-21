@@ -7,6 +7,7 @@ const { siteFreeModel } = require("./apmix-models.cjs");
 const { researchDecision } = require("./research/intent");
 const { researchContext, performResearch } = require("./research/firecrawl");
 const { isLangfuseEnabled, recordLangfuseTrace } = require("./langfuse");
+const fidelity = require("./refinement-fidelity");
 
 const envPath = path.join(__dirname, "..", ".env");
 if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function")
@@ -48,13 +49,19 @@ const maxImageBytes = 3000000;
 
 function configuredProviders(env = process.env) {
   const available = {
+    nvidia: Boolean(env.NVIDIA_API_KEY),
     apmix: Boolean(env.APMIX_API_KEY && env.APMIX_BASE_URL && env.APMIX_MODEL),
     groq: Boolean(env.GROQ_API_KEY && env.GROQ_MODEL),
     gemini: Boolean(env.GEMINI_API_KEY),
     openai: Boolean(env.OPENAI_API_KEY && env.OPENAI_MODEL),
     anthropic: Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_MODEL),
   };
-  const order = (env.AI_PROVIDER_ORDER || "apmix,groq,gemini,openai,anthropic")
+  const order = (
+    env.AI_PROVIDER_ORDER ||
+    (env.NVIDIA_API_KEY
+      ? "nvidia,groq,apmix,gemini,openai,anthropic"
+      : "apmix,groq,gemini,openai,anthropic")
+  )
     .split(",")
     .map((name) => name.trim().toLowerCase());
   return [...new Set(order)].filter((name) => available[name]);
@@ -179,6 +186,12 @@ function normalizeImages(input) {
 }
 
 function visionModel(provider, env) {
+  if (provider === "nvidia")
+    return (
+      env.NVIDIA_VISION_MODEL ||
+      env.NVIDIA_MODEL ||
+      "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    );
   if (provider === "groq") return env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
   if (provider === "gemini")
     return env.GEMINI_VISION_MODEL || env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -410,14 +423,22 @@ function anthropicRequest(messages, env, options = {}) {
       model: options.images?.length
         ? visionModel("anthropic", env)
         : env.ANTHROPIC_MODEL,
-      max_tokens: options.maxTokens || 2600,
+      max_tokens:
+        options.maxTokens || providerOutputBudget("anthropic", env, options),
       ...(system ? { system } : {}),
       messages: rest,
     },
-    extract: (json) =>
-      Array.isArray(json.content)
+    extract: (json) => {
+      if (json.stop_reason === "max_tokens") {
+        const error = new Error("AI response reached its output token limit.");
+        error.code = "OUTPUT_TRUNCATED";
+        error.finishReason = json.stop_reason;
+        throw error;
+      }
+      return Array.isArray(json.content)
         ? json.content.map((block) => block.text || "").join("")
-        : "",
+        : "";
+    },
   };
 }
 
@@ -462,8 +483,13 @@ function providerRequest(provider, messages, env, options = {}) {
         },
       ],
     };
-    if (options.json !== false)
-      body.generationConfig = { responseMimeType: "application/json" };
+    body.generationConfig = {
+      ...(options.json !== false
+        ? { responseMimeType: "application/json" }
+        : {}),
+      maxOutputTokens:
+        options.maxTokens || providerOutputBudget("gemini", env, options),
+    };
     return {
       url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       headers: {
@@ -471,34 +497,50 @@ function providerRequest(provider, messages, env, options = {}) {
         "x-goog-api-key": env.GEMINI_API_KEY,
       },
       body,
-      extract: (json) =>
-        json.candidates?.[0]?.content?.parts
+      extract: (json) => {
+        if (json.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+          const error = new Error(
+            "AI response reached its output token limit.",
+          );
+          error.code = "OUTPUT_TRUNCATED";
+          error.finishReason = "MAX_TOKENS";
+          throw error;
+        }
+        return json.candidates?.[0]?.content?.parts
           ?.map((part) => part.text || "")
-          .join(""),
+          .join("");
+      },
     };
   }
   const openai = provider === "openai";
-  const base = openai
-    ? env.OPENAI_BASE_URL || "https://api.openai.com/v1"
-    : provider === "apmix"
-      ? env.APMIX_BASE_URL
-      : "https://api.groq.com/openai/v1";
+  const nvidia = provider === "nvidia";
+  const base = nvidia
+    ? env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1"
+    : openai
+      ? env.OPENAI_BASE_URL || "https://api.openai.com/v1"
+      : provider === "apmix"
+        ? env.APMIX_BASE_URL
+        : "https://api.groq.com/openai/v1";
   const endpoint =
     base.replace(/\/+$/, "").replace(/\/chat\/completions$/, "") +
     "/chat/completions";
   assertProviderUrl(endpoint);
-  const apiKey = openai
-    ? env.OPENAI_API_KEY
-    : provider === "apmix"
-      ? env.APMIX_API_KEY
-      : env.GROQ_API_KEY;
+  const apiKey = nvidia
+    ? env.NVIDIA_API_KEY
+    : openai
+      ? env.OPENAI_API_KEY
+      : provider === "apmix"
+        ? env.APMIX_API_KEY
+        : env.GROQ_API_KEY;
   const model = options.images?.length
     ? visionModel(provider, env)
-    : openai
-      ? env.OPENAI_MODEL
-      : provider === "apmix"
-        ? env.APMIX_MODEL
-        : env.GROQ_MODEL;
+    : nvidia
+      ? env.NVIDIA_MODEL || "nvidia/nemotron-3.5-super-vl-120b-a12b"
+      : openai
+        ? env.OPENAI_MODEL
+        : provider === "apmix"
+          ? env.APMIX_MODEL
+          : env.GROQ_MODEL;
   return {
     url: endpoint,
     headers: {
@@ -522,10 +564,64 @@ function providerRequest(provider, messages, env, options = {}) {
             },
           ]
         : messages,
-      max_tokens: options.maxTokens || 2600,
+      max_tokens:
+        options.maxTokens || providerOutputBudget(provider, env, options),
+      ...(nvidia
+        ? {
+            chat_template_kwargs: {
+              enable_thinking:
+                options.reasoningEnabled ??
+                options.reasoning ??
+                Boolean(options.fidelity || options.reasoningEffort),
+            },
+            ...(options.reasoningEffort
+              ? { reasoning_effort: options.reasoningEffort }
+              : {}),
+          }
+        : {}),
+      ...(options.jsonSchema && (nvidia || provider === "groq" || openai)
+        ? {
+            response_format: {
+              type: "json_schema",
+              json_schema: options.jsonSchema,
+            },
+          }
+        : options.json !== false
+          ? { response_format: { type: "json_object" } }
+          : {}),
     },
-    extract: (json) => json.choices?.[0]?.message?.content,
+    extract: (json) => {
+      const choice = json.choices?.[0];
+      if (choice?.finish_reason === "length") {
+        const error = new Error("AI response reached its output token limit.");
+        error.code = "OUTPUT_TRUNCATED";
+        error.finishReason = choice.finish_reason;
+        throw error;
+      }
+      return choice?.message?.content;
+    },
   };
+}
+
+function providerOutputBudget(provider, env = process.env, options = {}) {
+  if (Number.isFinite(options.maxTokens) && options.maxTokens > 0)
+    return options.maxTokens;
+  const minimum = provider === "nvidia" ? 16384 : 4096;
+  const estimated = Math.max(
+    minimum,
+    Math.ceil((options.inputTokens || 0) * 1.5 + 2048),
+  );
+  if (provider === "nvidia")
+    return Math.min(estimated, Number(env.NVIDIA_MAX_OUTPUT_TOKENS) || 131072);
+  if (provider === "groq")
+    return Math.min(estimated, Number(env.GROQ_MAX_OUTPUT_TOKENS) || 2600);
+  if (provider === "apmix")
+    return Math.min(estimated, Number(env.APMIX_MAX_OUTPUT_TOKENS) || 4096);
+  if (provider === "gemini")
+    return Math.min(estimated, Number(env.GEMINI_MAX_OUTPUT_TOKENS) || 8192);
+  if (provider === "anthropic")
+    return Math.min(estimated, Number(env.ANTHROPIC_MAX_OUTPUT_TOKENS) || 8192);
+  return Math.min(estimated, Number(env.OPENAI_MAX_OUTPUT_TOKENS) || 8192);
 }
 
 async function generateWithProviders(
@@ -560,13 +656,29 @@ async function generateWithProviders(
     ),
     60000,
   );
-  const maxAttempts = Math.min(
-    providers.length,
-    Math.max(1, (Number(runEnv.AI_MAX_FALLBACKS) || 0) + 1),
-  );
+  const configuredFallbacks = runEnv.AI_MAX_FALLBACKS;
+  const fallbackLimit =
+    configuredFallbacks === undefined || configuredFallbacks === ""
+      ? providers.length - 1
+      : Math.max(0, Number(configuredFallbacks) || 0);
+  const maxAttempts = Math.min(providers.length, fallbackLimit + 1);
   const traceId = randomUUID();
   const startTime = new Date().toISOString();
   const generations = [];
+  const captureTraceContent = runEnv.LANGFUSE_CAPTURE_CONTENT === "true";
+  const traceInput = captureTraceContent
+    ? messages
+    : {
+        messageCount: messages.length,
+        inputCharacters: messages.reduce(
+          (total, message) =>
+            total +
+            (typeof message.content === "string"
+              ? message.content.length
+              : JSON.stringify(message.content || "").length),
+          0,
+        ),
+      };
 
   for (const provider of providers.slice(0, maxAttempts)) {
     const providerEnv =
@@ -584,7 +696,29 @@ async function generateWithProviders(
           body: JSON.stringify(config.body),
           signal: AbortSignal.timeout(timeout),
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          const error = new Error(`HTTP ${response.status}`);
+          error.status = response.status;
+          error.category =
+            response.status === 401 || response.status === 403
+              ? "authentication"
+              : response.status === 429
+                ? "rate_limit_or_quota"
+                : response.status >= 500
+                  ? "temporary_provider_failure"
+                  : "invalid_request_or_unsupported_parameter";
+          const retryAfter = response.headers?.get?.("retry-after");
+          if (retryAfter) {
+            const seconds = Number(retryAfter);
+            const date = Date.parse(retryAfter);
+            error.retryAfterMs = Number.isFinite(seconds)
+              ? Math.max(0, seconds * 1000)
+              : Number.isFinite(date)
+                ? Math.max(0, date - Date.now())
+                : undefined;
+          }
+          throw error;
+        }
         const json = await response.json();
         const content = config.extract(json);
         const parsed = parse(content);
@@ -594,8 +728,8 @@ async function generateWithProviders(
           startTime: attemptStart,
           endTime: new Date().toISOString(),
           status: "success",
-          input: messages,
-          output: content,
+          input: captureTraceContent ? messages : undefined,
+          output: captureTraceContent ? content : undefined,
           usage: json?.usage || json?.usageMetadata,
         });
         if (isLangfuseEnabled(runEnv)) {
@@ -604,8 +738,9 @@ async function generateWithProviders(
               traceId,
               name: options.traceName || "ai-generation",
               userId: options.userId,
-              input: messages,
-              output: parsed,
+              input: traceInput,
+              output: captureTraceContent ? parsed : undefined,
+              metadata: { contentCaptureEnabled: captureTraceContent },
               startTime,
               endTime: new Date().toISOString(),
               generations,
@@ -623,14 +758,17 @@ async function generateWithProviders(
           endTime: new Date().toISOString(),
           status: "error",
           error: error.message,
-          input: messages,
+          category: error.category || "request_or_response_failure",
+          statusCode: error.status,
+          retryAfterMs: error.retryAfterMs,
+          input: captureTraceContent ? messages : undefined,
         });
         if (attempt === 0 && error.message === "fetch failed") {
           await new Promise((resolve) => setTimeout(resolve, 250));
           continue;
         }
         console.warn(
-          `AI provider ${provider} failed: ${error.message?.slice(0, 100) || "Unknown error"}`,
+          `AI provider ${provider} failed (${error.category || "request_or_response_failure"}${error.status ? `, HTTP ${error.status}` : ""})${error.retryAfterMs ? `; retry after ${Math.ceil(error.retryAfterMs / 1000)}s` : ""}.`,
         );
         break;
       }
@@ -655,12 +793,13 @@ async function generateWithProviders(
         traceId,
         name: options.traceName || "ai-generation",
         userId: options.userId,
-        input: messages,
+        input: traceInput,
         error:
           options.errorMessage ||
           "AI suggestions are temporarily unavailable. Please try again.",
         startTime,
         endTime: new Date().toISOString(),
+        metadata: { contentCaptureEnabled: captureTraceContent },
         generations,
       },
       runEnv,
@@ -717,6 +856,67 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
       }
     : await performResearch(decision, env, request);
   const context = existingResearch || researchContext(research.sources);
+  const refinement = fidelity.classifyRefinement({
+    idea,
+    guidance,
+    clarifications,
+  });
+  if (refinement.fidelity && !images.length) {
+    let detailed;
+    try {
+      detailed = await fidelityIdeaToPrompt(
+        { idea, guidance, clarifications, context, refinement },
+        env,
+        request,
+      );
+    } catch {
+      detailed = {
+        idea,
+        provider: "source-preserved",
+        data: {
+          task: fidelity.preservedSourcePrompt({
+            idea,
+            guidance,
+            clarifications,
+            context,
+          }),
+          ...Object.fromEntries(
+            fieldNames.slice(1).map((field) => [field, ""]),
+          ),
+          raw: true,
+        },
+        interpretation: {
+          goal: "Preserve your supplied instructions in full",
+          whyThisDepth:
+            "PromptDock kept your original content intact because a complete refinement could not be verified.",
+          focusAreas: [],
+          missingDetails: [],
+        },
+      };
+    }
+    return {
+      ...detailed,
+      research: {
+        used: Boolean(context),
+        attempted: Boolean(research.attempted),
+        queries: research.queries || decision.queries || [],
+        sources: (research.sources || []).map(
+          ({ title, url, description, publishedAt, sourceType }) => ({
+            title,
+            url,
+            description,
+            publishedAt,
+            sourceType,
+          }),
+        ),
+        reused: Boolean(research.reused),
+        ...(research.fallbackReason
+          ? { fallbackReason: research.fallbackReason }
+          : {}),
+        ...(context && detailed.questions?.length ? { context } : {}),
+      },
+    };
+  }
   const system = ideaSystemPrompt({
     fields: fieldNames,
     formats,
@@ -752,6 +952,7 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
     request,
     {
       images,
+      reasoning: input?.reasoning,
       traceName: "idea-to-prompt",
       userId: input?.userId,
       ...(images.length ? { maxTokens: 4000, timeoutMs: 30000 } : {}),
@@ -779,6 +980,156 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
       ...(context && result.questions?.length ? { context } : {}),
     },
   };
+}
+
+function schemaFor(type) {
+  if (type === "inventory") return fidelity.inventorySchema();
+  if (type === "coverage") return fidelity.coverageSchema();
+  return fidelity.refinedPromptSchema();
+}
+
+async function fidelityCall(messages, parse, env, request, options = {}) {
+  return generateWithProviders(messages, parse, env, request, options);
+}
+
+async function fidelityIdeaToPrompt(
+  { idea, guidance, clarifications, context },
+  env,
+  request,
+) {
+  const preserved = fidelity.preservedSourcePrompt({
+    idea,
+    guidance,
+    clarifications,
+  });
+  const source = [preserved, context ? `## Research context\n${context}` : ""]
+    .filter(Boolean)
+    .join("\n\n");
+  const chunks = fidelity.splitStructuredDocument(source, {
+    maxEstimatedTokens: Number(env.AI_FIDELITY_CHUNK_TOKENS) || 8000,
+  });
+  const inventories = [];
+  for (const chunk of chunks) {
+    const messages = fidelity.inventoryMessages({
+      source: "",
+      guidance: {},
+      clarifications: [],
+      chunk,
+    });
+    const result = await fidelityCall(
+      messages,
+      (content) => ({ inventory: fidelity.parseRequirementInventory(content) }),
+      env,
+      request,
+      {
+        fidelity: true,
+        reasoningEnabled: true,
+        reasoningEffort: "low",
+        jsonSchema: schemaFor("inventory"),
+        inputTokens: fidelity.estimateTokens(chunk),
+        traceName: "fidelity-requirement-inventory",
+      },
+    );
+    inventories.push(result.inventory);
+  }
+  const inventory = fidelity.mergeRequirementInventories(inventories);
+  if (!clarifications.length && inventory.unresolvedQuestions.length) {
+    return {
+      idea,
+      questions: inventory.unresolvedQuestions,
+      provider: inventories.provider || configuredProviders(env)[0],
+    };
+  }
+  const common = { source, guidance: {}, clarifications: [], inventory };
+  const messages = fidelity.detailedRefinementMessages(common);
+  const generated = await fidelityCall(
+    messages,
+    fidelity.parseDetailedRefinement,
+    env,
+    request,
+    {
+      fidelity: true,
+      reasoningEnabled: true,
+      reasoningEffort: "high",
+      jsonSchema: schemaFor("refined"),
+      inputTokens: fidelity.estimateTokens(JSON.stringify(common)),
+      traceName: "fidelity-detailed-refinement",
+    },
+  );
+  let candidate = generated.data.task;
+  const validate = async (prompt) => {
+    const auditMessages = fidelity.coverageValidationMessages({
+      source,
+      inventory,
+      refinedPrompt: prompt,
+    });
+    const checked = await fidelityCall(
+      auditMessages,
+      (content) => ({
+        validation: fidelity.parseCoverageValidation(content, inventory),
+      }),
+      env,
+      request,
+      {
+        fidelity: true,
+        reasoningEnabled: false,
+        jsonSchema: schemaFor("coverage"),
+        inputTokens: fidelity.estimateTokens(
+          JSON.stringify({ source, inventory, prompt }),
+        ),
+        traceName: "fidelity-coverage-validation",
+      },
+    );
+    return checked.validation;
+  };
+  let validation;
+  try {
+    validation = await validate(candidate);
+    if (!validation.passed) {
+      const repaired = await fidelityCall(
+        fidelity.repairMessages({
+          source,
+          inventory,
+          refinedPrompt: candidate,
+          validation,
+        }),
+        fidelity.parseDetailedRefinement,
+        env,
+        request,
+        {
+          fidelity: true,
+          reasoningEnabled: true,
+          reasoningEffort: "high",
+          jsonSchema: schemaFor("refined"),
+          inputTokens: fidelity.estimateTokens(
+            JSON.stringify({ source, inventory, candidate, validation }),
+          ),
+          traceName: "fidelity-repair",
+        },
+      );
+      candidate = repaired.data.task;
+      validation = await validate(candidate);
+    }
+  } catch {
+    validation = { passed: false };
+  }
+  if (!validation?.passed) {
+    candidate = fidelity.preservedSourcePrompt({
+      idea,
+      guidance,
+      clarifications,
+      context,
+    });
+    generated.data.task = candidate;
+    generated.interpretation = {
+      ...generated.interpretation,
+      goal: "Preserve your supplied instructions in full",
+      whyThisDepth:
+        "PromptDock kept your original content intact because the refinement could not pass its completeness check.",
+    };
+  }
+  generated.data.raw = true;
+  return { idea, ...generated };
 }
 
 function normalizeRunInput(input) {

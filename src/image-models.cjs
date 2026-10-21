@@ -2,6 +2,7 @@
 // Unknown models use PromptDock's configured vision provider for attachments.
 function supportsImages(provider, model) {
   const id = String(model || "").toLowerCase();
+  if (provider === "nvidia") return /nemotron-3\.5-super-vl/.test(id);
   if (provider === "gemini") return /^gemini-(?:[2-9]|1\.5)/.test(id);
   if (provider === "anthropic" || provider === "anthropic_compatible")
     return /^claude-(?:3|4|sonnet-4|opus-4|haiku-4)/.test(id);

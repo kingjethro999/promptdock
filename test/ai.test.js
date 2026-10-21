@@ -875,7 +875,8 @@ test("a Gemini test run asks for plain text instead of JSON", async () => {
     },
     fakeFetch,
   );
-  assert.equal(body.generationConfig, undefined);
+  assert.equal(body.generationConfig.responseMimeType, undefined);
+  assert.ok(body.generationConfig.maxOutputTokens > 0);
   assert.equal(result.text, "Answer");
 });
 
@@ -1058,4 +1059,228 @@ test("execution tasks unwrap plan-wrapped tasks and enforce non-stopping executi
     /Do not stop at planning\. Inspect, plan, implement, run, visually evaluate, refine, and verify\./,
   );
   assert.match(result.data.constraints, /Preserve brand identity\./);
+});
+
+test("detailed refinements pass a requirement inventory and coverage audit", async () => {
+  const source = [
+    "# Account linking specification",
+    "- Support Google and GitHub sign-in.",
+    "- Existing users must authenticate before linking a provider.",
+    "- Do not create duplicate accounts.",
+    "- Preserve existing account records and database schema.",
+    "## Verification",
+    "- Add regression tests for account linking.",
+    "- Do not expose provider credentials in logs.",
+  ].join("\n");
+  const outputs = [
+    {
+      sourceType: "detailed_document",
+      intent: "Safely support account linking",
+      requirements: [
+        {
+          text: "Support Google and GitHub sign-in",
+          kind: "functionality",
+          priority: "required",
+          evidence: "Support Google and GitHub sign-in.",
+          status: "active",
+        },
+        {
+          text: "Authenticate before linking",
+          kind: "constraint",
+          priority: "required",
+          evidence:
+            "Existing users must authenticate before linking a provider.",
+          status: "active",
+        },
+        {
+          text: "Do not create duplicate accounts",
+          kind: "prohibition",
+          priority: "required",
+          evidence: "Do not create duplicate accounts.",
+          status: "active",
+        },
+        {
+          text: "Preserve existing account records and schema",
+          kind: "constraint",
+          priority: "required",
+          evidence: "Preserve existing account records and database schema.",
+          status: "active",
+        },
+        {
+          text: "Add account linking regression tests",
+          kind: "deliverable",
+          priority: "required",
+          evidence: "Add regression tests for account linking.",
+          status: "active",
+        },
+        {
+          text: "Do not log credentials",
+          kind: "prohibition",
+          priority: "required",
+          evidence: "Do not expose provider credentials in logs.",
+          status: "active",
+        },
+      ],
+      unresolvedQuestions: [],
+    },
+    {
+      refinedPrompt: `${source}\n\nImplement and verify the account linking flow.`,
+      interpretation: {
+        goal: "Safely support account linking",
+        focusAreas: ["Preserve account identity"],
+      },
+    },
+    {
+      passed: true,
+      coveredRequirementIds: ["R001", "R002", "R003", "R004", "R005", "R006"],
+      missingRequirementIds: [],
+      weakenedRequirementIds: [],
+      sourceRequirementsMissingFromInventory: [],
+      contradictions: [],
+      unsupportedAssumptions: [],
+      placeholdersForKnownInfo: [],
+      changedDeliverable: false,
+    },
+  ];
+  const calls = [];
+  const result = await ideaToPrompt(
+    { idea: source },
+    {
+      AI_PROVIDER_ORDER: "groq",
+      AI_MAX_FALLBACKS: "0",
+      GROQ_API_KEY: "test-key",
+      GROQ_MODEL: "openai/gpt-oss-120b",
+    },
+    async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      const content = JSON.stringify(outputs.shift());
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content }, finish_reason: "stop" }],
+        }),
+      };
+    },
+  );
+  assert.equal(calls.length, 3);
+  assert.ok(calls[0].response_format.json_schema);
+  assert.match(calls[1].messages[1].content, /R006/);
+  assert.equal(result.data.raw, true);
+  assert.match(result.data.task, /Do not create duplicate accounts/);
+});
+
+test("detailed refinement falls back to the source after failed repair validation", async () => {
+  const source = [
+    "# Data migration rules",
+    "- Preserve the existing PostgreSQL schema.",
+    "- Do not delete existing records.",
+    "- Keep the migration reversible.",
+    "- Do not introduce downtime.",
+    "## Tests",
+    "- Verify rollback behavior.",
+  ].join("\n");
+  const inventory = {
+    sourceType: "detailed_document",
+    intent: "Safely migrate data",
+    requirements: [
+      {
+        text: "Preserve schema",
+        kind: "constraint",
+        priority: "required",
+        evidence: "Preserve the existing PostgreSQL schema.",
+        status: "active",
+      },
+      {
+        text: "Do not delete records",
+        kind: "prohibition",
+        priority: "required",
+        evidence: "Do not delete existing records.",
+        status: "active",
+      },
+      {
+        text: "Keep migration reversible",
+        kind: "constraint",
+        priority: "required",
+        evidence: "Keep the migration reversible.",
+        status: "active",
+      },
+      {
+        text: "Do not introduce downtime",
+        kind: "prohibition",
+        priority: "required",
+        evidence: "Do not introduce downtime.",
+        status: "active",
+      },
+      {
+        text: "Verify rollback behavior",
+        kind: "deliverable",
+        priority: "required",
+        evidence: "Verify rollback behavior.",
+        status: "active",
+      },
+    ],
+    unresolvedQuestions: [],
+  };
+  const queue = [
+    inventory,
+    {
+      refinedPrompt: "Migrate the data safely.",
+      interpretation: { goal: "Migrate data" },
+    },
+    {
+      passed: false,
+      coveredRequirementIds: ["R001"],
+      missingRequirementIds: [],
+      weakenedRequirementIds: [],
+      sourceRequirementsMissingFromInventory: [],
+      contradictions: [],
+      unsupportedAssumptions: [],
+      placeholdersForKnownInfo: [],
+      changedDeliverable: false,
+    },
+    {
+      refinedPrompt: "Migrate the data safely and keep it reversible.",
+      interpretation: { goal: "Migrate data" },
+    },
+    {
+      passed: false,
+      coveredRequirementIds: ["R001", "R003"],
+      missingRequirementIds: [],
+      weakenedRequirementIds: [],
+      sourceRequirementsMissingFromInventory: [],
+      contradictions: [],
+      unsupportedAssumptions: [],
+      placeholdersForKnownInfo: [],
+      changedDeliverable: false,
+    },
+  ];
+  const result = await ideaToPrompt(
+    { idea: source },
+    {
+      AI_PROVIDER_ORDER: "groq",
+      AI_MAX_FALLBACKS: "0",
+      GROQ_API_KEY: "test-key",
+      GROQ_MODEL: "openai/gpt-oss-120b",
+    },
+    async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: { content: JSON.stringify(queue.shift()) },
+            finish_reason: "stop",
+          },
+        ],
+      }),
+    }),
+  );
+  assert.equal(queue.length, 0);
+  assert.equal(result.data.raw, true);
+  assert.match(result.data.task, /Do not delete existing records/);
+  assert.match(result.data.task, /Do not introduce downtime/);
+  assert.match(
+    result.interpretation.whyThisDepth,
+    /kept your original content intact/,
+  );
 });

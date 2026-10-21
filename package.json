@@ -18,6 +18,8 @@
     "start:api": "node src/server.js",
     "build:frontend": "node scripts/build-frontend.js",
     "test": "node --test",
+    "ci:verify": "npm run lint && npm run format:check && npm run headers:check && npm test && npm run typecheck && npm run build:frontend && npm run build",
+    "benchmark:models": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/model-benchmark.cjs",
     "version:bump": "node scripts/bump-version.js",
     "setup:hooks": "git config core.hooksPath .githooks",
     "headers:check": "node scripts/check-next-deployment.js",

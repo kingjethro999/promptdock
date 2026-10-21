@@ -1,0 +1,56 @@
+{
+  "id": "contradictory-decisions",
+  "title": "Later decision supersedes an earlier option",
+  "sourceFile": "brief.md",
+  "requirements": [
+    {
+      "id": "R01",
+      "description": "Final database choice is PostgreSQL",
+      "hard": true,
+      "anchors": [
+        ["final decision", "keep postgresql"],
+        ["keep postgresql", "current schema"]
+      ]
+    },
+    {
+      "id": "R02",
+      "description": "Do not migrate or replace the database",
+      "hard": true,
+      "anchors": [
+        ["do not migrate", "replace the database"],
+        ["do not replace", "database"]
+      ]
+    },
+    {
+      "id": "R03",
+      "description": "Preserve existing account records",
+      "hard": true,
+      "anchors": [
+        ["keep existing account records"],
+        ["preserve existing account records"]
+      ]
+    },
+    {
+      "id": "R04",
+      "description": "Use the current identity table",
+      "hard": true,
+      "anchors": [["current identity table"]]
+    },
+    {
+      "id": "R05",
+      "description": "Prevent duplicate accounts and test it",
+      "hard": true,
+      "anchors": [
+        ["do not create duplicate accounts", "regression test"],
+        ["prevent duplicate accounts", "regression test"]
+      ]
+    }
+  ],
+  "unsupportedAdditions": [
+    {
+      "id": "U01",
+      "description": "Use MongoDB",
+      "anchors": [["use mongodb"], ["migrate to mongodb"]]
+    }
+  ]
+}

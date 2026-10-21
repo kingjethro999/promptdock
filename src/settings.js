@@ -10,6 +10,7 @@ const providerTypes = [
   "anthropic",
   "openai",
   "groq",
+  "nvidia",
   "apmix",
   "anthropic_compatible",
   "openai_compatible",
@@ -18,6 +19,7 @@ const providerTypes = [
 const customTypes = new Set(["openai_compatible", "anthropic_compatible"]);
 const defaultNames = {
   groq: "Groq",
+  nvidia: "NVIDIA",
   gemini: "Gemini",
   apmix: "APMIX",
   openai: "OpenAI",
@@ -110,8 +112,8 @@ function validateSetting(input) {
   const visionModel =
     typeof input?.visionModel === "string" ? input.visionModel.trim() : "";
   const apiKey = typeof input?.apiKey === "string" ? input.apiKey.trim() : "";
-  if (!["groq", "gemini", "apmix"].includes(provider))
-    throw fail("Choose Groq, Gemini, or APMIX.");
+  if (!["groq", "nvidia", "gemini", "apmix"].includes(provider))
+    throw fail("Choose Groq, NVIDIA, Gemini, or APMIX.");
   if (!/^[A-Za-z0-9._:/-]{2,120}$/.test(model))
     throw fail("Enter a valid model ID.");
   if (visionModel && !/^[A-Za-z0-9._:/-]{2,120}$/.test(visionModel))
@@ -350,6 +352,14 @@ async function effectiveEnv(userId, env = process.env) {
     next.GROQ_VISION_MODEL = supportsImages(setting.provider, setting.model)
       ? setting.model
       : "";
+  }
+  if (setting.provider === "nvidia") {
+    next.NVIDIA_API_KEY = apiKey;
+    next.NVIDIA_MODEL = setting.model;
+    next.NVIDIA_VISION_MODEL = supportsImages(setting.provider, setting.model)
+      ? setting.model
+      : "";
+    next.NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
   }
   if (setting.provider === "gemini") {
     next.GEMINI_API_KEY = apiKey;

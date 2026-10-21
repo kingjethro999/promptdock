@@ -1,0 +1,72 @@
+{
+  "id": "strict-constraints",
+  "title": "Negative requirements and existing implementation constraints",
+  "sourceFile": "brief.md",
+  "requirements": [
+    {
+      "id": "R01",
+      "description": "Audit and fix existing upload validation bug",
+      "hard": true,
+      "anchors": [["audit", "upload flow", "fix", "validation bug"]]
+    },
+    {
+      "id": "R02",
+      "description": "Keep provider and public API unchanged",
+      "hard": true,
+      "anchors": [["keep", "upload provider", "public api", "unchanged"]]
+    },
+    {
+      "id": "R03",
+      "description": "Do not add video upload",
+      "hard": true,
+      "anchors": [["do not add video upload"], ["video upload", "out of scope"]]
+    },
+    {
+      "id": "R04",
+      "description": "Do not store uploaded contents in database",
+      "hard": true,
+      "anchors": [["do not store", "uploaded file contents", "database"]]
+    },
+    {
+      "id": "R05",
+      "description": "Keep existing file URLs",
+      "hard": true,
+      "anchors": [
+        ["do not change existing file urls"],
+        ["preserve existing file urls"]
+      ]
+    },
+    {
+      "id": "R06",
+      "description": "Use current test framework and test executable content",
+      "hard": true,
+      "anchors": [
+        ["current test framework", "regression", "executable content"]
+      ]
+    },
+    {
+      "id": "R07",
+      "description": "Run focused tests and lint",
+      "hard": true,
+      "anchors": [["focused tests", "lint"]]
+    },
+    {
+      "id": "R08",
+      "description": "Implement directly in existing repository",
+      "hard": true,
+      "anchors": [["existing repository", "implement", "directly"]]
+    }
+  ],
+  "unsupportedAdditions": [
+    {
+      "id": "U01",
+      "description": "Migrate uploads to a new provider",
+      "anchors": [["migrate uploads", "provider"]]
+    },
+    {
+      "id": "U02",
+      "description": "Create a new database table for file bytes",
+      "anchors": [["store file bytes", "new table"]]
+    }
+  ]
+}
