@@ -54,7 +54,7 @@ export default function LandingDemo() {
         >
           <div className="landing-demo-top">
             <span className="demo-live-dot" />
-            <span>LIVE WORKSPACE PREVIEW</span>
+            <span>INTERACTIVE EXAMPLE</span>
             <span className="demo-step-count">0{selected + 1} / 03</span>
           </div>
 
@@ -69,6 +69,7 @@ export default function LandingDemo() {
                   key={item.name}
                   onClick={() => triggerSynthesis(index)}
                   disabled={isSynthesizing}
+                  aria-pressed={selected === index}
                 >
                   {item.name}
                 </button>
@@ -84,16 +85,18 @@ export default function LandingDemo() {
               <span>
                 {isSynthesizing
                   ? "Distilling intent & priorities…"
-                  : "PromptDock shapes the direction"}
+                  : "From thought to direction"}
               </span>
             </div>
-            <span className="demo-connector__badge">Auto-format</span>
+            <span className="demo-connector__badge">Example output</span>
           </div>
 
           <div
             className={`landing-demo-output ${
               isSynthesizing ? "is-synthesizing fluid-shimmer" : ""
             }`}
+            aria-live="polite"
+            aria-busy={isSynthesizing}
           >
             <div className="demo-output-head">
               <span>✦ STRUCTURED PROMPT</span>
