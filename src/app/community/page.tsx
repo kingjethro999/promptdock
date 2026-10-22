@@ -23,7 +23,7 @@ export default async function CommunityPage() {
   ]);
 
   return (
-    <div className="community-container">
+    <div className="community-container community-page">
       <header className="community-header">
         <div className="community-title-row">
           <div>

@@ -21,6 +21,7 @@ export type SelectOption<T extends string = string> = {
 
 export interface SelectProps<T extends string = string> {
   label?: string;
+  accessibleLabel?: string;
   value: T | null;
   onChange: (value: T) => void;
   options: readonly SelectOption<T>[];
@@ -38,6 +39,7 @@ import { usePopupPosition } from "./usePopupPosition";
 
 export function Select<T extends string = string>({
   label,
+  accessibleLabel,
   value,
   onChange,
   options,
@@ -295,6 +297,7 @@ export function Select<T extends string = string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
+        aria-label={accessibleLabel}
         aria-labelledby={label ? `${fid}-label ${fid}` : undefined}
         aria-activedescendant={open ? `${listId}-${active}` : undefined}
         aria-invalid={error ? true : undefined}

@@ -56,13 +56,19 @@ export default function CommunityExplorer({
       </div>
 
       {activeTab === "prompts" ? (
-        <PromptGrid
-          initial={initialPrompts}
-          availableTags={availableTags}
-          showFilters={true}
-        />
+        <section aria-label="Shared prompts">
+          <h2 className="sr-only">Shared prompts</h2>
+          <PromptGrid
+            initial={initialPrompts}
+            availableTags={availableTags}
+            showFilters={true}
+          />
+        </section>
       ) : (
-        <CreatorGrid initialCreators={initialCreators} />
+        <section aria-label="Community creators">
+          <h2 className="sr-only">Community creators</h2>
+          <CreatorGrid initialCreators={initialCreators} />
+        </section>
       )}
     </div>
   );
