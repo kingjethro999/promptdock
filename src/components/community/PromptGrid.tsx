@@ -118,7 +118,7 @@ export default function PromptGrid({
                 { value: "new", label: "Newest first" },
                 { value: "old", label: "Oldest first" },
               ]}
-              aria-label="Sort prompts"
+              accessibleLabel="Sort prompts"
             />
           </div>
         </div>
