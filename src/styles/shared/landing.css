@@ -2023,7 +2023,7 @@ button.visibility-badge:hover {
   font-weight: 800;
 }
 .benchmark-table {
-  min-width: 1040px;
+  min-width: 1220px;
 }
 .benchmark-table thead th {
   white-space: normal;
@@ -2048,29 +2048,38 @@ button.visibility-badge:hover {
   object-fit: contain;
   flex: 0 0 20px;
 }
+.benchmark-served-model {
+  display: block;
+  margin-top: 5px;
+  color: #5f6f61;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
 .benchmark-table tbody th {
   color: #233e2d;
   font-size: 11px;
   font-weight: 800;
 }
-.benchmark-table tbody th span {
-  display: block;
+.benchmark-table tbody .benchmark-measure-description {
   max-width: 210px;
-  margin-top: 5px;
-  color: #829082;
-  font-size: 9px;
+  color: #5f6f61;
+  font-size: 10px;
   font-weight: 500;
   line-height: 1.55;
 }
 .benchmark-not-run {
-  color: #929d90;
-  font-size: 10px;
+  color: #586b5b;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
 .benchmark-result-value {
-  color: #d2f15f;
-  font-size: 10px;
+  color: #355c1f;
+  font-size: 11px;
   font-weight: 750;
   line-height: 1.5;
 }

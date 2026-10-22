@@ -1,8 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const {
   buildModelMatrix,
+  classifyBenchmarkError,
   estimateCost,
   parseCompletion,
   publicReport,
@@ -11,6 +14,7 @@ const {
   runBenchmark,
   requestCompletion,
   scoreResponse,
+  scoreReviewedResponse,
 } = require("../scripts/model-benchmark.cjs");
 
 const fixture = {
@@ -42,6 +46,40 @@ const fixture = {
   ],
 };
 
+test("landing benchmark includes all measured candidates and labels reliability separately", () => {
+  const component = fs.readFileSync(
+    path.join(__dirname, "../src/components/landing/ModelsBenchmark.tsx"),
+    "utf8",
+  );
+  assert.match(component, /nvidia-ultra-text/);
+  assert.match(component, /Valid response rate/);
+  assert.match(component, /Strict complete rate/);
+  assert.match(component, /benchmark-measure-description/);
+  assert.match(component, /Provider returned:/);
+  assert.doesNotMatch(component, /passed · \$\{valid\} valid/);
+});
+
+test("landing benchmark result text meets 4.5:1 contrast on white", () => {
+  const css = fs.readFileSync(
+    path.join(__dirname, "../src/styles/shared/landing.css"),
+    "utf8",
+  );
+  const block = css.match(/\.benchmark-result-value\s*\{([^}]+)\}/);
+  assert.ok(block, "benchmark result style exists");
+  const color = block[1].match(/color:\s*(#[\da-f]{6})/i)?.[1];
+  assert.ok(color, "benchmark result uses an explicit six-digit color");
+  const channels = color
+    .slice(1)
+    .match(/../g)
+    .map((part) => parseInt(part, 16) / 255)
+    .map((channel) =>
+      channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+    );
+  const luminance =
+    channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  assert.ok(1.05 / (luminance + 0.05) >= 4.5, `${color} contrast is too low`);
+});
+
 test("scoreResponse measures requirement coverage and hard omissions from authored anchors", () => {
   const result = scoreResponse(
     fixture,
@@ -62,6 +100,60 @@ test("scoreResponse reports an omitted hard constraint", () => {
   assert.equal(result.passed, false);
 });
 
+test("reviewed rubric scores paraphrases and distinguishes strict completion", () => {
+  const result = scoreReviewedResponse(
+    fixture,
+    {
+      requirements: {
+        R1: {
+          rating: "covered",
+          evidence: "Keep the current PostgreSQL layout.",
+        },
+        R2: { rating: "missing", evidence: "" },
+      },
+      unsupportedAdditions: {
+        U1: { present: false, evidence: "" },
+      },
+    },
+    "Keep the current PostgreSQL layout.",
+  );
+
+  assert.equal(result.requirementCoverage, 0.5);
+  assert.deepEqual(result.hardConstraintOmissions, []);
+  assert.deepEqual(result.missingRequirementIds, ["R2"]);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.evidence.R1, "Keep the current PostgreSQL layout.");
+});
+
+test("review evidence must be an excerpt from the generated response", () => {
+  assert.throws(
+    () =>
+      scoreReviewedResponse(
+        fixture,
+        {
+          requirements: {
+            R1: { rating: "covered", evidence: "made-up evidence" },
+            R2: { rating: "missing", evidence: "" },
+          },
+          unsupportedAdditions: { U1: { present: false, evidence: "" } },
+        },
+        "Preserve the existing PostgreSQL schema.",
+      ),
+    /not found in the generated response/,
+  );
+});
+
+test("reviewed rubric requires a complete per-fixture assessment", () => {
+  assert.throws(
+    () =>
+      scoreReviewedResponse(fixture, {
+        requirements: { R1: { rating: "covered", evidence: "x" } },
+        unsupportedAdditions: { U1: { present: false, evidence: "" } },
+      }),
+    /R2/,
+  );
+});
+
 test("estimated benchmark costs require configured per-token pricing", () => {
   assert.equal(
     estimateCost(
@@ -78,6 +170,7 @@ test("estimated benchmark costs require configured per-token pricing", () => {
 
 test("parseCompletion rejects token-limited and empty responses", () => {
   const limited = parseCompletion({
+    model: "private/nvidia/served-alias",
     choices: [
       {
         finish_reason: "length",
@@ -90,11 +183,55 @@ test("parseCompletion rejects token-limited and empty responses", () => {
   assert.equal(limited.validResponse, false);
   assert.equal(limited.finishReason, "length");
   assert.equal(limited.usage.totalTokens, 125);
+  assert.equal(limited.servedModel, "private/nvidia/served-alias");
 
   const empty = parseCompletion({
     choices: [{ finish_reason: "stop", message: { content: "  " } }],
   });
   assert.equal(empty.validResponse, false);
+});
+
+test("NVIDIA benchmark requests disable thinking while Groq keeps its native request shape", async () => {
+  const nvidia = {
+    id: "nvidia-super-vl",
+    provider: "NVIDIA",
+    model: "nvidia/test-model",
+    baseUrl: "https://provider.example/v1",
+    apiKeyEnv: "NVIDIA_API_KEY",
+    maxTokens: 16384,
+    prices: {},
+  };
+  const groq = { ...nvidia, provider: "Groq", apiKeyEnv: "GROQ_API_KEY" };
+  const bodies = [];
+  const fetchImpl = async (_url, init) => {
+    bodies.push(JSON.parse(init.body));
+    return {
+      ok: true,
+      headers: { get: () => null },
+      json: async () => ({
+        model: "served/test-model",
+        choices: [{ finish_reason: "stop", message: { content: "complete" } }],
+      }),
+    };
+  };
+  const env = { NVIDIA_API_KEY: "nvidia-secret", GROQ_API_KEY: "groq-secret" };
+
+  const completion = await requestCompletion(
+    nvidia,
+    { id: "short-idea", title: "Short idea", source: "Build an app." },
+    env,
+    fetchImpl,
+  );
+  await requestCompletion(
+    groq,
+    { id: "short-idea", title: "Short idea", source: "Build an app." },
+    env,
+    fetchImpl,
+  );
+
+  assert.deepEqual(bodies[0].chat_template_kwargs, { enable_thinking: false });
+  assert.equal("chat_template_kwargs" in bodies[1], false);
+  assert.equal(completion.servedModel, "served/test-model");
 });
 
 test("buildModelMatrix requires explicit provider keys and gives candidates equal budgets", () => {
@@ -104,7 +241,6 @@ test("buildModelMatrix requires explicit provider keys and gives candidates equa
     NVIDIA_API_KEY: "nvidia-secret",
     GROQ_API_KEY: "groq-secret",
     AI_BENCHMARK_MAX_TOKENS: "16384",
-    BENCHMARK_NVIDIA_SUPER_MODEL: "nvidia/older-super",
   });
 
   assert.deepEqual(
@@ -113,6 +249,7 @@ test("buildModelMatrix requires explicit provider keys and gives candidates equa
       "nvidia-super-vl",
       "nvidia-lightning",
       "nvidia-super-text",
+      "nvidia-ultra-text",
       "groq-gpt-oss-120b",
     ],
   );
@@ -122,6 +259,31 @@ test("buildModelMatrix requires explicit provider keys and gives candidates equa
   );
   assert.equal(JSON.stringify(models).includes("nvidia-secret"), false);
   assert.equal(JSON.stringify(models).includes("groq-secret"), false);
+  assert.deepEqual(
+    models.map(({ model }) => model),
+    [
+      "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "nvidia/nemotron-3-super-120b-a12b",
+      "nvidia/nemotron-3-ultra-550b-a55b",
+      "openai/gpt-oss-120b",
+    ],
+  );
+});
+
+test("buildModelMatrix preserves all NVIDIA and Groq model overrides", () => {
+  const models = buildModelMatrix({
+    NVIDIA_API_KEY: "nvidia-secret",
+    GROQ_API_KEY: "groq-secret",
+    BENCHMARK_NVIDIA_SUPER_MODEL: "nvidia/custom-super",
+    BENCHMARK_NVIDIA_ULTRA_MODEL: "nvidia/custom-ultra",
+    BENCHMARK_GROQ_MODEL: "openai/custom-groq",
+  });
+
+  assert.deepEqual(
+    models.slice(2).map(({ model }) => model),
+    ["nvidia/custom-super", "nvidia/custom-ultra", "openai/custom-groq"],
+  );
 });
 
 test("provider errors retain safe diagnostics without treating errors as omissions", async () => {
@@ -157,6 +319,32 @@ test("provider errors retain safe diagnostics without treating errors as omissio
   assert.doesNotMatch(error.message, /test-secret/);
 });
 
+test("benchmark classifies timeouts, HTTP responses, and transport failures safely", () => {
+  assert.equal(
+    classifyBenchmarkError(
+      Object.assign(new Error("aborted"), { name: "AbortError" }),
+    ),
+    "timeout",
+  );
+  assert.equal(
+    classifyBenchmarkError(
+      Object.assign(new Error("provider error"), {
+        benchmark: { httpStatus: 404 },
+      }),
+    ),
+    "http-error",
+  );
+  assert.equal(
+    classifyBenchmarkError(
+      Object.assign(new Error("fetch failed"), {
+        name: "TypeError",
+        cause: { code: "ECONNRESET" },
+      }),
+    ),
+    "network-error",
+  );
+});
+
 test("runBenchmark separates provider errors from requirement omissions", async () => {
   const report = await runBenchmark({
     fixtureId: "short-idea",
@@ -175,8 +363,8 @@ test("runBenchmark separates provider errors from requirement omissions", async 
   assert.equal(result.errorStatus, 500);
   assert.equal(result.errorCode, "backend_overloaded");
   assert.equal(result.errorRequestId, "req-123");
-  assert.deepEqual(result.scoring.hardConstraintOmissions, []);
-  assert.deepEqual(result.scoring.missingRequirementIds, []);
+  assert.equal(result.scoring, null);
+  assert.equal(result.reviewStatus, "not-evaluable");
   const publicJson = JSON.stringify(publicReport(report));
   assert.match(publicJson, /backend_overloaded/);
   assert.doesNotMatch(publicJson, /req-123|nvidia-secret|groq-secret/);
@@ -253,10 +441,14 @@ test("public benchmark summaries include metrics but exclude model output and ha
         estimatedCostUsd: null,
         scoring: {
           requirementCoverage: 0.95,
+          requirementCount: 2,
+          requirementPoints: 1.9,
           hardConstraintOmissions: [],
           unsupportedAdditions: [],
           passed: true,
+          evidence: { R1: "private evidence" },
         },
+        reviewStatus: "reviewed",
         outputSha256: "private-output-hash",
         outputCharacters: 1300,
         output: "private generated prompt",
@@ -270,6 +462,77 @@ test("public benchmark summaries include metrics but exclude model output and ha
     json,
     /private-output-hash|private generated prompt|outputCharacters/,
   );
+});
+
+test("public report separates response availability from strict quality passes", () => {
+  const results = Array.from({ length: 4 }, (_, index) => ({
+    modelId: "groq-gpt-oss-120b",
+    fixtureId: `fixture-${index}`,
+    validResponse: true,
+    finishReason: "stop",
+    truncated: false,
+    latencyMs: 1000,
+    usage: { totalTokens: 500 },
+    estimatedCostUsd: null,
+    scoring: {
+      requirementCoverage: 0.4,
+      requirementCount: 10,
+      requirementPoints: 4,
+      hardConstraintOmissions: ["R01"],
+      unsupportedAdditions: [],
+      passed: false,
+      evidence: { R01: "private excerpt" },
+    },
+    reviewStatus: "reviewed",
+    errorStatus: null,
+  }));
+  const report = publicReport({ generatedAt: "2026-10-22T00:00:00Z", results });
+  const model = report.models[0];
+
+  assert.equal(model.attemptedCount, 4);
+  assert.equal(model.validResponseCount, 4);
+  assert.equal(model.responseRate, 1);
+  assert.equal(model.evaluatedCount, 4);
+  assert.equal(model.strictCompleteCount, 0);
+  assert.equal(model.strictCompleteRate, 0);
+  assert.equal(model.requirementCoverage, 0.4);
+  assert.deepEqual(model.servedModels, []);
+  assert.doesNotMatch(JSON.stringify(report), /private excerpt/);
+});
+
+test("public benchmark shows the model identifier returned by the provider", () => {
+  const report = publicReport({
+    generatedAt: "2026-10-22T00:00:00Z",
+    results: [
+      {
+        modelId: "nvidia-super-vl",
+        servedModel: "private/nvidia/served-alias",
+        validResponse: true,
+        finishReason: "stop",
+        truncated: false,
+        latencyMs: 100,
+        usage: { totalTokens: 10 },
+        estimatedCostUsd: null,
+        reviewStatus: "pending",
+        scoring: null,
+      },
+    ],
+  });
+
+  assert.deepEqual(report.models[0].servedModels, [
+    "private/nvidia/served-alias",
+  ]);
+  assert.equal(report.results[0].servedModel, "private/nvidia/served-alias");
+});
+
+test("public benchmark records disabled NVIDIA extended reasoning", () => {
+  const report = publicReport({
+    generatedAt: "2026-10-22T00:00:00Z",
+    configuration: { nvidiaThinkingEnabled: false },
+    results: [],
+  });
+
+  assert.equal(report.configuration.nvidiaThinkingEnabled, false);
 });
 
 test("the benchmark fixtures cover short, long, contradictory, and strict inputs", () => {
