@@ -1,21 +1,137 @@
 {
-  "generatedAt": "2026-10-21T22:04:45.453Z",
+  "generatedAt": "2026-10-22T20:24:47.679Z",
+  "configuration": {
+    "maxTokens": 16384,
+    "timeoutMs": 180000,
+    "fixtureCount": 4,
+    "modelCount": 5,
+    "nvidiaThinkingEnabled": false
+  },
+  "models": [
+    {
+      "modelId": "nvidia-super-vl",
+      "servedModels": ["private/nvidia/nemotron-3.5-super-120b-a12b"],
+      "attemptedCount": 4,
+      "validResponseCount": 4,
+      "responseRate": 1,
+      "errorCount": 0,
+      "errorBreakdown": {},
+      "truncatedCount": 0,
+      "evaluatedCount": 4,
+      "requirementCount": 43,
+      "requirementCoverage": 1,
+      "strictCompleteCount": 4,
+      "strictCompleteRate": 1,
+      "hardConstraintOmissions": 0,
+      "unsupportedAdditionCount": 0,
+      "averageLatencyMs": 38266,
+      "totalTokens": 2641,
+      "estimatedCostUsd": null
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "servedModels": ["nvidia/nemotron-3.5-lightning-30b-a3b"],
+      "attemptedCount": 4,
+      "validResponseCount": 4,
+      "responseRate": 1,
+      "errorCount": 0,
+      "errorBreakdown": {},
+      "truncatedCount": 0,
+      "evaluatedCount": 4,
+      "requirementCount": 43,
+      "requirementCoverage": 1,
+      "strictCompleteCount": 4,
+      "strictCompleteRate": 1,
+      "hardConstraintOmissions": 0,
+      "unsupportedAdditionCount": 0,
+      "averageLatencyMs": 4423,
+      "totalTokens": 2668,
+      "estimatedCostUsd": null
+    },
+    {
+      "modelId": "nvidia-super-text",
+      "servedModels": [],
+      "attemptedCount": 4,
+      "validResponseCount": 0,
+      "responseRate": 0,
+      "errorCount": 4,
+      "errorBreakdown": {
+        "HTTP 404": 4
+      },
+      "truncatedCount": 0,
+      "evaluatedCount": 0,
+      "requirementCount": 0,
+      "requirementCoverage": null,
+      "strictCompleteCount": 0,
+      "strictCompleteRate": null,
+      "hardConstraintOmissions": 0,
+      "unsupportedAdditionCount": 0,
+      "averageLatencyMs": 935,
+      "totalTokens": 0,
+      "estimatedCostUsd": null
+    },
+    {
+      "modelId": "nvidia-ultra-text",
+      "servedModels": ["nvidia/nemotron-3-ultra-550b-a55b"],
+      "attemptedCount": 4,
+      "validResponseCount": 4,
+      "responseRate": 1,
+      "errorCount": 0,
+      "errorBreakdown": {},
+      "truncatedCount": 0,
+      "evaluatedCount": 4,
+      "requirementCount": 43,
+      "requirementCoverage": 1,
+      "strictCompleteCount": 4,
+      "strictCompleteRate": 1,
+      "hardConstraintOmissions": 0,
+      "unsupportedAdditionCount": 0,
+      "averageLatencyMs": 10512,
+      "totalTokens": 2625,
+      "estimatedCostUsd": null
+    },
+    {
+      "modelId": "groq-gpt-oss-120b",
+      "servedModels": ["openai/gpt-oss-120b"],
+      "attemptedCount": 4,
+      "validResponseCount": 4,
+      "responseRate": 1,
+      "errorCount": 0,
+      "errorBreakdown": {},
+      "truncatedCount": 0,
+      "evaluatedCount": 4,
+      "requirementCount": 43,
+      "requirementCoverage": 1,
+      "strictCompleteCount": 4,
+      "strictCompleteRate": 1,
+      "hardConstraintOmissions": 0,
+      "unsupportedAdditionCount": 0,
+      "averageLatencyMs": 1695,
+      "totalTokens": 3720,
+      "estimatedCostUsd": null
+    }
+  ],
   "results": [
     {
       "modelId": "nvidia-super-vl",
+      "servedModel": "private/nvidia/nemotron-3.5-super-120b-a12b",
       "fixtureId": "contradictory-decisions",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 4417,
+      "latencyMs": 12340,
       "usage": {
-        "totalTokens": 972
+        "totalTokens": 320
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
@@ -23,19 +139,24 @@
     },
     {
       "modelId": "nvidia-super-vl",
+      "servedModel": "private/nvidia/nemotron-3.5-super-120b-a12b",
       "fixtureId": "detailed-workspace",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 22099,
+      "latencyMs": 135417,
       "usage": {
-        "totalTokens": 3982
+        "totalTokens": 1766
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 25,
+        "requirementPoints": 25,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
@@ -43,19 +164,24 @@
     },
     {
       "modelId": "nvidia-super-vl",
+      "servedModel": "private/nvidia/nemotron-3.5-super-120b-a12b",
       "fixtureId": "short-idea",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 4170,
+      "latencyMs": 2698,
       "usage": {
-        "totalTokens": 843
+        "totalTokens": 234
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
@@ -63,99 +189,296 @@
     },
     {
       "modelId": "nvidia-super-vl",
+      "servedModel": "private/nvidia/nemotron-3.5-super-120b-a12b",
       "fixtureId": "strict-constraints",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 2607,
+      "usage": {
+        "totalTokens": 321
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "requirementCount": 8,
+        "requirementPoints": 8,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "servedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "fixtureId": "contradictory-decisions",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 1088,
+      "usage": {
+        "totalTokens": 325
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "servedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "fixtureId": "detailed-workspace",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 6600,
+      "usage": {
+        "totalTokens": 1773
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "requirementCount": 25,
+        "requirementPoints": 25,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "servedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "fixtureId": "short-idea",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 5954,
+      "usage": {
+        "totalTokens": 249
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-lightning",
+      "servedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "fixtureId": "strict-constraints",
+      "validResponse": true,
+      "finishReason": "stop",
+      "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
+      "errorStatus": null,
+      "errorCode": null,
+      "latencyMs": 4048,
+      "usage": {
+        "totalTokens": 321
+      },
+      "estimatedCostUsd": null,
+      "scoring": {
+        "requirementCoverage": 1,
+        "requirementCount": 8,
+        "requirementPoints": 8,
+        "hardConstraintOmissions": [],
+        "unsupportedAdditions": [],
+        "passed": true
+      }
+    },
+    {
+      "modelId": "nvidia-super-text",
+      "servedModel": null,
+      "fixtureId": "contradictory-decisions",
       "validResponse": false,
       "finishReason": "error",
       "truncated": false,
-      "errorStatus": 500,
+      "errorCategory": "http-error",
+      "reviewStatus": "not-evaluable",
+      "errorStatus": 404,
       "errorCode": null,
-      "latencyMs": 867,
+      "latencyMs": 1899,
       "usage": {
         "totalTokens": null
       },
       "estimatedCostUsd": null,
-      "scoring": {
-        "requirementCoverage": 0,
-        "hardConstraintOmissions": [],
-        "unsupportedAdditions": [],
-        "passed": false
-      }
+      "scoring": null
     },
     {
-      "modelId": "nvidia-lightning",
+      "modelId": "nvidia-super-text",
+      "servedModel": null,
+      "fixtureId": "detailed-workspace",
+      "validResponse": false,
+      "finishReason": "error",
+      "truncated": false,
+      "errorCategory": "http-error",
+      "reviewStatus": "not-evaluable",
+      "errorStatus": 404,
+      "errorCode": null,
+      "latencyMs": 646,
+      "usage": {
+        "totalTokens": null
+      },
+      "estimatedCostUsd": null,
+      "scoring": null
+    },
+    {
+      "modelId": "nvidia-super-text",
+      "servedModel": null,
+      "fixtureId": "short-idea",
+      "validResponse": false,
+      "finishReason": "error",
+      "truncated": false,
+      "errorCategory": "http-error",
+      "reviewStatus": "not-evaluable",
+      "errorStatus": 404,
+      "errorCode": null,
+      "latencyMs": 643,
+      "usage": {
+        "totalTokens": null
+      },
+      "estimatedCostUsd": null,
+      "scoring": null
+    },
+    {
+      "modelId": "nvidia-super-text",
+      "servedModel": null,
+      "fixtureId": "strict-constraints",
+      "validResponse": false,
+      "finishReason": "error",
+      "truncated": false,
+      "errorCategory": "http-error",
+      "reviewStatus": "not-evaluable",
+      "errorStatus": 404,
+      "errorCode": null,
+      "latencyMs": 551,
+      "usage": {
+        "totalTokens": null
+      },
+      "estimatedCostUsd": null,
+      "scoring": null
+    },
+    {
+      "modelId": "nvidia-ultra-text",
+      "servedModel": "nvidia/nemotron-3-ultra-550b-a55b",
       "fixtureId": "contradictory-decisions",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 19510,
+      "latencyMs": 11906,
       "usage": {
-        "totalTokens": 2550
+        "totalTokens": 290
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
       }
     },
     {
-      "modelId": "nvidia-lightning",
+      "modelId": "nvidia-ultra-text",
+      "servedModel": "nvidia/nemotron-3-ultra-550b-a55b",
       "fixtureId": "detailed-workspace",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 23686,
+      "latencyMs": 24569,
       "usage": {
-        "totalTokens": 3381
+        "totalTokens": 1763
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 25,
+        "requirementPoints": 25,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
       }
     },
     {
-      "modelId": "nvidia-lightning",
+      "modelId": "nvidia-ultra-text",
+      "servedModel": "nvidia/nemotron-3-ultra-550b-a55b",
       "fixtureId": "short-idea",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 37818,
+      "latencyMs": 2670,
       "usage": {
-        "totalTokens": 1096
+        "totalTokens": 251
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
       }
     },
     {
-      "modelId": "nvidia-lightning",
+      "modelId": "nvidia-ultra-text",
+      "servedModel": "nvidia/nemotron-3-ultra-550b-a55b",
       "fixtureId": "strict-constraints",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 21452,
+      "latencyMs": 2902,
       "usage": {
-        "totalTokens": 2893
+        "totalTokens": 321
       },
       "estimatedCostUsd": null,
       "scoring": {
         "requirementCoverage": 1,
+        "requirementCount": 8,
+        "requirementPoints": 8,
         "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
         "passed": true
@@ -163,97 +486,102 @@
     },
     {
       "modelId": "groq-gpt-oss-120b",
+      "servedModel": "openai/gpt-oss-120b",
       "fixtureId": "contradictory-decisions",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 1498,
+      "latencyMs": 1629,
       "usage": {
-        "totalTokens": 606
+        "totalTokens": 570
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0,
-        "hardConstraintOmissions": ["R01", "R02", "R03", "R04", "R05"],
+        "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
+        "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
-        "passed": false
+        "passed": true
       }
     },
     {
       "modelId": "groq-gpt-oss-120b",
+      "servedModel": "openai/gpt-oss-120b",
       "fixtureId": "detailed-workspace",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 2933,
+      "latencyMs": 2679,
       "usage": {
-        "totalTokens": 2153
+        "totalTokens": 2100
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0.4,
-        "hardConstraintOmissions": [
-          "R04",
-          "R06",
-          "R07",
-          "R09",
-          "R10",
-          "R11",
-          "R14",
-          "R15",
-          "R16",
-          "R17",
-          "R21",
-          "R23",
-          "R24",
-          "R25"
-        ],
+        "requirementCoverage": 1,
+        "requirementCount": 25,
+        "requirementPoints": 25,
+        "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
-        "passed": false
+        "passed": true
       }
     },
     {
       "modelId": "groq-gpt-oss-120b",
+      "servedModel": "openai/gpt-oss-120b",
       "fixtureId": "short-idea",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 766,
+      "latencyMs": 1044,
       "usage": {
         "totalTokens": 419
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0.8,
-        "hardConstraintOmissions": ["R02"],
+        "requirementCoverage": 1,
+        "requirementCount": 5,
+        "requirementPoints": 5,
+        "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
-        "passed": false
+        "passed": true
       }
     },
     {
       "modelId": "groq-gpt-oss-120b",
+      "servedModel": "openai/gpt-oss-120b",
       "fixtureId": "strict-constraints",
       "validResponse": true,
       "finishReason": "stop",
       "truncated": false,
+      "errorCategory": null,
+      "reviewStatus": "reviewed",
       "errorStatus": null,
       "errorCode": null,
-      "latencyMs": 924,
+      "latencyMs": 1428,
       "usage": {
-        "totalTokens": 576
+        "totalTokens": 631
       },
       "estimatedCostUsd": null,
       "scoring": {
-        "requirementCoverage": 0.5,
-        "hardConstraintOmissions": ["R03", "R04", "R05", "R06"],
+        "requirementCoverage": 1,
+        "requirementCount": 8,
+        "requirementPoints": 8,
+        "hardConstraintOmissions": [],
         "unsupportedAdditions": [],
-        "passed": false
+        "passed": true
       }
     }
   ]

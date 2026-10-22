@@ -81,17 +81,28 @@ function buildModelMatrix(env = process.env) {
     },
   ];
 
-  if (env.BENCHMARK_NVIDIA_SUPER_MODEL) {
-    models.push({
+  models.push(
+    {
       id: "nvidia-super-text",
       provider: "NVIDIA",
-      model: env.BENCHMARK_NVIDIA_SUPER_MODEL,
+      model:
+        env.BENCHMARK_NVIDIA_SUPER_MODEL || "nvidia/nemotron-3-super-120b-a12b",
       baseUrl: nvidiaBaseUrl,
       apiKeyEnv: "NVIDIA_API_KEY",
       maxTokens,
       prices: pricesFor("NVIDIA_SUPER_TEXT"),
-    });
-  }
+    },
+    {
+      id: "nvidia-ultra-text",
+      provider: "NVIDIA",
+      model:
+        env.BENCHMARK_NVIDIA_ULTRA_MODEL || "nvidia/nemotron-3-ultra-550b-a55b",
+      baseUrl: nvidiaBaseUrl,
+      apiKeyEnv: "NVIDIA_API_KEY",
+      maxTokens,
+      prices: pricesFor("NVIDIA_ULTRA_TEXT"),
+    },
+  );
 
   models.push({
     id: "groq-gpt-oss-120b",
@@ -129,6 +140,29 @@ function estimateCost(usage, prices) {
   );
 }
 
+function classifyBenchmarkError(error) {
+  if (error?.benchmark?.httpStatus) return "http-error";
+  if (
+    error?.name === "AbortError" ||
+    /operation was aborted|timed out/i.test(error?.message || "")
+  ) {
+    return "timeout";
+  }
+  if (
+    error instanceof SyntaxError ||
+    /invalid json|malformed response/i.test(error?.message || "")
+  ) {
+    return "invalid-response";
+  }
+  if (
+    error?.cause?.code ||
+    /fetch failed|network/i.test(error?.message || "")
+  ) {
+    return "network-error";
+  }
+  return "request-error";
+}
+
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFKC")
@@ -144,6 +178,8 @@ function matchesAnchorGroups(text, anchorGroups) {
   );
 }
 
+// Lexical anchors remain useful in fixture tests and diagnostics only. Published
+// quality scores use the evidence-backed rubric review in scoreReviewedResponse.
 function scoreResponse(fixture, output) {
   const requirements = fixture.requirements || [];
   const covered = requirements.filter((requirement) =>
@@ -175,6 +211,151 @@ function scoreResponse(fixture, output) {
   };
 }
 
+function scoreReviewedResponse(fixture, assessment, output) {
+  const requirements = fixture.requirements || [];
+  const additions = fixture.unsupportedAdditions || [];
+  const reviewedRequirements = assessment?.requirements || {};
+  const reviewedAdditions = assessment?.unsupportedAdditions || {};
+  const expectedRequirementIds = requirements.map(({ id }) => id).sort();
+  const expectedAdditionIds = additions.map(({ id }) => id).sort();
+  const actualRequirementIds = Object.keys(reviewedRequirements).sort();
+  const actualAdditionIds = Object.keys(reviewedAdditions).sort();
+
+  if (
+    JSON.stringify(actualRequirementIds) !==
+    JSON.stringify(expectedRequirementIds)
+  ) {
+    const missing = expectedRequirementIds.filter(
+      (id) => !actualRequirementIds.includes(id),
+    );
+    const extra = actualRequirementIds.filter(
+      (id) => !expectedRequirementIds.includes(id),
+    );
+    throw new Error(
+      `Incomplete requirement review for ${fixture.id}; missing: ${missing.join(", ") || "none"}; unknown: ${extra.join(", ") || "none"}.`,
+    );
+  }
+  if (
+    JSON.stringify(actualAdditionIds) !== JSON.stringify(expectedAdditionIds)
+  ) {
+    throw new Error(
+      `Incomplete unsupported-addition review for ${fixture.id}.`,
+    );
+  }
+
+  const evidence = {};
+  let points = 0;
+  for (const requirement of requirements) {
+    const judgment = reviewedRequirements[requirement.id];
+    if (
+      !judgment ||
+      !["covered", "partial", "missing"].includes(judgment.rating)
+    ) {
+      throw new Error(
+        `Invalid rubric rating for ${fixture.id}/${requirement.id}.`,
+      );
+    }
+    const quote =
+      typeof judgment.evidence === "string" ? judgment.evidence.trim() : "";
+    if (judgment.rating !== "missing" && !quote) {
+      throw new Error(
+        `Evidence is required for covered criteria ${requirement.id}.`,
+      );
+    }
+    if (quote && !normalizeText(output).includes(normalizeText(quote))) {
+      throw new Error(
+        `Review evidence for ${requirement.id} was not found in the generated response.`,
+      );
+    }
+    evidence[requirement.id] = quote;
+    points +=
+      judgment.rating === "covered"
+        ? 1
+        : judgment.rating === "partial"
+          ? 0.5
+          : 0;
+  }
+
+  const missingRequirementIds = requirements
+    .filter(({ id }) => reviewedRequirements[id].rating === "missing")
+    .map(({ id }) => id);
+  const partialRequirementIds = requirements
+    .filter(({ id }) => reviewedRequirements[id].rating === "partial")
+    .map(({ id }) => id);
+  const hardConstraintOmissions = requirements
+    .filter(
+      ({ id, hard }) => hard && reviewedRequirements[id].rating !== "covered",
+    )
+    .map(({ id }) => id);
+  const unsupportedAdditions = additions
+    .filter(({ id }) => reviewedAdditions[id].present === true)
+    .map(({ id }) => id);
+  for (const addition of additions) {
+    const judgment = reviewedAdditions[addition.id];
+    if (!judgment || typeof judgment.present !== "boolean") {
+      throw new Error(
+        `Invalid addition review for ${fixture.id}/${addition.id}.`,
+      );
+    }
+    const quote =
+      typeof judgment.evidence === "string" ? judgment.evidence.trim() : "";
+    if (judgment.present && !quote) {
+      throw new Error(
+        `Evidence is required for unsupported addition ${addition.id}.`,
+      );
+    }
+    if (quote && !normalizeText(output).includes(normalizeText(quote))) {
+      throw new Error(
+        `Review evidence for ${addition.id} was not found in the generated response.`,
+      );
+    }
+    evidence[addition.id] = quote;
+  }
+  const requirementCount = requirements.length;
+  const requirementCoverage = requirementCount ? points / requirementCount : 1;
+
+  return {
+    requirementCoverage,
+    requirementCount,
+    requirementPoints: points,
+    coveredRequirementIds: requirements
+      .filter(({ id }) => reviewedRequirements[id].rating === "covered")
+      .map(({ id }) => id),
+    partialRequirementIds,
+    missingRequirementIds,
+    hardConstraintOmissions,
+    unsupportedAdditions,
+    evidence,
+    passed:
+      requirementCoverage === 1 &&
+      hardConstraintOmissions.length === 0 &&
+      unsupportedAdditions.length === 0,
+  };
+}
+
+function applyReviews(report, reviews) {
+  return {
+    ...report,
+    results: report.results.map((result) => {
+      if (!result.validResponse || result.truncated || result.errorStatus) {
+        return { ...result, scoring: null, reviewStatus: "not-evaluable" };
+      }
+      const assessment = reviews?.[result.modelId]?.[result.fixtureId];
+      if (!assessment) {
+        return { ...result, scoring: null, reviewStatus: "pending" };
+      }
+      const fixture = loadFixtures().find(({ id }) => id === result.fixtureId);
+      if (!fixture)
+        throw new Error(`Unknown reviewed fixture ${result.fixtureId}.`);
+      return {
+        ...result,
+        scoring: scoreReviewedResponse(fixture, assessment, result.output),
+        reviewStatus: "reviewed",
+      };
+    }),
+  };
+}
+
 function parseCompletion(payload) {
   const choice =
     payload && Array.isArray(payload.choices) ? payload.choices[0] : null;
@@ -185,6 +366,7 @@ function parseCompletion(payload) {
   const usage = payload?.usage || {};
 
   return {
+    servedModel: typeof payload?.model === "string" ? payload.model : null,
     text,
     finishReason,
     truncated,
@@ -297,6 +479,9 @@ async function requestCompletion(model, fixture, env, fetchImpl = fetch) {
         ],
         temperature: 0,
         max_tokens: model.maxTokens,
+        ...(model.provider === "NVIDIA"
+          ? { chat_template_kwargs: { enable_thinking: false } }
+          : {}),
       }),
       signal: controller.signal,
     });
@@ -374,22 +559,27 @@ async function runBenchmark(options = {}) {
           env,
           options.fetchImpl,
         );
-        const scoring = scoreResponse(fixture, completion.text);
-        const accepted = completion.validResponse && scoring.passed;
         const estimatedCostUsd = estimateCost(completion.usage, model.prices);
         results.push({
           modelId: model.id,
           provider: model.provider,
           model: model.model,
+          servedModel: completion.servedModel,
           fixtureId: fixture.id,
           fixtureTitle: fixture.title,
           validResponse: completion.validResponse,
           finishReason: completion.finishReason,
           truncated: completion.truncated,
+          errorCategory: completion.truncated
+            ? "truncated"
+            : completion.validResponse
+              ? null
+              : "invalid-response",
           latencyMs: completion.latencyMs,
           usage: completion.usage,
           estimatedCostUsd,
-          scoring: { ...scoring, passed: accepted },
+          scoring: null,
+          reviewStatus: completion.validResponse ? "pending" : "not-evaluable",
           outputSha256: crypto
             .createHash("sha256")
             .update(completion.text)
@@ -397,17 +587,21 @@ async function runBenchmark(options = {}) {
           outputCharacters: completion.text.length,
           ...(options.retainOutput ? { output: completion.text } : {}),
         });
-        process.stdout.write(`${accepted ? "PASS" : "FAIL"}\n`);
+        process.stdout.write(
+          `${completion.validResponse ? "RESPONSE" : "INVALID RESPONSE"}\n`,
+        );
       } catch (error) {
         results.push({
           modelId: model.id,
           provider: model.provider,
           model: model.model,
+          servedModel: null,
           fixtureId: fixture.id,
           fixtureTitle: fixture.title,
           validResponse: false,
           finishReason: "error",
           truncated: false,
+          errorCategory: classifyBenchmarkError(error),
           latencyMs: error?.benchmark?.latencyMs ?? null,
           errorStatus: error?.benchmark?.httpStatus ?? null,
           errorCode: error?.benchmark?.providerCode ?? null,
@@ -420,14 +614,8 @@ async function runBenchmark(options = {}) {
             reasoningTokens: null,
           },
           estimatedCostUsd: null,
-          scoring: {
-            requirementCoverage: 0,
-            coveredRequirementIds: [],
-            missingRequirementIds: [],
-            hardConstraintOmissions: [],
-            unsupportedAdditions: [],
-            passed: false,
-          },
+          scoring: null,
+          reviewStatus: "not-evaluable",
           error:
             error instanceof Error ? error.message : "Unknown benchmark error",
           outputSha256: null,
@@ -443,12 +631,19 @@ async function runBenchmark(options = {}) {
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     configuration: {
       maxTokens: models[0].maxTokens,
+      timeoutMs: parsePositiveInteger(
+        env.AI_BENCHMARK_TIMEOUT_MS,
+        DEFAULT_TIMEOUT_MS,
+        "AI_BENCHMARK_TIMEOUT_MS",
+        900000,
+      ),
       fixtureCount: fixtures.length,
       modelCount: models.length,
+      nvidiaThinkingEnabled: false,
       pricingConfigured: models.every(
         ({ prices: item }) =>
           item?.inputUsdPerMillion != null && item?.outputUsdPerMillion != null,
@@ -458,7 +653,9 @@ async function runBenchmark(options = {}) {
         .update(SYSTEM_POLICY)
         .digest("hex"),
     },
-    results,
+    results: options.reviews
+      ? applyReviews({ results }, options.reviews).results
+      : results,
   };
 }
 
@@ -487,22 +684,24 @@ function renderMarkdown(report) {
   for (const result of report.results) {
     const usage = result.usage || {};
     lines.push(
-      `| ${result.provider} | \`${result.model}\` | ${result.fixtureTitle} | ${percent(result.scoring.requirementCoverage)} | ${result.scoring.hardConstraintOmissions.length} | ${result.scoring.unsupportedAdditions.length} | ${result.validResponse ? "Yes" : "No"} | ${result.finishReason} | ${result.truncated ? "Yes" : "No"} | ${result.latencyMs === null ? "—" : `${display(result.latencyMs)} ms`} | ${display(usage.promptTokens)} / ${display(usage.completionTokens)} / ${display(usage.totalTokens)} | ${result.estimatedCostUsd == null ? "Unknown" : `$${result.estimatedCostUsd.toFixed(6)}`} | ${result.outputSha256 || "—"} |`,
+      `| ${result.provider} | \`${result.model}\` | ${result.fixtureTitle} | ${result.scoring ? percent(result.scoring.requirementCoverage) : "Not reviewed"} | ${result.scoring?.hardConstraintOmissions.length ?? "—"} | ${result.scoring?.unsupportedAdditions.length ?? "—"} | ${result.validResponse ? "Yes" : "No"} | ${result.finishReason} | ${result.truncated ? "Yes" : "No"} | ${result.latencyMs === null ? "—" : `${display(result.latencyMs)} ms`} | ${display(usage.promptTokens)} / ${display(usage.completionTokens)} / ${display(usage.totalTokens)} | ${result.estimatedCostUsd == null ? "Unknown" : `$${result.estimatedCostUsd.toFixed(6)}`} | ${result.outputSha256 || "—"} |`,
     );
   }
 
   lines.push("", "## Failures", "");
-  const failures = report.results.filter((result) => !result.scoring.passed);
+  const failures = report.results.filter(
+    (result) => result.scoring?.passed !== true,
+  );
   if (failures.length === 0) {
     lines.push("All model and fixture combinations passed.");
   } else {
     for (const result of failures) {
       const details = [
         result.error ? `error: ${result.error}` : null,
-        result.scoring.missingRequirementIds?.length
+        result.scoring?.missingRequirementIds?.length
           ? `missing: ${result.scoring.missingRequirementIds.join(", ")}`
           : null,
-        result.scoring.unsupportedAdditions?.length
+        result.scoring?.unsupportedAdditions?.length
           ? `unsupported additions: ${result.scoring.unsupportedAdditions.join(", ")}`
           : null,
         result.truncated ? "provider reported truncation" : null,
@@ -516,14 +715,111 @@ function renderMarkdown(report) {
 }
 
 function publicReport(report) {
+  const groups = new Map();
+  for (const result of report.results) {
+    if (!groups.has(result.modelId)) groups.set(result.modelId, []);
+    groups.get(result.modelId).push(result);
+  }
+  const models = [...groups.entries()].map(([modelId, results]) => {
+    const valid = results.filter(
+      ({ validResponse, truncated }) => validResponse && !truncated,
+    );
+    const reviewed = valid.filter(
+      ({ reviewStatus, scoring }) => reviewStatus === "reviewed" && scoring,
+    );
+    const requirementCount = reviewed.reduce(
+      (sum, { scoring }) => sum + (scoring.requirementCount || 0),
+      0,
+    );
+    const requirementPoints = reviewed.reduce(
+      (sum, { scoring }) => sum + (scoring.requirementPoints || 0),
+      0,
+    );
+    const latencies = results
+      .map(({ latencyMs }) => latencyMs)
+      .filter((latency) => typeof latency === "number");
+    const allPricesKnown = results.every(
+      ({ estimatedCostUsd }) => estimatedCostUsd != null,
+    );
+    const errorBreakdown = {};
+    for (const result of results) {
+      if (result.validResponse || result.truncated) continue;
+      const label = result.errorStatus
+        ? `HTTP ${result.errorStatus}`
+        : result.errorCategory || "request error";
+      errorBreakdown[label] = (errorBreakdown[label] || 0) + 1;
+    }
+    return {
+      modelId,
+      servedModels: [
+        ...new Set(valid.map(({ servedModel }) => servedModel).filter(Boolean)),
+      ],
+      attemptedCount: results.length,
+      validResponseCount: valid.length,
+      responseRate: results.length ? valid.length / results.length : null,
+      errorCount: results.filter(
+        ({ validResponse, truncated }) => !validResponse && !truncated,
+      ).length,
+      errorBreakdown,
+      truncatedCount: results.filter(({ truncated }) => truncated).length,
+      evaluatedCount: reviewed.length,
+      requirementCount,
+      requirementCoverage: requirementCount
+        ? requirementPoints / requirementCount
+        : null,
+      strictCompleteCount: reviewed.filter(({ scoring }) => scoring.passed)
+        .length,
+      strictCompleteRate: reviewed.length
+        ? reviewed.filter(({ scoring }) => scoring.passed).length /
+          reviewed.length
+        : null,
+      hardConstraintOmissions: reviewed.reduce(
+        (sum, { scoring }) => sum + scoring.hardConstraintOmissions.length,
+        0,
+      ),
+      unsupportedAdditionCount: reviewed.reduce(
+        (sum, { scoring }) => sum + scoring.unsupportedAdditions.length,
+        0,
+      ),
+      averageLatencyMs: latencies.length
+        ? Math.round(
+            latencies.reduce((sum, latency) => sum + latency, 0) /
+              latencies.length,
+          )
+        : null,
+      totalTokens: results.reduce(
+        (sum, { usage }) => sum + (usage?.totalTokens || 0),
+        0,
+      ),
+      estimatedCostUsd: allPricesKnown
+        ? results.reduce(
+            (sum, { estimatedCostUsd }) => sum + estimatedCostUsd,
+            0,
+          )
+        : null,
+    };
+  });
+
   return {
     generatedAt: report.generatedAt,
+    configuration: {
+      maxTokens: report.configuration?.maxTokens ?? null,
+      timeoutMs: report.configuration?.timeoutMs ?? null,
+      fixtureCount: report.configuration?.fixtureCount ?? null,
+      modelCount: report.configuration?.modelCount ?? models.length,
+      nvidiaThinkingEnabled:
+        report.configuration?.nvidiaThinkingEnabled ?? null,
+    },
+    models,
     results: report.results.map((result) => ({
       modelId: result.modelId,
+      servedModel: result.servedModel ?? null,
       fixtureId: result.fixtureId,
       validResponse: result.validResponse,
       finishReason: result.finishReason,
       truncated: result.truncated,
+      errorCategory: result.errorCategory ?? null,
+      reviewStatus: result.reviewStatus || "pending",
       errorStatus: result.errorStatus ?? null,
       errorCode: result.errorCode ?? null,
       latencyMs: result.latencyMs,
@@ -531,12 +827,16 @@ function publicReport(report) {
         totalTokens: result.usage?.totalTokens ?? null,
       },
       estimatedCostUsd: result.estimatedCostUsd,
-      scoring: {
-        requirementCoverage: result.scoring.requirementCoverage,
-        hardConstraintOmissions: result.scoring.hardConstraintOmissions,
-        unsupportedAdditions: result.scoring.unsupportedAdditions,
-        passed: result.scoring.passed,
-      },
+      scoring: result.scoring
+        ? {
+            requirementCoverage: result.scoring.requirementCoverage,
+            requirementCount: result.scoring.requirementCount,
+            requirementPoints: result.scoring.requirementPoints,
+            hardConstraintOmissions: result.scoring.hardConstraintOmissions,
+            unsupportedAdditions: result.scoring.unsupportedAdditions,
+            passed: result.scoring.passed,
+          }
+        : null,
     })),
   };
 }
@@ -558,6 +858,12 @@ function parseArguments(argv) {
       index += 1;
     } else if (argument === "--publish") {
       options.publish = true;
+    } else if (argument === "--publish-report") {
+      options.publishReport = path.resolve(argv[index + 1]);
+      index += 1;
+    } else if (argument === "--reviews") {
+      options.reviewsPath = path.resolve(argv[index + 1]);
+      index += 1;
     } else if (argument === "--help" || argument === "-h") {
       options.help = true;
     } else {
@@ -568,13 +874,40 @@ function parseArguments(argv) {
 }
 
 function helpText() {
-  return `Usage: npm run benchmark:models -- [--model ID] [--fixture ID] [--output-dir PATH] [--retain-output] [--publish]\n\nRequired environment variables:\n  NVIDIA_API_KEY\n  GROQ_API_KEY\n\nOptional environment variables:\n  AI_BENCHMARK_MAX_TOKENS (default: 16384)\n  AI_BENCHMARK_TIMEOUT_MS (default: 180000)\n  BENCHMARK_NVIDIA_SUPER_MODEL (adds the older text-only Super candidate)\n\n--retain-output stores completions only in the ignored local report.\n--publish writes a sanitized score summary to public/model-benchmark.json for the landing page.\n`;
+  return `Usage: npm run benchmark:models -- [--model ID] [--fixture ID] [--output-dir PATH] [--retain-output] [--publish]\n       npm run benchmark:models -- --publish-report REPORT.json --reviews REVIEWS.json\n\nRequired environment variables for live runs:\n  NVIDIA_API_KEY\n  GROQ_API_KEY\n\nOptional environment variables:\n  AI_BENCHMARK_MAX_TOKENS (default: 16384)\n  AI_BENCHMARK_TIMEOUT_MS (default: 180000)\n  BENCHMARK_NVIDIA_SUPER_MODEL\n  BENCHMARK_NVIDIA_ULTRA_MODEL\n\n--retain-output stores completions only in the ignored local report.\n--publish writes a sanitized report for unreviewed availability data.\n--publish-report combines an existing retained report with reviewed rubric evidence, stores a local reviewed report, and publishes sanitized metrics.\n`;
 }
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   if (options.help) {
     process.stdout.write(helpText());
+    return;
+  }
+  if (options.publishReport) {
+    if (!options.reviewsPath) {
+      throw new Error("--publish-report requires a local --reviews JSON file.");
+    }
+    const sourceReport = JSON.parse(
+      fs.readFileSync(options.publishReport, "utf8"),
+    );
+    const reviews = JSON.parse(fs.readFileSync(options.reviewsPath, "utf8"));
+    const reviewedReport = applyReviews(sourceReport, reviews);
+    const reviewedPath = options.publishReport.replace(
+      /\.json$/i,
+      "-reviewed.json",
+    );
+    fs.writeFileSync(
+      reviewedPath,
+      `${JSON.stringify(reviewedReport, null, 2)}\n`,
+    );
+    const publicPath = path.join(ROOT, "public", "model-benchmark.json");
+    fs.writeFileSync(
+      publicPath,
+      `${JSON.stringify(publicReport(reviewedReport), null, 2)}\n`,
+    );
+    process.stdout.write(
+      `Reviewed local report: ${reviewedPath}\nPublic benchmark data: ${publicPath}\n`,
+    );
     return;
   }
   const report = await runBenchmark(options);
@@ -601,15 +934,18 @@ async function main() {
 module.exports = {
   SYSTEM_POLICY,
   buildModelMatrix,
+  classifyBenchmarkError,
   estimateCost,
   fixturePrompt,
   loadFixtures,
   parseCompletion,
   renderMarkdown,
   publicReport,
+  applyReviews,
   requestCompletion,
   runBenchmark,
   scoreResponse,
+  scoreReviewedResponse,
   parseOptionalPrice,
 };
 

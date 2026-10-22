@@ -20,6 +20,27 @@ type ModelEntry = {
 
 type BenchmarkResult = {
   modelId: string;
+  servedModels?: string[];
+  attemptedCount: number;
+  validResponseCount: number;
+  responseRate: number | null;
+  errorCount: number;
+  errorBreakdown: Record<string, number>;
+  truncatedCount: number;
+  evaluatedCount: number;
+  requirementCount: number;
+  requirementCoverage: number | null;
+  strictCompleteCount: number;
+  strictCompleteRate: number | null;
+  hardConstraintOmissions: number;
+  unsupportedAdditionCount: number;
+  averageLatencyMs: number | null;
+  totalTokens: number;
+  estimatedCostUsd: number | null;
+};
+
+type BenchmarkFixtureResult = {
+  modelId: string;
   validResponse: boolean;
   truncated: boolean;
   errorStatus?: number | null;
@@ -27,15 +48,22 @@ type BenchmarkResult = {
   latencyMs: number | null;
   usage: { totalTokens: number | null };
   estimatedCostUsd: number | null;
-  scoring: {
-    requirementCoverage: number;
-    hardConstraintOmissions: string[];
-    unsupportedAdditions: string[];
-    passed: boolean;
-  };
+  reviewStatus: string;
+  scoring: { requirementCoverage: number; passed: boolean } | null;
 };
 
-type BenchmarkReport = { generatedAt?: string; results?: BenchmarkResult[] };
+type BenchmarkReport = {
+  generatedAt?: string;
+  configuration?: {
+    maxTokens: number | null;
+    timeoutMs: number | null;
+    fixtureCount: number | null;
+    modelCount: number | null;
+    nvidiaThinkingEnabled: boolean | null;
+  };
+  models?: BenchmarkResult[];
+  results?: BenchmarkFixtureResult[];
+};
 
 const models: ModelEntry[] = [
   {
@@ -83,6 +111,22 @@ const models: ModelEntry[] = [
     source: {
       label: "NVIDIA model card",
       href: "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
+    },
+    benchmark: true,
+  },
+  {
+    id: "nvidia-ultra-text",
+    provider: "NVIDIA",
+    logo: "/images/providers/nvidia.svg",
+    model: "Nemotron 3 Ultra 550B-A55B",
+    status: "Available through NVIDIA BYOK",
+    bestFor: "Complex reasoning and planning; benchmark candidate",
+    inputs: ["Text"],
+    context: "Up to 1M model context (deployment dependent)",
+    capabilities: ["Reasoning", "Tool use"],
+    source: {
+      label: "NVIDIA model card",
+      href: "https://build.nvidia.com/nvidia/nemotron-3-ultra-550b-a55b/modelcard",
     },
     benchmark: true,
   },
@@ -208,6 +252,11 @@ const benchmarkModels = [
     logo: "/images/providers/nvidia.svg",
   },
   {
+    id: "nvidia-ultra-text",
+    name: "Nemotron 3 Ultra",
+    logo: "/images/providers/nvidia.svg",
+  },
+  {
     id: "groq-gpt-oss-120b",
     name: "GPT-OSS 120B",
     logo: "/images/providers/groq.svg",
@@ -215,14 +264,27 @@ const benchmarkModels = [
 ];
 const benchmarkChecks = [
   {
+    key: "availability",
+    name: "Valid response rate",
+    description:
+      "Separates completed responses from provider errors and truncation",
+  },
+  {
     key: "coverage",
     name: "Requirement coverage",
-    description: "Measures retained source requirements",
+    description: "Evidence-reviewed coverage; partial criteria count as half",
+  },
+  {
+    key: "strict",
+    name: "Strict complete rate",
+    description:
+      "Reviewed outputs preserving every criterion with no unsupported additions",
   },
   {
     key: "omissions",
     name: "Hard constraint omissions",
-    description: "Tracks missing prohibitions and required decisions",
+    description:
+      "Uncovered prohibitions and required decisions across reviewed outputs",
   },
   {
     key: "additions",
@@ -405,11 +467,14 @@ export default function ModelsBenchmark() {
                   PromptDock evaluation
                 </span>
                 <h3>Measured on the same preservation tasks.</h3>
-                <p>Each candidate uses the same source fixtures and policy.</p>
+                <p>
+                  Reliability counts completed responses. Coverage and strict
+                  completion use only evidence-reviewed outputs.
+                </p>
               </div>
               <span className="model-benchmark-pending">
                 {benchmark.generatedAt
-                  ? `Last run ${new Date(benchmark.generatedAt).toLocaleDateString()}`
+                  ? `Last evaluated ${new Date(benchmark.generatedAt).toLocaleDateString()}`
                   : "First run pending"}
               </span>
             </div>
@@ -419,19 +484,30 @@ export default function ModelsBenchmark() {
                   <tr>
                     <th scope="col">Evaluation</th>
                     <th scope="col">What it measures</th>
-                    {benchmarkModels.map((model) => (
-                      <th scope="col" key={model.name}>
-                        <span className="benchmark-model-heading">
-                          <Image
-                            src={model.logo}
-                            alt=""
-                            width={20}
-                            height={20}
-                          />
-                          {model.name}
-                        </span>
-                      </th>
-                    ))}
+                    {benchmarkModels.map((model) => {
+                      const result = (benchmark.models || []).find(
+                        (candidate) => candidate.modelId === model.id,
+                      );
+                      return (
+                        <th scope="col" key={model.name}>
+                          <span className="benchmark-model-heading">
+                            <Image
+                              src={model.logo}
+                              alt=""
+                              width={20}
+                              height={20}
+                            />
+                            {model.name}
+                          </span>
+                          {result?.servedModels?.length ? (
+                            <span className="benchmark-served-model">
+                              Provider returned:{" "}
+                              {result.servedModels.join(", ")}
+                            </span>
+                          ) : null}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -439,22 +515,24 @@ export default function ModelsBenchmark() {
                     <tr key={key}>
                       <th scope="row">
                         <strong>{name}</strong>
-                        <span>{description}</span>
                       </th>
+                      <td className="benchmark-measure-description">
+                        {description}
+                      </td>
                       {benchmarkModels.map((model) => {
-                        const results = (benchmark.results || []).filter(
-                          (result) => result.modelId === model.id,
+                        const result = (benchmark.models || []).find(
+                          (candidate) => candidate.modelId === model.id,
                         );
                         return (
                           <td key={`${key}-${model.name}`}>
                             <span
                               className={
-                                results.length
+                                result
                                   ? "benchmark-result-value"
                                   : "benchmark-not-run"
                               }
                             >
-                              {benchmarkValue(key, results)}
+                              {benchmarkValue(key, result)}
                             </span>
                           </td>
                         );
@@ -465,10 +543,18 @@ export default function ModelsBenchmark() {
               </table>
             </div>
             <p className="models-directory-note">
-              Scores use the versioned long-spec, contradiction,
-              strict-constraint, and short-idea fixtures. Run the controlled
-              benchmark and publish its sanitized report to update this table.
-              Models without a published run remain marked as not measured.
+              {benchmark.configuration?.maxTokens
+                ? `Run settings: ${benchmark.configuration.maxTokens.toLocaleString()} output tokens and ${Math.round((benchmark.configuration.timeoutMs || 0) / 1000)} seconds per request. `
+                : "Run settings are not available. "}
+              Requirement coverage averages covered criteria as 1, partial as
+              0.5, and missing as 0 across reviewed outputs. Provider errors and
+              truncated responses are excluded from quality scores. Each
+              response was reviewed against the fixture rubric; the sample is
+              four requests per model. Costs appear only when token prices are
+              configured. NVIDIA extended reasoning was disabled for this
+              comparison. Provider-reported model identifiers appear under each
+              candidate when available. Models without a published run remain
+              marked as not measured.
             </p>
           </div>
         )}
@@ -485,77 +571,35 @@ export default function ModelsBenchmark() {
   );
 }
 
-function benchmarkValue(key: string, results: BenchmarkResult[]) {
-  if (!results.length) return "Not measured";
-  if (key === "coverage") {
-    const completed = results.filter(
-      (result) => result.validResponse && !result.truncated,
-    );
-    if (!completed.length) return "No valid response";
-    const average =
-      completed.reduce(
-        (sum, result) => sum + result.scoring.requirementCoverage,
-        0,
-      ) / completed.length;
-    return `${(average * 100).toFixed(1)}% avg. · ${completed.length} valid`;
-  }
+function benchmarkValue(key: string, result?: BenchmarkResult) {
+  if (!result) return "Not measured";
+  if (key === "availability")
+    return `${result.validResponseCount}/${result.attemptedCount} valid · ${
+      Object.entries(result.errorBreakdown || {})
+        .map(([name, count]) => `${count} ${name}`)
+        .join(", ") || "0 errors"
+    } · ${result.truncatedCount} truncated`;
+  if (key === "coverage")
+    return result.requirementCoverage == null
+      ? `Not reviewed · ${result.validResponseCount} valid`
+      : `${(result.requirementCoverage * 100).toFixed(1)}% · ${result.requirementCount} criteria`;
+  if (key === "strict")
+    return result.strictCompleteRate == null
+      ? `Not reviewed · 0/${result.validResponseCount} outputs`
+      : `${(result.strictCompleteRate * 100).toFixed(1)}% · ${result.strictCompleteCount}/${result.evaluatedCount} outputs`;
   if (key === "omissions")
-    return String(
-      results.reduce(
-        (sum, result) => sum + result.scoring.hardConstraintOmissions.length,
-        0,
-      ),
-    );
+    return result.evaluatedCount
+      ? `${result.hardConstraintOmissions} · ${result.evaluatedCount} reviewed`
+      : "Not reviewed";
   if (key === "additions")
-    return String(
-      results.reduce(
-        (sum, result) => sum + result.scoring.unsupportedAdditions.length,
-        0,
-      ),
-    );
-  if (key === "completion") {
-    const valid = results.filter(
-      (result) => result.validResponse && !result.truncated,
-    ).length;
-    const truncated = results.filter((result) => result.truncated).length;
-    const passed = results.filter((result) => result.scoring.passed).length;
-    const errors = results.filter(
-      (result) => result.validResponse === false && result.truncated === false,
-    ).length;
-    const statuses = [
-      ...new Set(
-        results
-          .map((result) => result.errorStatus)
-          .filter((status): status is number => typeof status === "number"),
-      ),
-    ];
-    const statusSummary = statuses.length
-      ? ` (${statuses.map((status) => `HTTP ${status}`).join(", ")})`
-      : "";
-    return `${passed}/${results.length} passed · ${valid} valid · ${errors} errors${statusSummary} · ${truncated} truncated`;
-  }
-  if (key === "performance") {
-    const latency = results.filter((result) => result.latencyMs != null);
-    const tokens = results.reduce(
-      (sum, result) => sum + (result.usage.totalTokens || 0),
-      0,
-    );
-    const averageLatency = latency.length
-      ? Math.round(
-          latency.reduce((sum, result) => sum + (result.latencyMs || 0), 0) /
-            latency.length,
-        )
-      : null;
-    return `${averageLatency == null ? "—" : `${averageLatency.toLocaleString()} ms`} · ${tokens.toLocaleString()} tokens`;
-  }
-  if (key === "cost") {
-    if (results.some((result) => result.estimatedCostUsd == null))
-      return "Not reported";
-    const total = results.reduce(
-      (sum, result) => sum + (result.estimatedCostUsd || 0),
-      0,
-    );
-    return `$${total.toFixed(4)}`;
-  }
+    return result.evaluatedCount
+      ? `${result.unsupportedAdditionCount} · ${result.evaluatedCount} reviewed`
+      : "Not reviewed";
+  if (key === "performance")
+    return `${result.averageLatencyMs == null ? "—" : `${result.averageLatencyMs.toLocaleString()} ms avg.`} · ${result.totalTokens.toLocaleString()} tokens`;
+  if (key === "cost")
+    return result.estimatedCostUsd == null
+      ? "Not reported"
+      : `$${result.estimatedCostUsd.toFixed(4)} total`;
   return "Not measured";
 }
