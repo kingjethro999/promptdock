@@ -7,7 +7,7 @@ export function homeStructuredData(origin: string) {
         url: `${origin}/`,
         name: "PromptDock",
         description:
-          "Turn rough or spoken ideas into structured prompts you can save, reuse, and share with any AI tool.",
+          "Turn rough ideas into clear AI prompts, then refine, save, organize, and share reusable prompts for the AI tools you use.",
         inLanguage: "en",
         publisher: {
           "@type": "Organization",
@@ -35,7 +35,7 @@ export function homeStructuredData(origin: string) {
         isAccessibleForFree: true,
         inLanguage: "en",
         description:
-          "An idea-to-prompt workspace that turns rough ideas into clear prompts you can reuse on any AI platform.",
+          "An AI prompt builder and library for turning rough ideas into clear prompts you can refine, save, organize, and reuse across AI tools.",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       },
     ],

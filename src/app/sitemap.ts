@@ -1,12 +1,11 @@
 import type { MetadataRoute } from "next";
 import { siteUpdates } from "@/lib/server/public-data";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const origin = (
-    process.env.APP_URL || "https://thepromptdock.vercel.app"
-  ).replace(/\/$/, "");
+  const origin = SITE_URL;
   const pages = [
     "",
     "community",
