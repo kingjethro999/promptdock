@@ -33,11 +33,13 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — your prompt workspace`,
+    default: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
     template: `%s — ${SITE_NAME}`,
   },
-  description: "Write, organize and share your best prompts.",
+  description:
+    "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
   applicationName: "PromptDock",
+  verification: { google: "lPK13chagDv8i5bMS5lDIzUcGerNFMeaPLkS1DXWn7U" },
   alternates: { canonical: "/", types: { "application/rss+xml": "/feed.xml" } },
   icons: { icon: "/favicon.svg" },
   openGraph: {
@@ -45,8 +47,9 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "en_US",
     url: "/",
-    title: `${SITE_NAME} — your prompt workspace`,
-    description: "Write, organize and share your best prompts.",
+    title: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
+    description:
+      "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
     images: [
       {
         url: "/api/og/default",
@@ -58,8 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — your prompt workspace`,
-    description: "Write, organize and share your best prompts.",
+    title: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
+    description:
+      "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
     images: ["/api/og/default"],
   },
 };

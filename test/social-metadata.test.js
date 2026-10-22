@@ -44,7 +44,10 @@ test("community metadata includes a complete large social preview", () => {
 test("the Next sitemap includes community and normalizes a trailing origin slash", async () => {
   const route = loadModule(
     "src/app/sitemap.ts",
-    { "@/lib/server/public-data": { siteUpdates: async () => [] } },
+    {
+      "@/lib/server/public-data": { siteUpdates: async () => [] },
+      "@/lib/site": { SITE_URL: "https://thepromptdock.vercel.app" },
+    },
     { process: { env: { APP_URL: "https://thepromptdock.vercel.app/" } } },
   );
   const urls = (await route.default()).map((entry) => entry.url);

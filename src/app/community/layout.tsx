@@ -1,9 +1,9 @@
 import { AdaptiveShell } from "@/components/community/AdaptiveShell";
 import type { Metadata } from "next";
 
-const title = "PromptDock Community — Discover & Remix Public Prompts";
+const title = "AI Prompt Community — Discover & Remix Prompts";
 const description =
-  "Explore prompts shared by the PromptDock community. Find ideas worth building on, save what works, and remix prompts into something new.";
+  "Discover, save, and remix reusable AI prompts shared by the PromptDock community. Find prompt ideas for ChatGPT, Claude, Gemini, and other AI tools.";
 const image = "/api/og/default";
 
 export const metadata: Metadata = {

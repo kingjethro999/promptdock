@@ -23,8 +23,9 @@ export default function LandingHero() {
         </h1>
 
         <p>
-          Start with a rough idea. Shape it into a focused prompt, keep what
-          works, and use it with the AI tools you already know.
+          Turn rough ideas into clear AI prompts. Refine, organize, and save
+          what works in your prompt library, then use it with the AI tools you
+          already know.
         </p>
 
         <div className="landing-hero-actions">
