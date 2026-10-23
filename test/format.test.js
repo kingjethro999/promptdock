@@ -103,3 +103,20 @@ test("buildPromptWithProfile switches dynamically across profiles", () => {
     /Analyze this request step-by-step/,
   );
 });
+
+for (const profile of ["universal", "claude", "openai", "reasoning", "cursor"]) {
+  test(`${profile} preserves raw documents and every edited detail without a task wrapper`, () => {
+    const task = "# Existing instructions\n\nKeep {{product}} unchanged.\n\n```js\nrun();\n```";
+    const output = buildPromptWithProfile({ ...sampleData, task, raw: true }, profile);
+    assert.ok(output.startsWith(task + "\n\n"), "The original document must stay intact at the start");
+    for (const [field, value] of Object.entries(sampleData)) {
+      if (field !== "task") assert.ok(output.includes(value), `${field} was dropped`);
+    }
+  });
+
+  test(`${profile} leaves a raw-only document byte-for-byte unchanged`, () => {
+    const task = "  # Keep spacing\n\n- First\n- Second\n";
+    assert.equal(buildPromptWithProfile({ task, raw: true }, profile), task);
+    assert.equal(buildPromptWithProfile({ task: "  ", raw: true, tone: "Friendly" }, profile), "");
+  });
+}

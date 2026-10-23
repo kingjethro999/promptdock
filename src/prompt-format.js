@@ -22,20 +22,34 @@ const depthCopy = {
   Deep: "Work through the important reasoning, tradeoffs, edge cases, and concrete next steps.",
 };
 
+// A raw task is already a complete document. Keep it intact in every profile;
+// structured edits made after import are additional instructions, not a reason
+// to wrap the whole document in another task or silently discard the edits.
+function buildRawPrompt(data) {
+  const labels = {
+    role: "Role",
+    context: "Context",
+    audience: "Audience",
+    approach: "Suggested approach",
+    format: "Output format",
+    tone: "Tone",
+    focus: "Priorities",
+    depth: "Answer depth",
+    constraints: "Requirements",
+  };
+  const details = Object.entries(labels)
+    .filter(([field]) => data[field]?.trim())
+    .map(([field, label]) =>
+      field === "depth" && depthCopy[data.depth]
+        ? `${label}: ${data.depth}. ${depthCopy[data.depth]}`
+        : `${label}: ${data[field]}`,
+    );
+  return [data.task, ...details].join("\n\n");
+}
+
 function buildUniversalPrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  const details = [
-    "role",
-    "context",
-    "audience",
-    "approach",
-    "format",
-    "tone",
-    "focus",
-    "depth",
-    "constraints",
-  ];
-  if (data.raw && details.every((field) => !data[field])) return data.task;
+  if (data.raw) return buildRawPrompt(data);
   const parts = [];
   if (data.role) parts.push(`Act as ${data.role.replace(/[.\s]+$/, "")}.`);
   parts.push(`Task: ${data.task}`);
@@ -56,7 +70,7 @@ function buildUniversalPrompt(data = {}) {
 
 function buildClaudePrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  if (data.raw) return data.task;
+  if (data.raw) return buildRawPrompt(data);
   const parts = [];
   if (data.role) {
     parts.push(`<role>\nAct as ${data.role.replace(/[.\s]+$/, "")}.\n</role>`);
@@ -85,7 +99,7 @@ function buildClaudePrompt(data = {}) {
 
 function buildOpenAIPrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  if (data.raw) return data.task;
+  if (data.raw) return buildRawPrompt(data);
   const parts = [];
   if (data.role) {
     parts.push(`# Role & Persona\nAct as ${data.role.replace(/[.\s]+$/, "")}.`);
@@ -114,7 +128,7 @@ function buildOpenAIPrompt(data = {}) {
 
 function buildReasoningPrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  if (data.raw) return data.task;
+  if (data.raw) return buildRawPrompt(data);
   const parts = [];
   parts.push(data.task);
   if (data.role) {
@@ -137,7 +151,7 @@ function buildReasoningPrompt(data = {}) {
 
 function buildCursorRulesPrompt(data = {}) {
   if (!data.task?.trim()) return "";
-  if (data.raw) return data.task;
+  if (data.raw) return buildRawPrompt(data);
   const roleText = data.role
     ? ` specialized as ${data.role.replace(/[.\s]+$/, "")}`
     : "";
