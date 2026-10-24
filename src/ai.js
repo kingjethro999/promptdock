@@ -1114,6 +1114,7 @@ async function fidelityIdeaToPrompt(
     validation = { passed: false };
   }
   if (!validation?.passed) {
+    generated.provider = "source-preserved";
     candidate = fidelity.preservedSourcePrompt({
       idea,
       guidance,

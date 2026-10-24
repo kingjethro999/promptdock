@@ -10,11 +10,16 @@ import type {
   SavedPrompt,
 } from "@/lib/prompt/types";
 import type { PromptTemplate } from "@/lib/prompt/templates";
+import { emptyPromptData } from "@/lib/prompt/types";
 import {
   completePromptClarification,
   generatePrompt,
 } from "./prompt-builder-generation";
-import { resetForInput, revoke } from "./prompt-builder-helpers";
+import {
+  invalidateRequest,
+  resetForInput,
+  revoke,
+} from "./prompt-builder-helpers";
 
 export type PendingClarification = {
   idea: string;
@@ -44,11 +49,15 @@ export type BuilderState = {
   attachments: Attachment[];
   sourcePrompt: SavedPrompt | null;
   revision: number;
+  documentRevision: number;
+  documentSource: string;
+  documentEdited: boolean;
   setIdea(value: string): void;
   setResearchMode(mode: "auto" | "on" | "off"): void;
   setReferenceUrl(url: string): void;
   updateGuidance(field: GuidanceField, value: string): void;
   editPromptField(field: keyof PromptData, value: string): void;
+  editDocument(text: string): void;
   addImages(files: File[]): void;
   removeImage(index: number): void;
   answer(index: number, value: string): void;
@@ -74,47 +83,88 @@ export const usePromptBuilderStore = create<BuilderState>()(
       ready: false,
       attachments: [],
       revision: 0,
+      documentRevision: 0,
+      documentSource: "",
+      documentEdited: false,
       sourcePrompt: null,
 
       setIdea(value) {
         set((state) => ({
-          ...resetForInput(state),
+          ...invalidateRequest(state),
           idea: value,
-          status: value.trim()
-            ? "Ready to shape your idea"
-            : "Add your idea to begin",
+          status: state.ready
+            ? "Source changed. Your previous prompt is kept until a new result succeeds."
+            : value.trim()
+              ? "Ready to shape your idea"
+              : "Add your idea to begin",
         }));
       },
       setResearchMode(mode) {
-        set({ researchMode: mode });
+        set((state) => ({
+          ...invalidateRequest(state),
+          researchMode: mode,
+          pending: state.pending
+            ? {
+                ...state.pending,
+                researchContext: undefined,
+                researchSources: undefined,
+              }
+            : null,
+          status:
+            "Research settings apply to your next request. Current prompt unchanged.",
+        }));
       },
       setReferenceUrl(url) {
-        set({ referenceUrl: url });
+        set((state) => ({
+          ...invalidateRequest(state),
+          referenceUrl: url,
+          pending: state.pending
+            ? {
+                ...state.pending,
+                researchContext: undefined,
+                researchSources: undefined,
+              }
+            : null,
+          status:
+            "Reference URL applies to your next request. Current prompt unchanged.",
+        }));
       },
       updateGuidance(field, value) {
         set((state) => ({
+          ...invalidateRequest(state),
           guidance: { ...state.guidance, [field]: value },
-          pending: null,
-          revision: state.revision + 1,
-          status: state.ready
-            ? "Prompt updated. Review it before using or saving."
-            : state.status,
+          status:
+            "Options apply to your next request. Current prompt unchanged.",
         }));
       },
       editPromptField(field, value) {
         if (field === "raw") return;
         set((state) => {
           if (!state.result?.data) return {};
-          const guidance = { ...state.guidance };
-          delete guidance[field as GuidanceField];
           return {
-            guidance,
+            ...invalidateRequest(state),
             result: {
               ...state.result,
               data: { ...state.result.data, [field]: value },
             },
-            revision: state.revision + 1,
+            documentRevision: state.documentRevision + 1,
+            documentEdited: true,
             status: "Prompt updated. Review it before using or saving.",
+          };
+        });
+      },
+      editDocument(text) {
+        set((state) => {
+          if (!state.result?.data || !state.ready) return {};
+          return {
+            ...invalidateRequest(state),
+            result: {
+              ...state.result,
+              data: { ...emptyPromptData, task: text, raw: true },
+            },
+            documentRevision: state.documentRevision + 1,
+            documentEdited: true,
+            status: "Prompt edited. Copy, export and save use this version.",
           };
         });
       },
@@ -129,7 +179,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
           ...(state.pending?.imageCount &&
           state.attachments.length < state.pending.imageCount
             ? {}
-            : resetForInput(state)),
+            : invalidateRequest(state)),
           attachments: [...state.attachments, ...added],
           status: state.pending?.imageCount
             ? "Images attached. Answer the quick check to finish."
@@ -141,7 +191,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
         if (!current[index]) return;
         revoke([current[index]]);
         set((state) => ({
-          ...resetForInput(state),
+          ...invalidateRequest(state),
           attachments: state.attachments.filter(
             (_, position) => position !== index,
           ),
@@ -149,6 +199,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
       },
       answer(index, value) {
         set((state) => ({
+          ...invalidateRequest(state),
           pending: state.pending
             ? {
                 ...state.pending,
@@ -172,6 +223,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
           idea: saved.idea || saved.data.task,
           guidance: {},
           result: { provider: "library", data: saved.data },
+          documentSource: saved.idea || saved.data.task,
           ready: true,
           attachments: [],
           sourcePrompt: saved,
@@ -219,7 +271,23 @@ export const usePromptBuilderStore = create<BuilderState>()(
         pending: state.pending,
         ready: state.ready,
         sourcePrompt: state.sourcePrompt,
+        documentSource: state.documentSource,
+        documentEdited: state.documentEdited,
       }),
+      merge: (persisted, current) => {
+        const draft = persisted as Partial<BuilderState> | undefined;
+        return {
+          ...current,
+          ...draft,
+          // Request/document identities are session-local and never restored.
+          revision: current.revision,
+          documentRevision: current.documentRevision + 1,
+          busy: false,
+          documentSource:
+            draft?.documentSource ?? (draft?.ready ? draft.idea || "" : ""),
+          documentEdited: draft?.documentEdited ?? false,
+        };
+      },
     },
   ),
 );
