@@ -43,7 +43,8 @@ export default function PromptVariablesForm({
               Dynamic Variables ({variables.length})
             </div>
             <div className="variables-subtitle">
-              Fill in placeholder values to preview and test with real data
+              Values are temporary for copy, download and Run/Compare. Save
+              keeps the template.
             </div>
           </div>
         </div>

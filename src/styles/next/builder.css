@@ -6,6 +6,30 @@
   gap: 17px;
   min-width: 0;
 }
+.prompt-document-tools {
+  display: flex;
+  margin: 12px 0;
+}
+.prompt-document-tools .ui-btn {
+  min-height: 44px;
+}
+.prompt-document-editor {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 240px;
+  max-height: none;
+  overflow: hidden;
+  resize: vertical;
+  padding: 16px;
+  border: 1px solid var(--ui-border, #d7e2d4);
+  border-radius: 12px;
+  background: var(--ui-bg, #fff);
+  color: var(--ui-text, #182824);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+}
 .react-composer-flow > .composer-card {
   margin-top: -17px;
   border-color: #dcebc9;

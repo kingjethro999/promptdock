@@ -161,6 +161,14 @@ export default function PromptWorkspace() {
         </div>
         <PromptPreview
           prompt={builder.prompt}
+          ready={builder.ready}
+          provider={builder.result?.provider}
+          documentRevision={builder.documentRevision}
+          documentEdited={builder.documentEdited}
+          sourceChanged={
+            builder.ready && builder.idea !== builder.documentSource
+          }
+          onEdit={builder.editDocument}
           data={builder.data}
           research={builder.result?.research}
           save={savePrompt}

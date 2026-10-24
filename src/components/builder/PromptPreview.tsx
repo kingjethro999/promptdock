@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { json } from "@/lib/client/api";
 import Button from "@/components/ui/Button";
 import type { PromptData, ResearchMetadata } from "@/lib/prompt/types";
@@ -19,6 +19,12 @@ import type { useSavePrompt } from "@/hooks/useSavePrompt";
 
 type Props = {
   prompt: string;
+  ready: boolean;
+  documentRevision: number;
+  provider?: string;
+  documentEdited?: boolean;
+  sourceChanged?: boolean;
+  onEdit?(text: string): void;
   data?: PromptData | null;
   onSave?: () => void;
   save?: ReturnType<typeof useSavePrompt>;
@@ -28,6 +34,12 @@ type Props = {
 
 export default function PromptPreview({
   prompt,
+  ready,
+  documentRevision,
+  provider,
+  documentEdited,
+  sourceChanged,
+  onEdit,
   data,
   onSave,
   save,
@@ -35,6 +47,9 @@ export default function PromptPreview({
   research,
 }: Props) {
   const [profile, setProfile] = useState<PromptProfile>("universal");
+  const [editing, setEditing] = useState(false);
+  const editor = useRef<HTMLTextAreaElement>(null);
+  const executionRevision = useRef(0);
   const [variableValues, setVariableValues] = useState<Record<string, string>>(
     {},
   );
@@ -48,21 +63,51 @@ export default function PromptPreview({
     | null
   >(null);
 
-  const activePrompt =
-    data && data.task?.trim() ? buildPromptWithProfile(data, profile) : prompt;
+  const activePrompt = !ready
+    ? ""
+    : data && data.task?.trim()
+      ? buildPromptWithProfile(data, profile)
+      : prompt;
 
   const finalPrompt = useVariables
     ? interpolatePrompt(activePrompt, variableValues)
     : activePrompt;
 
+  useLayoutEffect(() => {
+    setVariableValues({});
+  }, [documentRevision]);
+
+  // A response belongs to both a document version and its exact exported text.
+  // Layout effects invalidate it before a newly selected document is painted.
+  useLayoutEffect(() => {
+    executionRevision.current += 1;
+    setMessage("");
+    setRunOutput("");
+    setCompareOutputs(null);
+    setRunning(false);
+    setComparing(false);
+    return () => {
+      executionRevision.current += 1;
+    };
+  }, [documentRevision, finalPrompt]);
+
+  useLayoutEffect(() => {
+    if (!editor.current) return;
+    editor.current.style.height = "auto";
+    editor.current.style.height = `${editor.current.scrollHeight}px`;
+  }, [prompt, editing]);
+
   async function copy() {
     if (!finalPrompt) return;
+    const revision = executionRevision.current;
     try {
       await navigator.clipboard.writeText(finalPrompt);
+      if (revision !== executionRevision.current) return;
       const currentProfile = PROMPT_PROFILES.find((p) => p.id === profile);
       setMessage(`Prompt copied (${currentProfile?.label || "Universal"}).`);
     } catch {
-      setMessage("Copy unavailable. Select the text and copy it.");
+      if (revision === executionRevision.current)
+        setMessage("Copy unavailable. Select the text and copy it.");
     }
   }
 
@@ -75,12 +120,7 @@ export default function PromptPreview({
         : `promptdock-${currentProfile?.id || "prompt"}.md`;
     const mime =
       currentProfile?.id === "cursor" ? "text/plain" : "text/markdown";
-    const header =
-      currentProfile?.id === "cursor"
-        ? `${finalPrompt}\n`
-        : `# My prompt (${currentProfile?.label})\n\n${finalPrompt}\n`;
-
-    const url = URL.createObjectURL(new Blob([header], { type: mime }));
+    const url = URL.createObjectURL(new Blob([finalPrompt], { type: mime }));
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
@@ -90,27 +130,31 @@ export default function PromptPreview({
 
   async function testPrompt() {
     if (!finalPrompt || running || comparing) return;
+    const revision = executionRevision.current;
     setRunning(true);
-    setMessage("Testing your finished prompt…");
+    setMessage("Testing the current prompt…");
     try {
       const result = await json<{ text: string; provider: string }>(
         "/api/run",
         "POST",
         { prompt: finalPrompt },
       );
+      if (revision !== executionRevision.current) return;
       setRunOutput(result.text);
       setMessage(`Tested with ${result.provider}.`);
     } catch (error) {
+      if (revision !== executionRevision.current) return;
       setMessage(
         error instanceof Error ? error.message : "Could not test this prompt.",
       );
     } finally {
-      setRunning(false);
+      if (revision === executionRevision.current) setRunning(false);
     }
   }
 
   async function comparePrompt() {
     if (!finalPrompt || running || comparing) return;
+    const revision = executionRevision.current;
     setComparing(true);
     setMessage("Running prompt across multiple models in parallel…");
     try {
@@ -122,6 +166,7 @@ export default function PromptPreview({
           success: boolean;
         }[];
       }>("/api/run", "POST", { prompt: finalPrompt, compare: true });
+      if (revision !== executionRevision.current) return;
       setCompareOutputs(result.results);
       setMessage(
         `Comparison complete across ${result.results.length} model${
@@ -129,13 +174,14 @@ export default function PromptPreview({
         }.`,
       );
     } catch (error) {
+      if (revision !== executionRevision.current) return;
       setMessage(
         error instanceof Error
           ? error.message
           : "Could not compare models right now.",
       );
     } finally {
-      setComparing(false);
+      if (revision === executionRevision.current) setComparing(false);
     }
   }
 
@@ -151,13 +197,29 @@ export default function PromptPreview({
         </span>
       </div>
       <h2 id="previewHeading">
-        {finalPrompt ? "Your finished prompt" : "Your prompt will appear here"}
+        {!ready
+          ? "Your prompt will appear here"
+          : documentEdited
+            ? "Your edited prompt"
+            : provider === "source-preserved"
+              ? "Your preserved source"
+              : provider === "library"
+                ? "Your saved prompt"
+                : "Your prompt"}
       </h2>
       <p className="preview-subtitle">
-        {finalPrompt
-          ? "Review and optimize it for your target AI platform."
+        {ready
+          ? provider === "source-preserved"
+            ? "Source preserved, not AI-refined. You can edit or copy it, or retry refinement from your source."
+            : "Review or edit your document before using it. Export profiles change formatting; Save keeps the editable document."
           : "Share your idea, then let PromptDock shape it."}
       </p>
+      {sourceChanged && (
+        <p className="settings-feedback" role="status">
+          Your source has changed. This is your previous prompt, kept until a
+          new result succeeds.
+        </p>
+      )}
 
       {activePrompt && (
         <div
@@ -199,14 +261,40 @@ export default function PromptPreview({
 
       {activePrompt && <ResearchDrawer research={research} />}
 
-      <div
-        className={`prompt-output${finalPrompt ? "" : " is-empty"}`}
-        tabIndex={0}
-        aria-live="polite"
-      >
-        {finalPrompt ||
-          "Your prompt will appear here after PromptDock shapes your idea."}
-      </div>
+      {ready && onEdit && (
+        <div className="prompt-document-tools">
+          <Button
+            variant="quiet"
+            onClick={() => setEditing(!editing)}
+            aria-expanded={editing}
+            aria-controls="promptDocumentEditor"
+          >
+            <Icon name="pencil" size={16} />{" "}
+            {editing ? "Done editing" : "Edit prompt"}
+          </Button>
+        </div>
+      )}
+      {ready && editing && onEdit ? (
+        <textarea
+          ref={editor}
+          id="promptDocumentEditor"
+          className="prompt-document-editor"
+          aria-label="Edit current prompt"
+          value={prompt}
+          onChange={(event) => onEdit(event.target.value)}
+          autoFocus
+          rows={10}
+        />
+      ) : (
+        <div
+          className={`prompt-output${finalPrompt ? "" : " is-empty"}`}
+          tabIndex={0}
+          aria-live="polite"
+        >
+          {finalPrompt ||
+            "Your prompt will appear here after PromptDock shapes your idea."}
+        </div>
+      )}
 
       <div className="preview-actions">
         <Button variant="primary" disabled={!finalPrompt} onClick={copy}>
@@ -227,15 +315,15 @@ export default function PromptPreview({
       </div>
 
       <div className="export-row">
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           className="quiet-button"
           disabled={!finalPrompt}
           onClick={download}
         >
-          ↓ Download{" "}
+          <Icon name="arrow-down" size={16} /> Download{" "}
           {profile === "cursor" ? ".cursorrules" : `(${profile}) .md`}
-        </button>
+        </Button>
         <span className="word-count">
           {finalPrompt
             ? `${finalPrompt.trim().split(/\s+/).length} words`
@@ -244,22 +332,23 @@ export default function PromptPreview({
       </div>
 
       <div className="run-row">
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           className="ai-button run-button"
           disabled={!finalPrompt || running || comparing}
           onClick={testPrompt}
         >
-          <span>▶</span> {running ? "Running…" : "Run"}
-        </button>
-        <button
-          type="button"
+          <Icon name="zap" size={16} /> {running ? "Running…" : "Run"}
+        </Button>
+        <Button
+          variant="quiet"
           className="ai-button arena-button"
           disabled={!finalPrompt || running || comparing}
           onClick={comparePrompt}
         >
-          <span>⚔</span> {comparing ? "Comparing…" : "Compare"}
-        </button>
+          <Icon name="shuffle" size={16} />{" "}
+          {comparing ? "Comparing…" : "Compare"}
+        </Button>
         <span className="run-note">
           Test your AI or compare multi-model outputs.
         </span>
