@@ -1,12 +1,22 @@
 import type { Attachment } from "@/hooks/useAttachments";
 import type { BuilderState } from "./prompt-builder";
 
-export function resetForInput(state: BuilderState) {
+export function invalidateRequest(state: BuilderState) {
   return {
     revision: state.revision + 1,
-    result: null,
     pending: null,
+    busy: false,
+  };
+}
+
+export function resetForInput(state: BuilderState) {
+  return {
+    ...invalidateRequest(state),
+    result: null,
     ready: false,
+    documentRevision: state.documentRevision + 1,
+    documentSource: "",
+    documentEdited: false,
   };
 }
 

@@ -1277,6 +1277,7 @@ test("detailed refinement falls back to the source after failed repair validatio
   );
   assert.equal(queue.length, 0);
   assert.equal(result.data.raw, true);
+  assert.equal(result.provider, "source-preserved");
   assert.match(result.data.task, /Do not delete existing records/);
   assert.match(result.data.task, /Do not introduce downtime/);
   assert.match(

@@ -16,9 +16,13 @@ export function usePromptBuilder() {
   const sourcePrompt = usePromptBuilderStore((state) => state.sourcePrompt);
   const researchMode = usePromptBuilderStore((state) => state.researchMode);
   const referenceUrl = usePromptBuilderStore((state) => state.referenceUrl);
-  const data = result?.data
-    ? { ...emptyPromptData, ...result.data, ...guidance }
-    : null;
+  const documentRevision = usePromptBuilderStore(
+    (state) => state.documentRevision,
+  );
+  const documentSource = usePromptBuilderStore((state) => state.documentSource);
+  const documentEdited = usePromptBuilderStore((state) => state.documentEdited);
+  const data =
+    ready && result?.data ? { ...emptyPromptData, ...result.data } : null;
   return {
     idea,
     guidance,
@@ -29,6 +33,9 @@ export function usePromptBuilder() {
     status,
     busy,
     ready,
+    documentRevision,
+    documentSource,
+    documentEdited,
     data,
     sourcePrompt,
     prompt: ready && data ? buildPrompt(data) : "",
@@ -38,6 +45,7 @@ export function usePromptBuilder() {
     setReferenceUrl: usePromptBuilderStore((state) => state.setReferenceUrl),
     updateGuidance: usePromptBuilderStore((state) => state.updateGuidance),
     editPromptField: usePromptBuilderStore((state) => state.editPromptField),
+    editDocument: usePromptBuilderStore((state) => state.editDocument),
     addImages: usePromptBuilderStore((state) => state.addImages),
     removeImage: usePromptBuilderStore((state) => state.removeImage),
     answer: usePromptBuilderStore((state) => state.answer),

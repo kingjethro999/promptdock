@@ -32,7 +32,7 @@ export function buildPayload(
           ""
         : b.sourcePrompt?.name || b.data?.task.slice(0, 90) || "",
     data: b.data,
-    idea: b.idea,
+    idea: b.documentSource,
     analysis: b.result?.interpretation || b.sourcePrompt?.analysis || null,
     tags:
       overrides?.tags !== undefined

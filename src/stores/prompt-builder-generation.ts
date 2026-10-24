@@ -54,8 +54,12 @@ export async function generatePrompt(get: GetState, set: SetState) {
   const source =
     state.idea.trim() || (state.attachments.length ? imageOnlyIdea : "");
   if (state.busy || source.length < 4) return;
-  const revision = state.revision;
-  set({ busy: true, status: "Reading your idea and shaping the prompt…" });
+  const revision = state.revision + 1;
+  set({
+    revision,
+    busy: true,
+    status: "Reading your idea and shaping the prompt…",
+  });
   try {
     const response = await requestPrompt(
       source,
@@ -85,12 +89,7 @@ export async function generatePrompt(get: GetState, set: SetState) {
         status: "A few details could change the result. Answer or skip.",
       });
     } else if (response.data) {
-      set({
-        result: response,
-        ready: true,
-        pending: null,
-        status: "Prompt ready. Make it yours.",
-      });
+      acceptResult(state, set, response);
     } else throw new Error("The AI response did not contain a prompt.");
   } catch (error) {
     if (revision === get().revision)
@@ -99,7 +98,7 @@ export async function generatePrompt(get: GetState, set: SetState) {
           error instanceof Error ? error.message : "Could not shape this idea.",
       });
   } finally {
-    set({ busy: false });
+    if (revision === get().revision) set({ busy: false });
   }
 }
 
@@ -116,8 +115,9 @@ export async function completePromptClarification(
     });
     return;
   }
-  const revision = state.revision;
+  const revision = state.revision + 1;
   set({
+    revision,
     busy: true,
     status: "Shaping your prompt from your idea and answers…",
   });
@@ -148,12 +148,7 @@ export async function completePromptClarification(
     if (revision !== get().revision) return;
     if (!response.data)
       throw new Error("Could not finish this prompt. Try again.");
-    set({
-      result: response,
-      ready: true,
-      pending: null,
-      status: "Prompt ready. Make it yours.",
-    });
+    acceptResult(state, set, response);
   } catch (error) {
     if (revision === get().revision)
       set({
@@ -163,6 +158,33 @@ export async function completePromptClarification(
             : "Could not finish this prompt.",
       });
   } finally {
-    set({ busy: false });
+    if (revision === get().revision) set({ busy: false });
   }
+}
+
+function acceptResult(
+  state: BuilderState,
+  set: SetState,
+  response: IdeaResult,
+) {
+  const preserved = response.provider === "source-preserved";
+  if (preserved && state.ready && state.result?.data?.task.trim()) {
+    set({
+      pending: null,
+      status:
+        "Refinement could not be verified. Your previous prompt is kept. Try again.",
+    });
+    return;
+  }
+  set({
+    result: response,
+    ready: true,
+    pending: null,
+    documentRevision: state.documentRevision + 1,
+    documentSource: state.idea,
+    documentEdited: false,
+    status: preserved
+      ? "Source preserved, not AI-refined. Refinement could not be verified. Try again."
+      : "Prompt ready. Make it yours.",
+  });
 }
