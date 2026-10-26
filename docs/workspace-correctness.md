@@ -7,11 +7,11 @@ The workspace keeps a current document independently of the next refinement requ
 - `idea`, `guidance`, research mode, reference URL and attachments describe the next request. Editing them must not silently rewrite or delete the current result.
 - `result.data` is the current document. `ready` means it can be shown/edited, **not** that AI refinement succeeded. `source-preserved` is an explicit unverified fallback; a failed refinement retains an existing usable document.
 - `documentSource` records the source associated with that result. Saving an existing result uses this snapshot, not unsubmitted changes in the composer.
-- `revision` invalidates pending generation/clarification work. Starting a request also advances it. Only its owning revision may accept a response, show a request error or clear `busy`.
+- `revision` invalidates pending generation/clarification work. Starting a request also advances it. Ownership is checked after image preparation and before HTTP dispatch, as well as before accepting a response, showing a request error or clearing `busy`.
 - `documentRevision` advances on replacement, edits, clear and hydration. Run/Compare results belong to that version and the exact exported text, including profile/temporary variables. Late responses cannot overwrite a later version's execution state.
 - `documentEdited` distinguishes manual edits. Whole-document editing stores a compatible raw `PromptData` document and clears structured fields already incorporated into its text. Request guidance remains independent.
 
-The existing account-specific draft keys and `SavedPrompt` database schema are unchanged. Older drafts receive default document metadata during hydration; session-local request/version counters are not restored from storage.
+The existing account-specific draft keys and `SavedPrompt` database schema are unchanged. Ready drafts without `documentSource` predate the document/request split: hydration materializes their former guidance overlay into the current document so unsaved edits survive the upgrade. Drafts with the source snapshot already use the new semantics and never apply that overlay again. Session-local request/version counters are not restored from storage.
 
 ## Export semantics
 

@@ -13,6 +13,7 @@ async function requestPrompt(
   idea: string,
   guidance: Guidance,
   files: File[],
+  isCurrent: () => boolean,
   clarifications?: { question: string; answer: string }[],
   research?: {
     context?: string;
@@ -37,6 +38,10 @@ async function requestPrompt(
       clarifications,
     ),
   );
+  // Image preparation may outlive an input change or account switch. Check
+  // ownership before fetch reads the current same-origin session credentials.
+  if (!isCurrent())
+    throw new Error("This refinement request is no longer current.");
   if (research?.context) body.researchContext = research.context;
   if (research?.sources?.length) body.researchSources = research.sources;
   if (options?.researchMode) body.researchMode = options.researchMode;
@@ -65,6 +70,7 @@ export async function generatePrompt(get: GetState, set: SetState) {
       source,
       state.guidance,
       state.attachments.map(({ file }) => file),
+      () => revision === get().revision,
       undefined,
       undefined,
       {
@@ -131,6 +137,7 @@ export async function completePromptClarification(
       idea,
       guidance,
       state.attachments.map(({ file }) => file),
+      () => revision === get().revision,
       clarifications,
       state.pending.researchContext
         ? {
