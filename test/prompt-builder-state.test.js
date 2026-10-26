@@ -9,10 +9,11 @@ const { createRoot } = require("react-dom/client");
 const { JSDOM } = require("jsdom");
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-function fixture() {
+function fixture(browser = {}) {
   const requests = [];
   const storage = memoryStorage();
   const load = createClientLoader({
+    ...browser,
     localStorage: storage,
     fetch: (url, options) =>
       new Promise((resolve, reject) => {
@@ -267,3 +268,88 @@ test("old account drafts restore with a source snapshot without restoring reques
   assert.equal(store.getState().revision, revision);
   assert.equal(store.getState().busy, false);
 });
+
+test("legacy ready drafts preserve output edits previously stored in guidance", async () => {
+  const { store, saved, storage, load } = fixture();
+  storage.setItem(
+    "promptdock.react-draft.v1",
+    JSON.stringify({
+      version: 0,
+      state: {
+        idea: saved.idea,
+        result: {
+          provider: "fixture",
+          data: { ...saved.data, tone: "Neutral" },
+        },
+        ready: true,
+        guidance: {
+          tone: "Professional",
+          constraints: "Do not include customer names",
+        },
+        sourcePrompt: saved,
+      },
+    }),
+  );
+  await store.persist.rehydrate();
+  const state = store.getState();
+  assert.equal(
+    load("src/lib/prompt/format.ts").buildPrompt(state.result.data),
+    "Original document\n\nTone: Professional\n\nRequirements: Do not include customer names",
+  );
+  assert.equal(state.documentEdited, true);
+  // New-format drafts must not overlay next-request guidance during restoration.
+  state.updateGuidance("tone", "Friendly");
+  await store.persist.rehydrate();
+  assert.equal(store.getState().result.data.tone, "Professional");
+  assert.equal(store.getState().guidance.tone, "Friendly");
+});
+
+for (const continuation of [false, true]) {
+  test(`${continuation ? "clarification" : "generation"} never dispatches prepared images after switching accounts`, async () => {
+    const readers = [];
+    const { store, requests, load, saved } = fixture({
+      FileReader: class {
+        readAsDataURL() {
+          readers.push(() => {
+            this.result = "data:image/png;base64,AA==";
+            this.onload();
+          });
+        }
+      },
+    });
+    const { bindBuilderAccount } = load("src/stores/prompt-builder-account.ts");
+    await bindBuilderAccount("account-a");
+    store.getState().setIdea("Private source belonging to account A");
+    store
+      .getState()
+      .addImages([new File(["image"], "reference.png", { type: "image/png" })]);
+    let pending = store.getState().generate();
+    if (continuation) {
+      readers.shift()();
+      await new Promise(setImmediate);
+      requests[0].resolve({
+        provider: "fixture",
+        questions: ["What should change?"],
+      });
+      await pending;
+      store.getState().answer(0, "Keep the structure");
+      pending = store.getState().finishClarification();
+    }
+    const sentBeforeSwitch = requests.length;
+    assert.equal(readers.length, 1);
+    await bindBuilderAccount("account-b");
+    readers.shift()();
+    await new Promise(setImmediate);
+    // Settle a buggy dispatch so RED fails on leakage, not an unresolved promise.
+    for (const request of requests.slice(sentBeforeSwitch))
+      request.resolve({ provider: "fixture", data: saved.data });
+    await pending;
+    assert.equal(
+      requests.length,
+      sentBeforeSwitch,
+      "A prepared request must not be sent using the next account's session",
+    );
+    assert.equal(store.getState().result, null);
+    assert.equal(store.getState().busy, false);
+  });
+}

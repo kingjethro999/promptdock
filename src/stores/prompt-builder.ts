@@ -276,16 +276,36 @@ export const usePromptBuilderStore = create<BuilderState>()(
       }),
       merge: (persisted, current) => {
         const draft = persisted as Partial<BuilderState> | undefined;
+        // Pre-document drafts displayed guidance as live edits to result.data.
+        // Materialize that former document once; newer drafts have a source
+        // snapshot and must keep next-request guidance separate on restoration.
+        const legacyResult =
+          draft?.documentSource === undefined && draft?.ready
+            ? draft.result
+            : null;
+        const legacyEdited = Boolean(
+          legacyResult?.data &&
+          Object.entries(draft?.guidance || {}).some(
+            ([field, value]) =>
+              legacyResult.data?.[field as GuidanceField] !== value,
+          ),
+        );
         return {
           ...current,
           ...draft,
+          result: legacyResult?.data
+            ? {
+                ...legacyResult,
+                data: { ...legacyResult.data, ...draft?.guidance },
+              }
+            : (draft?.result ?? current.result),
           // Request/document identities are session-local and never restored.
           revision: current.revision,
           documentRevision: current.documentRevision + 1,
           busy: false,
           documentSource:
             draft?.documentSource ?? (draft?.ready ? draft.idea || "" : ""),
-          documentEdited: draft?.documentEdited ?? false,
+          documentEdited: draft?.documentEdited ?? legacyEdited,
         };
       },
     },
