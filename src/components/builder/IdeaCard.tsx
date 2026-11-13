@@ -2,7 +2,10 @@
 
 import { useVoiceIdea } from "@/hooks/useVoiceIdea";
 import type { Attachment } from "@/hooks/useAttachments";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Popover } from "@/components/ui/Popover";
+import { usePromptBuilderStore } from "@/stores/prompt-builder";
+import { useIdeaSuggestions, type IdeaSuggestion } from "./useIdeaSuggestions";
 
 type Props = {
   idea: string;
@@ -22,6 +25,21 @@ export default function IdeaCard({
   removeImage,
 }: Props) {
   const [imageError, setImageError] = useState("");
+  const loadTemplate = usePromptBuilderStore((state) => state.loadTemplate);
+  // The example stops moving for good once the visitor starts writing.
+  const [touched, setTouched] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
+  const browseButton = useRef<HTMLButtonElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const empty = idea === "";
+  const suggestions = useIdeaSuggestions(empty && !touched);
+
+  function use(suggestion: IdeaSuggestion) {
+    setTouched(true);
+    if (suggestion.template) loadTemplate(suggestion.template);
+    else setIdea(suggestion.idea);
+    input.current?.focus();
+  }
   const voice = useVoiceIdea((text) =>
     setIdea([idea.trim(), text.trim()].filter(Boolean).join("\n")),
   );
@@ -46,9 +64,29 @@ export default function IdeaCard({
           data-tour="composer"
           rows={5}
           maxLength={100000}
+          ref={input}
           value={idea}
-          onChange={(event) => setIdea(event.target.value)}
-          placeholder="I have an idea for an app that helps students study, but I'm not sure what features it needs…"
+          aria-describedby="ideaSuggestionHint"
+          onChange={(event) => {
+            setTouched(true);
+            setIdea(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            // Tab accepts the example only while the box is empty. With text
+            // in it, or with Shift held, Tab moves focus as usual.
+            if (
+              event.key !== "Tab" ||
+              !empty ||
+              event.shiftKey ||
+              event.altKey ||
+              event.ctrlKey ||
+              event.metaKey
+            )
+              return;
+            event.preventDefault();
+            use(suggestions.current);
+          }}
+          placeholder={suggestions.placeholder}
         />
         <div className="voice-controls">
           <button
@@ -128,31 +166,61 @@ export default function IdeaCard({
           ))}
         </div>
       )}
-      <div className="idea-examples">
-        <span>TRY AN EXAMPLE</span>
+      <div className="idea-suggest">
+        {empty ? (
+          <button
+            type="button"
+            className="idea-suggest-chip"
+            id="ideaSuggestionHint"
+            onClick={() => use(suggestions.current)}
+            aria-label={`Use this example: ${suggestions.current.idea}`}
+          >
+            <kbd aria-hidden="true">Tab</kbd>
+            <span className="idea-suggest-verb">Use</span>
+            <span className="idea-suggest-name">
+              {suggestions.current.name}
+            </span>
+          </button>
+        ) : (
+          <span id="ideaSuggestionHint" className="sr-only">
+            Your idea is ready to shape.
+          </span>
+        )}
         <button
+          ref={browseButton}
           type="button"
-          className="idea-example"
-          onClick={() =>
-            setIdea(
-              "I want to start a small online business selling handmade skincare, but I do not know where to begin.",
-            )
-          }
+          className="idea-suggest-browse"
+          aria-haspopup="dialog"
+          aria-expanded={browsing}
+          onClick={() => setBrowsing((open) => !open)}
         >
-          Start a business
-        </button>
-        <button
-          type="button"
-          className="idea-example"
-          onClick={() =>
-            setIdea(
-              "I have an idea for an app that helps people plan meals from ingredients they already have. Help me think it through.",
-            )
-          }
-        >
-          Plan an app
+          Browse templates
         </button>
       </div>
+      <Popover
+        open={browsing}
+        onClose={() => setBrowsing(false)}
+        anchorRef={browseButton}
+        label="Templates"
+        align="start"
+      >
+        <ul className="idea-template-list">
+          {suggestions.all.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setBrowsing(false);
+                  use(item);
+                }}
+              >
+                <strong>{item.name}</strong>
+                <span>{item.idea}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Popover>
     </section>
   );
 }

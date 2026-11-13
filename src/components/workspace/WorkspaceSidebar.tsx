@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
-import { promptTemplates } from "@/lib/prompt/templates";
-import { usePromptBuilderStore } from "@/stores/prompt-builder";
+import { readFlag, SUPPORT_LINKS, writeFlag } from "@/lib/client/support";
 import { detachBuilderAccount } from "@/stores/prompt-builder-account";
 import BrandMark from "@/components/ui/BrandMark";
+import { Icon } from "@/components/ui/Icon";
 import FeedbackDialog from "@/components/landing/FeedbackDialog";
 import InviteFriends from "./InviteFriends";
 
@@ -20,52 +19,70 @@ type Props = {
   admin: boolean;
   username: string | null;
   onNotice(message: string): void;
+  onHelp(): void;
 };
+
+const MORE_KEY = "promptdock.sidebar.more";
 
 const isProfilePath = (p: string) =>
   /^\/[^/]+\/?$/.test(p) &&
   !RESERVED.has((p.split("/")[1] || "").toLowerCase());
 
-function CommunityIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      style={{ verticalAlign: "middle" }}
-      {...props}
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
+/**
+ * Workspace navigation. Only the three everyday destinations are always
+ * visible; account items sit under "More" and support links under "Help".
+ * Both groups stay mounted while closed because they own dialogs.
+ */
 export default function WorkspaceSidebar({
   open,
   close,
   admin,
   username,
   onNotice,
+  onHelp,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const loadTemplate = usePromptBuilderStore((state) => state.loadTemplate);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  const onSettings = pathname.startsWith("/settings");
+  const [more, setMore] = useState(false);
+  const [help, setHelp] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     api<{ total: number }>("/api/prompts?limit=1")
       .then((result) => setLibraryCount(result.total))
       .catch(() => {});
   }, [pathname]);
+
+  useEffect(() => {
+    if (readFlag(MORE_KEY)) setMore(true);
+  }, []);
+  const moreOpen = more || onSettings;
+
+  useEffect(() => {
+    if (!help) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setHelp(false);
+      helpRef.current?.querySelector<HTMLElement>("button")?.focus();
+    };
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as Element;
+      // Dialogs opened from the menu render outside it; leave them alone.
+      if (
+        !helpRef.current?.contains(target) &&
+        !target.closest?.(".react-modal-backdrop, dialog")
+      )
+        setHelp(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [help]);
 
   async function logout() {
     try {
@@ -78,28 +95,18 @@ export default function WorkspaceSidebar({
     }
   }
 
-  function selectTemplate(id: string) {
-    const template = promptTemplates.find((item) => item.id === id);
-    if (!template) return;
-    loadTemplate(template);
-    close();
-    router.push("/workspace");
-  }
-
   return (
-    <aside className={`sidebar${open ? " open" : ""}`}>
+    <aside className={`sidebar sidebar-refresh${open ? " open" : ""}`}>
       <BrandMark compact />
-      <div className="sidebar-label">WORKSPACE</div>
       <nav className="main-nav" aria-label="Main navigation">
         <Link
           href="/workspace"
           onClick={close}
           data-tour="nav-new-prompt"
+          aria-current={pathname === "/workspace" ? "page" : undefined}
           className={`nav-item${pathname === "/workspace" ? " active" : ""}`}
         >
-          <span className="nav-icon" aria-hidden="true">
-            ✦
-          </span>
+          <Icon name="sparkles" size={17} className="nav-icon" />
           <span>New Prompt</span>
         </Link>
 
@@ -107,11 +114,10 @@ export default function WorkspaceSidebar({
           href="/library"
           onClick={close}
           data-tour="nav-library"
+          aria-current={pathname.startsWith("/library") ? "page" : undefined}
           className={`nav-item${pathname.startsWith("/library") ? " active" : ""}`}
         >
-          <span className="nav-icon" aria-hidden="true">
-            ▦
-          </span>
+          <Icon name="library" size={17} className="nav-icon" />
           <span>Library</span>
           {libraryCount !== null && (
             <span className="nav-count">{libraryCount}</span>
@@ -128,97 +134,126 @@ export default function WorkspaceSidebar({
               : ""
           }`}
         >
-          <span className="nav-icon" aria-hidden="true">
-            <CommunityIcon />
-          </span>
+          <Icon name="users" size={17} className="nav-icon" />
           <span>Community</span>
         </Link>
 
-        <Link
-          href="/settings"
-          onClick={close}
-          data-tour="nav-settings"
-          className={`nav-item${pathname.startsWith("/settings") ? " active" : ""}`}
-        >
-          <span className="nav-icon" aria-hidden="true">
-            ⚙
-          </span>
-          <span>Settings</span>
-        </Link>
-      </nav>
-      <div className="sidebar-divider" />
-      <div className="sidebar-label sidebar-label-row">
-        <span>QUICK STARTS</span>
-        <span className="tiny-sparkle" aria-hidden="true">
-          ✳
-        </span>
-      </div>
-      <nav className="template-nav" aria-label="Quick starts">
-        {promptTemplates.map((item) => (
+        {/* The onboarding tour points at this group for Settings, so the
+            target exists whether or not the group is expanded. */}
+        <div className="sidebar-more-group" data-tour="nav-settings">
           <button
             type="button"
-            className="template-item"
-            key={item.id}
-            onClick={() => selectTemplate(item.id)}
+            className="nav-item sidebar-more-toggle"
+            aria-expanded={moreOpen}
+            aria-controls="sidebarMore"
+            onClick={() => {
+              setMore(!moreOpen);
+              writeFlag(MORE_KEY, !moreOpen);
+            }}
           >
-            <span className="template-glyph" aria-hidden="true">
-              {item.icon}
-            </span>
-            <span>{item.name}</span>
+            <Icon
+              name={moreOpen ? "chevron-up" : "chevron-down"}
+              size={17}
+              className="nav-icon"
+            />
+            <span>More</span>
           </button>
-        ))}
+          <div id="sidebarMore" className="sidebar-more" hidden={!moreOpen}>
+            <Link
+              href="/settings"
+              onClick={close}
+              aria-current={onSettings ? "page" : undefined}
+              className={`nav-item${onSettings ? " active" : ""}`}
+            >
+              <Icon name="settings" size={17} className="nav-icon" />
+              <span>Settings</span>
+            </Link>
+            <InviteFriends
+              username={username}
+              closeSidebar={close}
+              triggerClassName="nav-item"
+            >
+              <Icon name="send" size={17} className="nav-icon" />
+              <span>Invite friends</span>
+            </InviteFriends>
+            {admin && (
+              <Link href="/admin" onClick={close} className="nav-item">
+                <Icon name="shield" size={17} className="nav-icon" />
+                <span>Admin console</span>
+              </Link>
+            )}
+            <button type="button" className="nav-item" onClick={logout}>
+              <Icon name="logout" size={17} className="nav-icon" />
+              <span>Sign out</span>
+            </button>
+          </div>
+        </div>
       </nav>
-      <div className="sidebar-bottom">
-        <InviteFriends username={username} closeSidebar={close} />
-        <FeedbackDialog
-          className="sidebar-feedback"
-          label="✎  Report an issue or idea"
-        />
-        <div className="sidebar-sponsor">
-          <Image
-            className="sidebar-sponsor-icon"
-            src="/assets/brands/github.png"
-            alt="GitHub"
-            width={26}
-            height={26}
-          />
-          <strong>Enjoying PromptDock?</strong>
-          <p>Help shape what comes next.</p>
-          <a
-            href="https://github.com/sponsors/kingjethro999"
-            target="_blank"
-            rel="noopener noreferrer"
+
+      <div className="sidebar-bottom sidebar-help" ref={helpRef}>
+        <div
+          id="sidebarHelp"
+          className="sidebar-help-panel"
+          role="group"
+          aria-label="Help and support"
+          hidden={!help}
+        >
+          <button
+            type="button"
+            className="sidebar-help-item"
+            onClick={() => {
+              setHelp(false);
+              close();
+              onHelp();
+            }}
           >
-            Sponsor on GitHub <span aria-hidden="true">↗</span>
-          </a>
+            <Icon name="info" size={15} />
+            <span>How PromptDock works</span>
+          </button>
+          <FeedbackDialog
+            className="sidebar-help-item"
+            label="Report an issue or idea"
+          />
+          {SUPPORT_LINKS.map((link) => (
+            <a
+              key={link.id}
+              className="sidebar-help-item"
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="heart" size={15} />
+              <span>Support on {link.label}</span>
+              <Icon name="external-link" size={12} />
+            </a>
+          ))}
+          <p className="sidebar-help-tip">
+            <strong>Better input, better output.</strong> Give your AI a clear
+            job, context, and a format to follow.
+          </p>
+          <nav className="sidebar-legal" aria-label="Legal information">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/copyright">Copyright</Link>
+          </nav>
+          <div className="sidebar-version">
+            PromptDock{" "}
+            <span>v{process.env.NEXT_PUBLIC_APP_VERSION || "0.7.4"}</span>
+          </div>
         </div>
-        <button type="button" className="sidebar-signout" onClick={logout}>
-          <span aria-hidden="true">↗</span> Sign out
+        <button
+          type="button"
+          className="nav-item sidebar-help-toggle"
+          aria-expanded={help}
+          aria-controls="sidebarHelp"
+          onClick={() => setHelp(!help)}
+        >
+          <Icon name="help" size={17} className="nav-icon" />
+          <span>Help</span>
         </button>
-        {admin && (
-          <Link href="/admin" className="sidebar-feedback">
-            ✦ Admin console ↗
-          </Link>
-        )}
-        <div className="tip-card">
-          <span className="tip-icon" aria-hidden="true">
-            ✦
-          </span>
-          <strong>Better input. Better output.</strong>
-          <p>Give your AI a clear job, context, and a format to follow.</p>
-        </div>
         <div className="privacy-note">
           <span className="status-dot" />
           <span>Library syncs with your account</span>
-        </div>
-        <nav className="sidebar-legal" aria-label="Legal information">
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
-          <Link href="/copyright">Copyright</Link>
-        </nav>
-        <div className="sidebar-version">
-          PromptDock{" "}
-          <span>v{process.env.NEXT_PUBLIC_APP_VERSION || "0.7.4"}</span>
         </div>
       </div>
     </aside>

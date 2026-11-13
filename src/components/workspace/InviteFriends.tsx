@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/client/api";
 import Button from "@/components/ui/Button";
 
@@ -15,9 +16,14 @@ type Referral = {
 export default function InviteFriends({
   username,
   closeSidebar,
+  triggerClassName = "sidebar-feedback",
+  children,
 }: {
   username: string | null;
   closeSidebar(): void;
+  triggerClassName?: string;
+  /** Replaces the default trigger content. */
+  children?: React.ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const link = useRef<HTMLInputElement>(null);
@@ -96,86 +102,95 @@ export default function InviteFriends({
 
   return (
     <>
-      <button className="sidebar-feedback" type="button" onClick={show}>
-        <span aria-hidden="true">↗</span> Invite friends
+      <button className={triggerClassName} type="button" onClick={show}>
+        {children ?? (
+          <>
+            <span aria-hidden="true">↗</span> Invite friends
+          </>
+        )}
       </button>
-      {open && (
-        <dialog
-          ref={dialog}
-          className="app-dialog invite-dialog"
-          onClose={() => setOpen(false)}
-          onClick={(event) => {
-            if (event.target === dialog.current) close();
-          }}
-        >
-          <button
-            className="dialog-close"
-            type="button"
-            aria-label="Close invitation"
-            onClick={close}
+      {/* Portaled so the collapsed sidebar group it lives in cannot hide it. */}
+      {open &&
+        createPortal(
+          <dialog
+            ref={dialog}
+            className="app-dialog invite-dialog"
+            onClose={() => setOpen(false)}
+            onClick={(event) => {
+              if (event.target === dialog.current) close();
+            }}
           >
-            ×
-          </button>
-          <span className="dialog-icon" aria-hidden="true">
-            ↗
-          </span>
-          <h2>Bring a friend along</h2>
-          <p>
-            Share PromptDock with someone who has ideas worth building. Each
-            friend who verifies an account adds to your hourly AI and voice
-            allowance, up to five friends.
-          </p>
-          <div className="invite-stats" aria-live="polite">
-            <div>
-              <strong>
-                {referral
-                  ? `${referral.verified} / ${referral.maxRewards}`
-                  : "—"}
-              </strong>
-              <span>Verified friends</span>
+            <button
+              className="dialog-close"
+              type="button"
+              aria-label="Close invitation"
+              onClick={close}
+            >
+              ×
+            </button>
+            <span className="dialog-icon" aria-hidden="true">
+              ↗
+            </span>
+            <h2>Bring a friend along</h2>
+            <p>
+              Share PromptDock with someone who has ideas worth building. Each
+              friend who verifies an account adds to your hourly AI and voice
+              allowance, up to five friends.
+            </p>
+            <div className="invite-stats" aria-live="polite">
+              <div>
+                <strong>
+                  {referral
+                    ? `${referral.verified} / ${referral.maxRewards}`
+                    : "—"}
+                </strong>
+                <span>Verified friends</span>
+              </div>
+              <div>
+                <strong>
+                  {referral ? `+${referral.rewardLevel * 2}` : "—"}
+                </strong>
+                <span>Extra uses per AI action / hour</span>
+              </div>
+              <div>
+                <strong>{referral ? `+${referral.rewardLevel}` : "—"}</strong>
+                <span>Extra voice recordings / hour</span>
+              </div>
             </div>
-            <div>
-              <strong>{referral ? `+${referral.rewardLevel * 2}` : "—"}</strong>
-              <span>Extra uses per AI action / hour</span>
-            </div>
-            <div>
-              <strong>{referral ? `+${referral.rewardLevel}` : "—"}</strong>
-              <span>Extra voice recordings / hour</span>
-            </div>
-          </div>
-          <p className="invite-pending">
-            {referral
-              ? pending
-                ? `${pending} friend${pending === 1 ? "" : "s"} signed up and ${pending === 1 ? "is" : "are"} waiting to verify email.`
-                : referral.rewardLevel >= referral.maxRewards
-                  ? "You reached the maximum referral bonus. Your link still welcomes new people."
-                  : "Your bonus grows when a friend verifies their email."
-              : ""}
-          </p>
-          <label htmlFor="reactInviteLink">Your invitation link</label>
-          <input
-            id="reactInviteLink"
-            ref={link}
-            readOnly
-            value={referral?.url || ""}
-            aria-label="Your invitation link"
-            onFocus={(event) => event.currentTarget.select()}
-          />
-          <div className="dialog-actions">
-            {canShare && (
-              <Button disabled={!referral} onClick={share}>
-                Share…
+            <p className="invite-pending">
+              {referral
+                ? pending
+                  ? `${pending} friend${pending === 1 ? "" : "s"} signed up and ${pending === 1 ? "is" : "are"} waiting to verify email.`
+                  : referral.rewardLevel >= referral.maxRewards
+                    ? "You reached the maximum referral bonus. Your link still welcomes new people."
+                    : "Your bonus grows when a friend verifies their email."
+                : ""}
+            </p>
+            <label htmlFor="reactInviteLink">Your invitation link</label>
+            <input
+              id="reactInviteLink"
+              ref={link}
+              readOnly
+              value={referral?.url || ""}
+              aria-label="Your invitation link"
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <div className="dialog-actions">
+              {canShare && (
+                <Button disabled={!referral} onClick={share}>
+                  Share…
+                </Button>
+              )}
+              <Button variant="primary" disabled={!referral} onClick={copy}>
+                Copy link
               </Button>
-            )}
-            <Button variant="primary" disabled={!referral} onClick={copy}>
-              Copy link
-            </Button>
-          </div>
-          <p className="settings-feedback" role="status">
-            {notice}
-          </p>
-        </dialog>
-      )}
+            </div>
+            <p className="settings-feedback" role="status">
+              {notice}
+            </p>
+          </dialog>,
+          document.body,
+        )}
     </>
   );
 }

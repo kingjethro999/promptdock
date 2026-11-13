@@ -1,0 +1,481 @@
+/* Library cards -------------------------------------------------------- */
+.prompt-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+.prompt-card {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 18px 20px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.prompt-card:hover,
+.prompt-card:focus-within {
+  border-color: #c5d9b8;
+  box-shadow: 0 6px 20px rgba(32, 55, 34, 0.07);
+}
+.prompt-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+.prompt-card button.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 30px;
+  background: #f0f3ec;
+  color: #4f6453;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.prompt-card button.visibility-badge:hover {
+  opacity: 1;
+  text-decoration: none;
+  filter: brightness(0.96);
+}
+.prompt-card .visibility-badge.is-link {
+  background: #e8f5db;
+  color: #2f5f35;
+}
+.prompt-card .visibility-badge.is-community {
+  background: #d6f87c;
+  color: #1e3025;
+}
+.prompt-card .visibility-badge.is-followers {
+  background: #efe9fd;
+  color: #5527b8;
+}
+.prompt-card-menu {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #5f7262;
+  fill: currentColor;
+}
+.prompt-card-menu:hover,
+.prompt-card-menu[aria-expanded="true"] {
+  background: #eef3ea;
+  color: #1e3025;
+}
+.prompt-card h3 {
+  margin: 14px 0 6px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+.prompt-card-title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1d2a25;
+  font: inherit;
+  text-align: left;
+}
+/* Two lines are always reserved so cards in a row line up. */
+.prompt-card-title span {
+  display: -webkit-box;
+  min-height: 2.7em;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.prompt-card-title:hover span {
+  text-decoration: underline;
+  text-decoration-color: #9fc67a;
+  text-underline-offset: 3px;
+}
+.prompt-card .prompt-card-summary {
+  min-height: 4.65em;
+  margin: 0 0 14px;
+  color: #5b6d5e;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.prompt-card .prompt-card-tags {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-height: 24px;
+  margin: 0 0 14px;
+  overflow: hidden;
+}
+.prompt-card .prompt-card-tags:empty {
+  display: flex;
+}
+.prompt-card .prompt-card-tags > span {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 9.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prompt-card .prompt-card-tags > .prompt-card-more-tags {
+  flex: none;
+}
+.prompt-card .prompt-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #edf1e9;
+  color: #5f7262;
+  font-size: 12px;
+}
+.prompt-card .prompt-card-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 0 6px 10px;
+  font-size: 12px;
+}
+.prompt-card-actions {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.prompt-card-actions button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #263b2c;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+.prompt-card-actions button:hover,
+.prompt-card-actions button:focus-visible {
+  background: #f1f6ec;
+}
+.prompt-card-actions button.is-danger {
+  color: #a3321f;
+}
+.prompt-card-actions button.is-danger:hover {
+  background: #fcefec;
+}
+
+/* Sidebar -------------------------------------------------------------- */
+.sidebar-refresh .brand {
+  margin-bottom: 36px;
+}
+.sidebar-refresh .nav-icon {
+  flex: none;
+  width: 20px;
+}
+.sidebar-refresh button.nav-item {
+  font-family: inherit;
+  cursor: pointer;
+}
+.sidebar-more-group {
+  display: grid;
+  gap: 5px;
+}
+.sidebar-more-toggle {
+  color: #9fb5a4;
+}
+.sidebar-more {
+  display: grid;
+  gap: 5px;
+}
+.sidebar-more[hidden],
+.sidebar-help-panel[hidden] {
+  display: none;
+}
+.sidebar-more .nav-item {
+  font-weight: 500;
+}
+.react-app-shell .sidebar-help {
+  padding-top: 24px;
+}
+.sidebar-help-panel {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #375444;
+  border-radius: 13px;
+  background: #21372d;
+}
+.sidebar-help-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #d5e5d6;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sidebar-help-item:hover {
+  background: #2f4a3b;
+  color: #fff;
+}
+.sidebar-help-item span {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-help-tip {
+  margin: 8px 10px 2px;
+  color: #a8bbaa;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.sidebar-help-tip strong {
+  color: #d5e5d6;
+}
+.sidebar-help-panel .sidebar-legal {
+  padding: 8px 10px 2px;
+}
+.sidebar-help-panel .sidebar-version {
+  margin: 0;
+  padding: 4px 10px 4px;
+}
+.sidebar-refresh .privacy-note {
+  margin-top: 12px;
+}
+
+/* Idea box suggestions -------------------------------------------------- */
+.idea-card textarea::placeholder {
+  color: #6b7f6c;
+}
+.idea-suggest {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 36px;
+  margin: 12px 0 18px;
+}
+.idea-suggest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 5px 13px 5px 7px;
+  border: 1px solid #cfe0c3;
+  border-radius: 30px;
+  background: #fff;
+  color: #2f4a33;
+  font-size: 12px;
+}
+.idea-suggest-chip:hover {
+  border-color: #84b95f;
+  background: #f6fbed;
+}
+.idea-suggest-chip kbd {
+  padding: 5px 7px;
+  border-radius: 20px;
+  background: #1e3025;
+  color: #d6f87c;
+  font:
+    700 10px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  letter-spacing: 0.4px;
+}
+.idea-suggest-verb {
+  color: #54695a;
+}
+.idea-suggest-name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.idea-suggest-browse {
+  margin-left: auto;
+  padding: 9px 4px;
+  border: 0;
+  background: none;
+  color: #356238;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Touch screens have no Tab key: the chip itself is the control. */
+@media (hover: none) and (pointer: coarse) {
+  .idea-suggest-chip kbd {
+    display: none;
+  }
+  .idea-suggest-chip {
+    padding-left: 13px;
+  }
+}
+.idea-template-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.idea-template-list button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+}
+.idea-template-list button:hover,
+.idea-template-list button:focus-visible {
+  background: #f1f6ec;
+}
+.idea-template-list strong {
+  color: #1d2a25;
+  font-size: 13px;
+}
+.idea-template-list span {
+  color: #5b6d5e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Support strip --------------------------------------------------------- */
+.support-strip-wrap {
+  position: relative;
+  z-index: 26;
+  height: 7px;
+}
+.support-strip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(90deg, #d6f87c, #9fd65a 50%, #d6f87c);
+}
+/* The bar is thin by design; this widens what a finger or pointer can hit. */
+.support-strip::after {
+  position: absolute;
+  inset: 0 0 -14px;
+  content: "";
+}
+.support-strip:hover,
+.support-strip[aria-expanded="true"] {
+  background: linear-gradient(90deg, #c7f464, #86c843 50%, #c7f464);
+}
+.support-strip:focus-visible {
+  outline: 3px solid #1e3025;
+  outline-offset: 0;
+}
+.updates-popover.support-popover {
+  top: calc(100% + 10px);
+  right: 42px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.updates-popover.support-popover::before {
+  display: none;
+}
+.support-popover p {
+  margin: 4px 4px 12px;
+  color: #294b33;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.support-popover-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.support-popover-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #1e3025;
+  border-radius: 9px;
+  background: #1e3025;
+  color: #d6f87c;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+.support-popover-links a + a {
+  border-color: #cfe0c3;
+  background: #f3f8ec;
+  color: #1e3025;
+}
+.support-popover-links a:hover {
+  filter: brightness(1.08);
+}
+.support-popover-dismiss {
+  display: block;
+  margin: 8px auto 0;
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: #54695a;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .updates-popover.support-popover {
+    right: 17px;
+  }
+}
+@media (max-width: 400px) {
+  .prompt-card {
+    padding: 16px;
+  }
+  .idea-suggest-browse {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt-card {
+    transition: none;
+  }
+}

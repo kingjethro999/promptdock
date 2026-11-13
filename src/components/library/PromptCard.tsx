@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { SavedPrompt } from "@/lib/prompt/types";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Popover } from "@/components/ui/Popover";
 import { SaveToPanel } from "@/components/collections/SaveToPanel";
+import { visibilityState } from "@/lib/community/visibility-state";
 
 type Props = {
   prompt: SavedPrompt;
@@ -15,6 +16,12 @@ type Props = {
   onHistory(prompt: SavedPrompt): void;
 };
 
+const MAX_TAGS = 3;
+
+/**
+ * One saved prompt in the library grid. The title opens the prompt; every
+ * other action lives in the card menu so nothing competes with the title.
+ */
 export default function PromptCard({
   prompt,
   onOpen,
@@ -23,94 +30,134 @@ export default function PromptCard({
   onDelete,
   onHistory,
 }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
-  const folderBtnRef = useRef<HTMLButtonElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const state = visibilityState(prompt);
+  const hiddenTags = prompt.tags.length - MAX_TAGS;
 
-  const isPublic = prompt.visibility === "public";
-  const isFollowers = prompt.visibility === "followers";
+  const actions: {
+    label: string;
+    icon: IconName;
+    run(): void;
+    danger?: boolean;
+  }[] = [
+    {
+      label: prompt.publicId ? "Sharing and visibility" : "Publish and share",
+      icon: state.icon,
+      run: () => onShare(prompt),
+    },
+    {
+      label: "Save to a collection",
+      icon: "folder-plus",
+      run: () => setCollectionsOpen(true),
+    },
+    { label: "Version history", icon: "refresh", run: () => onHistory(prompt) },
+    { label: "Duplicate", icon: "plus", run: () => onDuplicate(prompt) },
+    { label: "Delete", icon: "x", run: () => onDelete(prompt), danger: true },
+  ];
 
   return (
-    <article className="library-card">
-      <div className="library-card-top">
-        <span className="library-card-icon" aria-hidden="true">
-          <Icon name="sparkles" size={14} />
-        </span>
+    <article className="library-card prompt-card">
+      <div className="prompt-card-head">
         <button
           type="button"
-          className="card-menu"
-          aria-label={`Delete ${prompt.name}`}
-          onClick={() => onDelete(prompt)}
+          className={`visibility-badge is-${state.id}`}
+          onClick={() => onShare(prompt)}
+          aria-label={`${state.label}. Change who can see ${prompt.name}`}
+          title={state.hint}
         >
-          <Icon name="x" size={14} />
+          <Icon name={state.icon} size={12} />
+          <span>{state.label}</span>
+        </button>
+        <button
+          ref={menuButton}
+          type="button"
+          className="prompt-card-menu"
+          aria-label={`Actions for ${prompt.name}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </svg>
         </button>
       </div>
 
-      <h3>{prompt.name}</h3>
-      <p>{prompt.data.task}</p>
-
-      <div className="library-sharing">
+      <h3>
         <button
           type="button"
-          className={`visibility-badge${isPublic ? " is-public" : isFollowers ? " is-followers" : ""}`}
-          onClick={() => onShare(prompt)}
-          title="Change privacy (Public, Followers, or Private)"
+          className="prompt-card-title"
+          onClick={() => onOpen(prompt)}
         >
-          <Icon
-            name={isPublic ? "globe" : isFollowers ? "users" : "lock"}
-            size={12}
-          />
-          <span>
-            {isPublic ? "Public" : isFollowers ? "Followers" : "Private"}
+          <span>{prompt.name}</span>
+        </button>
+      </h3>
+      <p className="prompt-card-summary">{prompt.data.task}</p>
+
+      <div className="prompt-tags prompt-card-tags">
+        {prompt.tags.slice(0, MAX_TAGS).map((tag) => (
+          <span key={tag}>{tag}</span>
+        ))}
+        {hiddenTags > 0 && (
+          <span
+            className="prompt-card-more-tags"
+            title={prompt.tags.slice(MAX_TAGS).join(", ")}
+          >
+            +{hiddenTags}
+            <span className="sr-only"> more tags</span>
           </span>
-        </button>
+        )}
+      </div>
 
-        <button
-          className="library-share-button"
-          type="button"
-          onClick={() => onShare(prompt)}
-        >
-          <span>{prompt.publicId ? "Share link" : "Publish & share"}</span>
-          <Icon name="arrow-up-right" size={12} />
-        </button>
-
-        <button
-          ref={folderBtnRef}
-          className={`library-share-button${collectionsOpen ? " is-active" : ""}`}
-          type="button"
-          onClick={() => setCollectionsOpen((prev) => !prev)}
-          title="Add to playlist or folder"
-          aria-label="Add to playlist or folder"
-          aria-haspopup="dialog"
-          aria-expanded={collectionsOpen}
-        >
-          <Icon name="folder-plus" size={12} />
-          <span>Save to…</span>
-        </button>
-
-        <button
-          className="library-share-button"
-          type="button"
-          onClick={() => onHistory(prompt)}
-        >
-          <span>History</span>
-          <Icon name="refresh" size={12} />
-        </button>
-
-        <button
-          className="library-share-button"
-          type="button"
-          onClick={() => onDuplicate(prompt)}
-        >
-          <span>Duplicate</span>
-          <Icon name="plus" size={12} />
+      <div className="library-card-footer prompt-card-footer">
+        <time dateTime={new Date(prompt.updatedAt).toISOString()}>
+          {new Date(prompt.updatedAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </time>
+        <button type="button" onClick={() => onOpen(prompt)}>
+          <span>Open</span>
+          <Icon name="arrow-right" size={12} />
         </button>
       </div>
 
       <Popover
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        anchorRef={menuButton}
+        label={`Actions for ${prompt.name}`}
+      >
+        <ul className="prompt-card-actions" role="menu">
+          {actions.map((action) => (
+            <li key={action.label} role="none">
+              <button
+                type="button"
+                role="menuitem"
+                className={action.danger ? "is-danger" : undefined}
+                onClick={() => {
+                  setMenuOpen(false);
+                  action.run();
+                }}
+              >
+                <Icon name={action.icon} size={14} />
+                <span>{action.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Popover>
+
+      <Popover
         open={collectionsOpen}
         onClose={() => setCollectionsOpen(false)}
-        anchorRef={folderBtnRef}
-        label="Save to playlist or folder"
+        anchorRef={menuButton}
+        label="Save to a collection"
       >
         <SaveToPanel
           target={{
@@ -121,28 +168,6 @@ export default function PromptCard({
           onDone={() => setCollectionsOpen(false)}
         />
       </Popover>
-
-      <div className="library-card-footer">
-        <span>
-          {new Date(prompt.updatedAt).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-        <button type="button" onClick={() => onOpen(prompt)}>
-          <span>Open prompt</span>
-          <Icon name="arrow-right" size={12} />
-        </button>
-      </div>
-
-      {prompt.tags.length > 0 && (
-        <div className="prompt-tags">
-          {prompt.tags.map((tag) => (
-            <span key={tag}>{tag}</span>
-          ))}
-        </div>
-      )}
     </article>
   );
 }

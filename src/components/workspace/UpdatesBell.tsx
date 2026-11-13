@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
+import WorkspacePopover from "./WorkspacePopover";
 
 type Update = {
   id: string;
@@ -84,11 +85,7 @@ export default function UpdatesBell() {
         {unread > 0 && <span className="updates-badge">{unread}</span>}
       </button>
       {open && (
-        <div
-          className="updates-popover"
-          role="status"
-          aria-label="Latest product updates"
-        >
+        <WorkspacePopover role="status" label="Latest product updates">
           <div className="updates-popover-head">
             <strong>Latest updates</strong>
             <button
@@ -131,7 +128,7 @@ export default function UpdatesBell() {
           <Link className="updates-see-all" href="/updates">
             See all updates ↗
           </Link>
-        </div>
+        </WorkspacePopover>
       )}
       {toast && (
         <div className="react-live-toast" role="status">

@@ -7,7 +7,6 @@ import LibraryDialogs from "./LibraryDialogs";
 import CollectionDialog from "./CollectionDialog";
 import SearchSelect from "@/components/ui/SearchSelect";
 import Button from "@/components/ui/Button";
-import Masonry from "@/components/ui/Masonry";
 import { Icon } from "@/components/ui/Icon";
 import { useLibrary } from "@/hooks/useLibrary";
 import { usePromptBuilderStore } from "@/stores/prompt-builder";
@@ -394,12 +393,7 @@ export default function LibraryWorkspace({
           </p>
         </div>
       ) : (
-        <Masonry
-          className="library-grid react-library-masonry"
-          minColumnWidth={255}
-          maxColumns={5}
-          gap={15}
-        >
+        <div className="library-grid prompt-card-grid">
           {prompts.map((prompt) => (
             <PromptCard
               key={prompt.id}
@@ -414,7 +408,7 @@ export default function LibraryWorkspace({
               onHistory={showHistory}
             />
           ))}
-        </Masonry>
+        </div>
       )}
 
       {total > 100 && (

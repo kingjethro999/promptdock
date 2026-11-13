@@ -8,6 +8,7 @@ import { useLegacyLibraryImport } from "@/hooks/useLegacyLibraryImport";
 import UpdatesBell from "./UpdatesBell";
 import WorkspaceSidebar from "./WorkspaceSidebar";
 import HelpDialog from "./HelpDialog";
+import SupportStrip from "./SupportStrip";
 
 type Props = {
   user: { id: string; email: string; username: string | null };
@@ -47,8 +48,10 @@ export default function WorkspaceShell({ user, admin, children }: Props) {
         admin={admin}
         username={user.username}
         onNotice={setNotice}
+        onHelp={() => setHelp(true)}
       />
       <main className="main-content">
+        <SupportStrip />
         <header className="topbar">
           <button
             className="mobile-menu icon-button"
