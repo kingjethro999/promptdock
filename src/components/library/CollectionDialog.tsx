@@ -184,8 +184,13 @@ export default function CollectionDialog({
           )}
 
           <div className="react-modal-actions" style={{ marginTop: "20px" }}>
-            <Button variant="primary" type="submit" disabled={saving}>
-              {saving ? "Saving…" : collection ? "Save changes" : "Create"}
+            <Button
+              variant="primary"
+              type="submit"
+              loading={saving}
+              loadingText="Saving…"
+            >
+              {collection ? "Save changes" : "Create"}
             </Button>
             <Button onClick={onClose}>Cancel</Button>
           </div>

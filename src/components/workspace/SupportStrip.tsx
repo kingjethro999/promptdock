@@ -19,6 +19,28 @@ export default function SupportStrip() {
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Where along the strip the popover points: the hover or tap position, or
+  // the middle when opened from the keyboard.
+  const [place, setPlace] = useState<{
+    left: number;
+    width: number;
+    caret: number;
+  } | null>(null);
+
+  function aimAt(clientX: number | null) {
+    const box = wrap.current?.getBoundingClientRect();
+    if (!box) return;
+    const gutter = 12;
+    const width = Math.min(360, box.width - gutter * 2);
+    const x = clientX === null ? box.width / 2 : clientX - box.left;
+    const left = Math.min(
+      Math.max(x - width / 2, gutter),
+      box.width - width - gutter,
+    );
+    // The caret is 12px wide; keep it clear of the rounded corners.
+    const caret = Math.min(Math.max(x - left - 6, 16), width - 28);
+    setPlace({ left, width, caret });
+  }
 
   useEffect(() => setDismissed(readFlag(DISMISSED_KEY)), []);
 
@@ -40,8 +62,9 @@ export default function SupportStrip() {
 
   if (dismissed !== false) return null;
 
-  const show = () => {
+  const show = (clientX: number | null = null) => {
     if (closing.current) clearTimeout(closing.current);
+    aimAt(clientX);
     setOpen(true);
   };
   // The pointer crosses a small gap between the bar and the panel.
@@ -54,7 +77,6 @@ export default function SupportStrip() {
     <div
       ref={wrap}
       className="support-strip-wrap"
-      onMouseEnter={show}
       onMouseLeave={hideSoon}
       onBlur={(event) => {
         if (!wrap.current?.contains(event.relatedTarget as Node | null))
@@ -73,7 +95,14 @@ export default function SupportStrip() {
         aria-label="Support PromptDock"
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={show}
+        // A keyboard "click" has no position (detail 0): aim at the middle.
+        onClick={(event) => show(event.detail === 0 ? null : event.clientX)}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") show(event.clientX);
+        }}
+        onPointerMove={(event) => {
+          if (event.pointerType === "mouse" && open) aimAt(event.clientX);
+        }}
         onFocus={(event) => {
           if (event.currentTarget.matches(":focus-visible")) show();
         }}
@@ -82,6 +111,15 @@ export default function SupportStrip() {
         <WorkspacePopover
           label="Support PromptDock"
           className="support-popover"
+          style={
+            place
+              ? ({
+                  left: place.left,
+                  width: place.width,
+                  "--updates-pointer-left": `${place.caret}px`,
+                } as React.CSSProperties)
+              : undefined
+          }
         >
           <p>Enjoying PromptDock? Help keep it free and improving.</p>
           <div className="support-popover-links">

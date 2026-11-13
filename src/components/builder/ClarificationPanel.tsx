@@ -69,7 +69,9 @@ export default function ClarificationPanel({
           <Button
             variant="primary"
             type="submit"
-            disabled={busy || missingImages > 0}
+            disabled={missingImages > 0}
+            loading={busy}
+            loadingText="Shaping…"
           >
             Shape my prompt ↗
           </Button>

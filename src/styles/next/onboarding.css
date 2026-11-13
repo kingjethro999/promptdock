@@ -7,12 +7,6 @@
 .dark {
   --tour-scrim: rgba(0, 0, 0, 0.82);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --tour-scrim: rgba(0, 0, 0, 0.82);
-  }
-}
-
 .tour-blocker {
   position: fixed;
   inset: 0;
@@ -249,12 +243,6 @@
 .dark .setup {
   background: var(--community-bg, #0e1814);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .setup {
-    background: var(--community-bg, #0e1814);
-  }
-}
-
 .setup__header {
   border-bottom: 1px solid var(--ui-border);
   padding: 16px 24px;

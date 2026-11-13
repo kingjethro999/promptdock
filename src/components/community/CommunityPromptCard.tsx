@@ -169,10 +169,11 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
           size="sm"
           leadingIcon="bookmark"
           onClick={handleSave}
-          disabled={saving}
+          loading={saving}
+          loadingText="Saving…"
           aria-label="Save prompt to your library"
         >
-          {saved ? "Saved" : saving ? "Saving…" : "Save"}
+          {saved ? "Saved" : "Save"}
         </Button>
 
         <LinkButton

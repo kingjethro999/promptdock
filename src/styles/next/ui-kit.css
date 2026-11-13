@@ -1,4 +1,9 @@
-/* PromptDock Unified UI Kit CSS Tokens & Primitives */
+/* PromptDock Unified UI Kit CSS Tokens & Primitives
+
+   The product's pages are designed light. Dark tokens apply only when a page
+   opts in with data-theme="dark"; they used to follow the OS setting, which
+   flipped these tokens alone and left lime text and dark panels on light
+   pages for anyone using a dark system theme. */
 
 :root {
   color-scheme: light;
@@ -31,22 +36,6 @@
   --ui-on-accent: #0e1814;
   --ui-accent: #c7f464;
   --ui-accent-hover: #b4e64f;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --ui-bg: var(--community-surface, #14221c);
-    --ui-fg: var(--community-text, #f7f8f3);
-    --ui-border: var(--community-border, #23382e);
-    --ui-border-hover: #c7f464;
-    --ui-focus: #c7f464;
-    --ui-danger: #f87171;
-    --ui-placeholder: #95aba0;
-    --ui-on-accent: #0e1814;
-    --ui-accent: #c7f464;
-    --ui-accent-hover: #b4e64f;
-  }
 }
 
 /* ============================================================

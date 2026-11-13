@@ -280,9 +280,11 @@ export default function AiProviderSettings() {
           <Button
             variant="primary"
             type="submit"
-            disabled={busy || !settings?.available}
+            disabled={!settings?.available}
+            loading={busy}
+            loadingText="Saving…"
           >
-            {busy ? "Saving…" : editing ? "Save provider" : "Add provider"}
+            {editing ? "Save provider" : "Add provider"}
           </Button>
           {editing && (
             <Button disabled={busy} onClick={remove}>

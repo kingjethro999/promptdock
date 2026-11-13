@@ -225,6 +225,31 @@
   pointer-events: none;
 }
 
+/* A processing button is disabled to block double submits, but it is not
+   "unavailable". The legacy .primary-button:disabled rule (and similar) repaint
+   disabled buttons grey, which hid the water fill behind a washed-out button.
+   While loading, every variant keeps its own colours. */
+.liquid-button.liquid-button--primary[data-liquid-state="loading"] {
+  background: #193726;
+  color: #ffffff;
+}
+.liquid-button.liquid-button--secondary[data-liquid-state="loading"] {
+  background: #ffffff;
+  color: #234030;
+}
+.liquid-button.liquid-button--outline[data-liquid-state="loading"],
+.liquid-button.liquid-button--quiet[data-liquid-state="loading"] {
+  background: transparent;
+}
+.liquid-button.liquid-button--accent[data-liquid-state="loading"] {
+  background: #d5f876;
+  color: #1a3927;
+}
+.liquid-button.liquid-button--danger[data-liquid-state="loading"] {
+  background: #d9383a;
+  color: #ffffff;
+}
+
 /* Keyboard Focus */
 .liquid-button:focus-visible {
   outline: 2px solid #d5f876;
