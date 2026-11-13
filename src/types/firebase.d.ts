@@ -6,11 +6,27 @@ declare module "firebase/app" {
 }
 
 declare module "firebase/auth" {
-  export type User = { getIdToken(forceRefresh?: boolean): Promise<string> };
+  export type User = {
+    getIdToken(forceRefresh?: boolean): Promise<string>;
+    displayName?: string | null;
+    photoURL?: string | null;
+  };
   export type UserCredential = { user: User };
-  export type Auth = { currentUser: User | null };
-  export class GoogleAuthProvider {}
-  export class GithubAuthProvider {}
+  export type Auth = {
+    currentUser: User | null;
+    authStateReady?(): Promise<void>;
+  };
+  export class GoogleAuthProvider {
+    setCustomParameters?(params: Record<string, string>): this;
+  }
+  export class GithubAuthProvider {
+    setCustomParameters?(params: Record<string, string>): this;
+  }
+  export function signInWithRedirect(
+    auth: Auth,
+    provider: unknown,
+  ): Promise<never>;
+  export function getRedirectResult(auth: Auth): Promise<UserCredential | null>;
   export function getAuth(app?: unknown): Auth;
   export function signInWithPopup(
     auth: Auth,

@@ -6,13 +6,36 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError, api, json } from "@/lib/client/api";
 import {
+  completeRedirectSignIn,
   firebaseConfigured,
+  RedirectingError,
   signInWithProvider,
   type FirebaseProvider,
 } from "@/lib/client/firebase";
 import { Button, LinkButton, TextField, PasswordField } from "@/components/ui";
 import AuthShell from "./AuthShell";
 import { useResendVerification } from "./useResendVerification";
+
+const providerName = (provider: FirebaseProvider) =>
+  provider === "google" ? "Google" : "GitHub";
+
+/** Turns Firebase's error codes into something a person can act on. */
+function providerError(issue: unknown, provider: FirebaseProvider) {
+  const code = (issue as { code?: string } | null)?.code || "";
+  const message = issue instanceof Error ? issue.message : "";
+  const name = providerName(provider);
+  if (code.includes("popup-blocked") || message.includes("popup-blocked"))
+    return `Your browser blocked the ${name} window. Allow pop-ups for this site, then try again.`;
+  if (code.includes("network-request-failed"))
+    return `Could not reach ${name}. Check your connection and try again.`;
+  if (code.includes("account-exists-with-different-credential"))
+    return `This email already uses a different sign-in method. Try the other provider or your password.`;
+  if (code.includes("unauthorized-domain"))
+    return `${name} sign-in is not enabled for this address.`;
+  if (code.startsWith("auth/") || message.startsWith("Firebase:"))
+    return `Could not sign in with ${name}. Try again.`;
+  return message || `Could not sign in with ${name}.`;
+}
 
 type Mode = "login" | "register" | "forgot" | "reset";
 const validModes = new Set<Mode>(["login", "register", "forgot", "reset"]);
@@ -76,39 +99,70 @@ export default function AuthForm() {
     setConfirm(generated);
   }
 
-  async function continueWith(provider: FirebaseProvider) {
+  async function finishProviderSignIn(credential: {
+    user: { getIdToken(): Promise<string> };
+  }) {
+    const idToken = await credential.user.getIdToken();
+    await json("/api/auth/firebase", "POST", {
+      idToken,
+      referralCode:
+        params.get("ref") ||
+        sessionStorage.getItem("promptdock.referral") ||
+        undefined,
+    });
+    router.replace(nextPage);
+    router.refresh();
+  }
+
+  // Must stay synchronous up to signInWithProvider: the popup only opens
+  // while the browser still treats the call as part of the click.
+  function continueWith(provider: FirebaseProvider) {
     if (oauthBusy || busy) return;
     setOauthBusy(provider);
     setError("");
     setNotice("");
-    try {
-      const credential = await signInWithProvider(provider);
-      const idToken = await credential.user.getIdToken();
-      await json("/api/auth/firebase", "POST", {
-        idToken,
-        referralCode:
-          params.get("ref") ||
-          sessionStorage.getItem("promptdock.referral") ||
-          undefined,
-      });
-      router.replace(nextPage);
-      router.refresh();
-    } catch (issue) {
-      const message =
-        issue instanceof Error
-          ? issue.message
-          : `Could not sign in with ${provider === "google" ? "Google" : "GitHub"}.`;
-      if (
-        message.includes("auth/popup-closed-by-user") ||
-        message.includes("cancelled")
-      ) {
+    signInWithProvider(provider)
+      .then(finishProviderSignIn)
+      .catch((issue: unknown) => {
+        if (issue instanceof RedirectingError) return;
+        const code = (issue as { code?: string } | null)?.code || "";
+        if (
+          code === "auth/popup-closed-by-user" ||
+          code === "auth/cancelled-popup-request"
+        ) {
+          setOauthBusy(null);
+          return;
+        }
+        setError(providerError(issue, provider));
         setOauthBusy(null);
-        return;
-      }
-      setError(message);
-      setOauthBusy(null);
-    }
+      });
   }
+
+  // Coming back from the provider's own page after a redirect sign-in.
+  useEffect(() => {
+    if (!firebaseConfigured || (mode !== "login" && mode !== "register"))
+      return;
+    let cancelled = false;
+    completeRedirectSignIn()
+      .then((credential) => {
+        if (!credential || cancelled) return;
+        setOauthBusy("google");
+        return finishProviderSignIn(credential);
+      })
+      .catch((issue: unknown) => {
+        if (cancelled) return;
+        setError(
+          issue instanceof Error && !issue.message.startsWith("Firebase:")
+            ? issue.message
+            : "Could not finish signing in. Try again.",
+        );
+        setOauthBusy(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Runs once when the sign-in page opens.
+  }, []);
 
   useEffect(() => {
     if (mode !== "register" || !username.trim()) {
@@ -213,7 +267,11 @@ export default function AuthForm() {
                   key={provider}
                   variant="secondary"
                   className="auth-provider-button"
-                  disabled={busy || Boolean(oauthBusy)}
+                  disabled={
+                    busy || (Boolean(oauthBusy) && oauthBusy !== provider)
+                  }
+                  loading={oauthBusy === provider}
+                  loadingText="Connecting…"
                   onClick={() => continueWith(provider)}
                 >
                   <Image
@@ -224,9 +282,7 @@ export default function AuthForm() {
                     height={18}
                     aria-hidden="true"
                   />
-                  {oauthBusy === provider
-                    ? "Connecting…"
-                    : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
+                  {`Continue with ${provider === "google" ? "Google" : "GitHub"}`}
                 </Button>
               ))}
             </div>
