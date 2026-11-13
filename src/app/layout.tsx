@@ -26,6 +26,7 @@ import "../styles/next/responsive.css";
 import "../styles/next/landing-refresh.css";
 import "../styles/next/community-refresh.css";
 import "../styles/next/workspace-refresh.css";
+import "../styles/next/modals.css";
 
 import { OG_DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
 

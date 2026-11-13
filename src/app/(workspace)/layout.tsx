@@ -56,8 +56,23 @@ export default async function WorkspaceLayout({
         ? toClient(pending, { username: "user" })
         : null;
 
+  // Setup is shown once and never blocks the workspace. If it was left
+  // part-way, the sidebar offers a way back to it.
+  const profileSetupPending = Boolean(
+    isNewAccount &&
+    rows.some(
+      (r: { experience_id: string; status: string }) =>
+        r.experience_id === PROFILE_FLOW_ID &&
+        (r.status === "shown" || r.status === "dismissed"),
+    ),
+  );
+
   return (
-    <WorkspaceShell user={account.user} admin={account.admin}>
+    <WorkspaceShell
+      user={account.user}
+      admin={account.admin}
+      profileSetupPending={profileSetupPending}
+    >
       {children}
       {clientPending && <OnboardingHost pending={clientPending} />}
     </WorkspaceShell>

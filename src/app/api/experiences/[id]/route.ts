@@ -45,13 +45,22 @@ export async function POST(
     }
 
     await db.ensureSchema();
+    // A tour that was dismissed stays dismissed. A flow such as profile setup
+    // can be resumed after leaving the page, so leaving ("dismissed") is not
+    // final there: finishing or skipping it later must still be recorded.
+    const open = flow ? ["shown", "dismissed"] : ["shown"];
     await db.pool.query(
       `INSERT INTO user_experiences (user_id, experience_id, status, step_reached) VALUES ($1,$2,$3,$4)
        ON CONFLICT (user_id, experience_id) DO UPDATE SET
-         status       = CASE WHEN user_experiences.status = 'shown' THEN EXCLUDED.status ELSE user_experiences.status END,
+         status       = CASE
+                          WHEN user_experiences.status = ANY($5::text[])
+                            AND EXCLUDED.status <> 'shown'
+                          THEN EXCLUDED.status
+                          ELSE user_experiences.status
+                        END,
          step_reached = GREATEST(user_experiences.step_reached, EXCLUDED.step_reached),
          updated_at   = now()`,
-      [viewer.id, id, body.status, body.step],
+      [viewer.id, id, body.status, body.step, open],
     );
 
     return new Response(null, { status: 204 });

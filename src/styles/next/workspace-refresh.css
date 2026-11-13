@@ -198,6 +198,10 @@
   font-family: inherit;
   cursor: pointer;
 }
+.sidebar-setup-link {
+  border: 1px dashed #4b6c52;
+  color: #d6f87c;
+}
 .sidebar-more-group {
   display: grid;
   gap: 5px;
@@ -405,15 +409,34 @@
   outline: 3px solid #1e3025;
   outline-offset: 0;
 }
+/* Positioned by SupportStrip under the hovered or tapped point; the caret
+   (the shared updates-popover pointer) marks where it came from. */
 .updates-popover.support-popover {
-  top: calc(100% + 10px);
-  right: 42px;
+  top: calc(100% + 12px);
+  right: auto;
+  left: 12px;
   opacity: 1;
   pointer-events: auto;
   transform: none;
+  transform-origin: var(--updates-pointer-left) top;
+  animation: support-popover-in 0.18s ease-out both;
+  transition: left 0.16s ease-out;
 }
 .updates-popover.support-popover::before {
-  display: none;
+  transition: left 0.16s ease-out;
+}
+@keyframes support-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .updates-popover.support-popover,
+  .updates-popover.support-popover::before {
+    animation: none;
+    transition: none;
+  }
 }
 .support-popover p {
   margin: 4px 4px 12px;
@@ -461,11 +484,6 @@
   text-underline-offset: 3px;
 }
 
-@media (max-width: 760px) {
-  .updates-popover.support-popover {
-    right: 17px;
-  }
-}
 @media (max-width: 400px) {
   .prompt-card {
     padding: 16px;
@@ -477,5 +495,110 @@
 @media (prefers-reduced-motion: reduce) {
   .prompt-card {
     transition: none;
+  }
+}
+
+/* Dialogs are designed on a light surface. Without an explicit background a
+   visitor whose system is in dark mode got the browser's dark dialog canvas
+   under dark green text, which was unreadable. */
+.app-dialog {
+  background: #fff;
+  color-scheme: light;
+}
+
+.details-visibility {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #dbe4d6;
+  border-radius: 10px;
+  color: #2b3f30;
+  font-size: 13px;
+}
+.details-visibility .visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 30px;
+  background: #f0f3ec;
+  color: #2b3f30;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Library toolbar ---------------------------------------------------------
+   The count and the Sort label were #8c9c8d (about 2.9:1); #5b6d5e passes AA. */
+.library-toolbar > span,
+.sort-control {
+  color: #5b6d5e;
+}
+.library-toolbar > span {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Phones: search takes the full row, the count sits under it, tags scroll
+   sideways in one row, and Sort spans the width. */
+@media (max-width: 640px) {
+  .library-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .library-toolbar .search-box {
+    width: 100%;
+    min-height: 46px;
+  }
+  /* 16px stops iOS from zooming in when the search box is focused. */
+  .library-toolbar .search-box input {
+    height: 44px;
+    font-size: 16px;
+  }
+  .library-toolbar > span {
+    padding-left: 2px;
+  }
+  .library-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin: 0 0 16px;
+  }
+  .library-filters .tag-chips {
+    flex-wrap: nowrap;
+    margin-right: -16px;
+    padding: 2px 16px 4px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .library-filters .tag-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .library-filters .tag-chip {
+    flex: none;
+    min-height: 34px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  .library-filters .sort-control {
+    font-size: 13px;
+  }
+  .library-filters .sort-control > *:last-child,
+  .library-filters .sort-control .search-select,
+  .library-filters .sort-control .react-select {
+    flex: 1;
+    width: auto;
+  }
+  .library-filters .sort-control .search-select-trigger {
+    width: 100%;
+    min-height: 42px;
+    font-size: 14px;
   }
 }

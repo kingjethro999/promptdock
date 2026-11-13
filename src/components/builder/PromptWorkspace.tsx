@@ -13,6 +13,9 @@ import Button from "@/components/ui/Button";
 import Masonry from "@/components/ui/Masonry";
 import { usePromptBuilder } from "@/hooks/usePromptBuilder";
 import { useSavePrompt } from "@/hooks/useSavePrompt";
+import SharePromptDialog from "@/components/library/SharePromptDialog";
+import { Icon } from "@/components/ui/Icon";
+import { visibilityState } from "@/lib/community/visibility-state";
 
 import { useSearchParams } from "next/navigation";
 
@@ -33,6 +36,9 @@ export default function PromptWorkspace() {
   const [tags, setTags] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const saved = builder.sourcePrompt;
+  const visibility = saved ? visibilityState(saved) : null;
 
   useEffect(() => {
     if (!remixId) return;
@@ -233,20 +239,50 @@ export default function PromptWorkspace() {
                   placeholder="writing, work, ideas"
                 />
               </label>
+              {saved && visibility && (
+                <div className="details-visibility">
+                  <span>Who can see it</span>
+                  <button
+                    type="button"
+                    className={`visibility-badge is-${visibility.id}`}
+                    onClick={() => {
+                      setSaveOpen(false);
+                      setShareOpen(true);
+                    }}
+                  >
+                    <Icon name={visibility.icon} size={12} />
+                    <span>{visibility.label} · Change</span>
+                  </button>
+                </div>
+              )}
               {saveError && (
                 <p role="alert" className="settings-feedback">
                   {saveError}
                 </p>
               )}
               <div className="react-modal-actions">
-                <Button variant="primary" type="submit" disabled={saving}>
-                  {saving ? "Saving…" : "Save details"}
+                <Button
+                  variant="primary"
+                  type="submit"
+                  loading={saving}
+                  loadingText="Saving…"
+                >
+                  Save details
                 </Button>
                 <Button onClick={() => setSaveOpen(false)}>Cancel</Button>
               </div>
             </form>
           </section>
         </div>
+      )}
+      {shareOpen && saved && (
+        <SharePromptDialog
+          prompt={saved}
+          username={null}
+          close={() => setShareOpen(false)}
+          publish={async () => undefined}
+          setPrompt={builder.savedPrompt}
+        />
       )}
     </div>
   );

@@ -13,10 +13,17 @@ import SupportStrip from "./SupportStrip";
 type Props = {
   user: { id: string; email: string; username: string | null };
   admin: boolean;
+  /** True when profile setup was started but not finished or skipped. */
+  profileSetupPending?: boolean;
   children: React.ReactNode;
 };
 
-export default function WorkspaceShell({ user, admin, children }: Props) {
+export default function WorkspaceShell({
+  user,
+  admin,
+  profileSetupPending = false,
+  children,
+}: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
@@ -49,6 +56,7 @@ export default function WorkspaceShell({ user, admin, children }: Props) {
         username={user.username}
         onNotice={setNotice}
         onHelp={() => setHelp(true)}
+        profileSetupPending={profileSetupPending}
       />
       <main className="main-content">
         <SupportStrip />

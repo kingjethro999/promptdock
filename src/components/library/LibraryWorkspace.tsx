@@ -133,6 +133,8 @@ export default function LibraryWorkspace({
         <div className="library-intro-actions">
           <Button
             className="paste-prompt-button"
+            // The label is hidden on narrow screens; keep the button named.
+            aria-label="Paste prompt"
             onClick={() => setPasteOpen(true)}
           >
             <Icon name="file" size={14} />

@@ -9,6 +9,7 @@ import { PROFILE_FLOW_ID } from "@/lib/onboarding/registry";
 import { rasterize } from "@/lib/profile/avatar-gen";
 import { uploadProcessed } from "@/lib/profile/upload-client";
 import { cleanDisplayName } from "@/lib/profile/validate";
+import { providerProfile } from "@/lib/client/firebase";
 import { useCommitQueue } from "./useCommitQueue";
 import { useViewportHeightVar, useKeyboardOpen } from "./useViewportHeightVar";
 import { STEPS, type Draft, type StepId } from "./types";
@@ -26,7 +27,43 @@ type Props = {
   username: string;
   initial: Draft;
   siteHost: string;
+  /** Step to open on, when an earlier visit stopped part-way. */
+  startIndex?: number;
 };
+
+const HANDLE_ERRORS: Record<string, string> = {
+  username_taken: "That handle is taken.",
+  username_cooldown:
+    "You changed your handle recently. You can change it again in 30 days.",
+  invalid_username_reserved: "That handle is reserved.",
+  invalid_username_format:
+    "Use 3–30 lowercase letters or numbers. Hyphens and underscores can go in the middle.",
+};
+
+/** Loads a provider photo through a canvas so it can be stored first-party. */
+async function photoBlob(url: string): Promise<Blob | null> {
+  try {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+    await new Promise<void>((ok, bad) => {
+      image.onload = () => ok();
+      image.onerror = () => bad(new Error("unreadable"));
+      // Google serves a 96px thumbnail by default; ask for a profile-sized one.
+      image.src = url.replace(/=s\d+-c$/, "=s512-c");
+    });
+    const side = Math.min(512, image.naturalWidth, image.naturalHeight);
+    if (side < 48) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = side;
+    canvas.getContext("2d")?.drawImage(image, 0, 0, side, side);
+    return await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9),
+    );
+  } catch {
+    return null;
+  }
+}
 
 export function ProfileSetup({
   mode,
@@ -34,10 +71,12 @@ export function ProfileSetup({
   username,
   initial,
   siteHost,
+  startIndex = 0,
 }: Props) {
   const router = useRouter();
   const queue = useCommitQueue();
-  const [index, setIndex] = useState(0); // 0..3 = steps, 4 = done
+  const [index, setIndex] = useState(startIndex); // 0..3 = steps, 4 = done
+  const [handle, setHandle] = useState(username);
   const [dir, setDir] = useState<1 | -1>(1);
   const [draft, setDraft] = useState<Draft>(initial);
   const committed = useRef<{
@@ -46,7 +85,7 @@ export function ProfileSetup({
     banner?: string;
     bio?: string | null;
   }>({});
-  const reached = useRef(1);
+  const reached = useRef(startIndex + 1);
   const ended = useRef(false);
   const signup = mode === "signup";
   const step = STEPS[index];
@@ -60,6 +99,66 @@ export function ProfileSetup({
       record(PROFILE_FLOW_ID, "shown", 1);
     }
   }, [signup]);
+
+  // New accounts made with Google or GitHub start from that account's name
+  // and photo. Both stay editable, and nothing is saved until a step is
+  // continued.
+  useEffect(() => {
+    if (!signup) return;
+    let cancelled = false;
+    void providerProfile().then(async (profile) => {
+      if (!profile || cancelled) return;
+      const name = profile.name ? cleanDisplayName(profile.name) : null;
+      const providerName = name?.ok ? name.value : null;
+      if (providerName)
+        setDraft((d) =>
+          d.displayName === initial.displayName
+            ? { ...d, displayName: providerName }
+            : d,
+        );
+      if (!profile.photoUrl) return;
+      const blob = await photoBlob(profile.photoUrl);
+      if (!blob || cancelled) return;
+      setDraft((d) =>
+        d.avatar.kind === "none"
+          ? {
+              ...d,
+              avatar: {
+                kind: "image",
+                source: "provider",
+                id: "provider",
+                blob,
+                previewUrl: URL.createObjectURL(blob),
+              },
+            }
+          : d,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Runs once for the account that opened the flow.
+  }, [signup, initial.displayName]);
+
+  async function saveHandle(next: string): Promise<string | null> {
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: next }),
+      });
+      if (res.ok) {
+        setHandle(next);
+        return null;
+      }
+      const data = await res.json().catch(() => ({}));
+      return (
+        HANDLE_ERRORS[data.error] || "Could not save your handle. Try again."
+      );
+    } catch {
+      return "Could not save your handle. Check your connection.";
+    }
+  }
 
   // Pagehide fallback dismissal
   useEffect(() => {
@@ -224,7 +323,7 @@ export function ProfileSetup({
           <div className="setup__preview-slot">
             <PreviewCard
               draft={draft}
-              username={username}
+              username={handle}
               region={step?.region ?? null}
               done={index === 4}
               mini={keyboardOpen}
@@ -256,8 +355,9 @@ export function ProfileSetup({
                 <NameStep
                   draft={draft}
                   setDraft={setDraft}
-                  username={username}
+                  username={handle}
                   siteHost={siteHost}
+                  saveHandle={saveHandle}
                   onContinue={onContinue}
                 />
               )}
@@ -292,7 +392,7 @@ export function ProfileSetup({
               {index === 4 && (
                 <DoneStep
                   draft={draft}
-                  username={username}
+                  username={handle}
                   failed={queue.failed}
                   onRetry={queue.retry}
                   onFinish={finish}

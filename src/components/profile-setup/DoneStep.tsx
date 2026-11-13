@@ -106,9 +106,10 @@ export function DoneStep({
           variant="primary"
           size="md"
           onClick={handleFinish}
-          disabled={submitting}
+          loading={submitting}
+          loadingText="Saving your profile…"
         >
-          {submitting ? "Saving..." : "Go to my workspace"}
+          Go to my workspace
         </Button>
       </div>
     </div>

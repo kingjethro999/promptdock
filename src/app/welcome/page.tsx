@@ -24,7 +24,7 @@ export default async function WelcomePage({
 
   await db.ensureSchema();
   const nextParam = (await searchParams).next;
-  const next = safeReturnTo(nextParam ?? null, "/");
+  const next = safeReturnTo(nextParam ?? null, "/workspace");
 
   const [userRes, expRes] = await Promise.all([
     db.pool.query(
@@ -33,7 +33,7 @@ export default async function WelcomePage({
       [viewer.id],
     ),
     db.pool.query(
-      `SELECT experience_id, status FROM user_experiences WHERE user_id = $1::uuid`,
+      `SELECT experience_id, status, step_reached FROM user_experiences WHERE user_id = $1::uuid`,
       [viewer.id],
     ),
   ]);
@@ -45,13 +45,18 @@ export default async function WelcomePage({
 
   const rows = expRes.rows;
   const isNewAccount = new Date(user.created_at) >= new Date(ONBOARDING_EPOCH);
-  const mode =
-    isNewAccount &&
-    !rows.some(
-      (r: { experience_id: string }) => r.experience_id === PROFILE_FLOW_ID,
-    )
-      ? "signup"
-      : "edit";
+  const flow = rows.find(
+    (r: { experience_id: string }) => r.experience_id === PROFILE_FLOW_ID,
+  ) as { status: string; step_reached: number } | undefined;
+  // A setup that was opened but neither finished nor skipped can be picked
+  // up again from the step it reached.
+  const unfinished =
+    !flow || flow.status === "shown" || flow.status === "dismissed";
+  const mode = isNewAccount && unfinished ? "signup" : "edit";
+  const startIndex =
+    mode === "signup" && flow
+      ? Math.min(3, Math.max(0, (flow.step_reached || 1) - 1))
+      : 0;
 
   const initial: Draft = {
     displayName: user.display_name || user.username || "",
@@ -89,6 +94,7 @@ export default async function WelcomePage({
       username={user.username || "user"}
       initial={initial}
       siteHost={siteHost}
+      startIndex={startIndex}
     />
   );
 }

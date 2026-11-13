@@ -16,7 +16,7 @@ export default function FeedbackDialog({
   label = "Send feedback",
   className = "",
 }: {
-  label?: string;
+  label?: React.ReactNode;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);

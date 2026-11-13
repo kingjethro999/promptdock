@@ -20,6 +20,7 @@ type Props = {
   username: string | null;
   onNotice(message: string): void;
   onHelp(): void;
+  profileSetupPending?: boolean;
 };
 
 const MORE_KEY = "promptdock.sidebar.more";
@@ -40,6 +41,7 @@ export default function WorkspaceSidebar({
   username,
   onNotice,
   onHelp,
+  profileSetupPending = false,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -138,6 +140,17 @@ export default function WorkspaceSidebar({
           <span>Community</span>
         </Link>
 
+        {profileSetupPending && (
+          <Link
+            href="/welcome?next=/workspace"
+            onClick={close}
+            className="nav-item sidebar-setup-link"
+          >
+            <Icon name="user" size={17} className="nav-icon" />
+            <span>Finish your profile</span>
+          </Link>
+        )}
+
         {/* The onboarding tour points at this group for Settings, so the
             target exists whether or not the group is expanded. */}
         <div className="sidebar-more-group" data-tour="nav-settings">
@@ -212,7 +225,12 @@ export default function WorkspaceSidebar({
           </button>
           <FeedbackDialog
             className="sidebar-help-item"
-            label="Report an issue or idea"
+            label={
+              <>
+                <Icon name="message" size={15} />
+                <span>Report an issue or idea</span>
+              </>
+            }
           />
           {SUPPORT_LINKS.map((link) => (
             <a
