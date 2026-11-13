@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
 import { getFonts } from "@/lib/og/fonts";
 import { safeAvatar } from "@/lib/og/avatar";
@@ -12,7 +13,7 @@ const CACHE =
   "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 const SHORT = "public, max-age=60, s-maxage=300"; // generic fallback: keep short so a late-created code can show up
 
-export async function GET(
+async function render(
   _req: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
@@ -54,4 +55,8 @@ export async function GET(
     />,
     { ...OG_SIZE, fonts, headers: { "Cache-Control": CACHE } },
   );
+}
+
+export function GET(...args: Parameters<typeof render>): Promise<Response> {
+  return ogResponse(() => render(...args));
 }

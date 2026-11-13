@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
 import { getFonts } from "@/lib/og/fonts";
 import { clean, initial } from "@/lib/og/text";
@@ -10,7 +11,7 @@ const CACHE =
   "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 const SHORT = "public, max-age=60, s-maxage=300";
 
-export async function GET(
+async function render(
   _req: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
@@ -56,4 +57,8 @@ export async function GET(
       headers: { "Cache-Control": CACHE, "x-og-variant": "profile" },
     },
   );
+}
+
+export function GET(...args: Parameters<typeof render>): Promise<Response> {
+  return ogResponse(() => render(...args));
 }

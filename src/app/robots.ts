@@ -6,7 +6,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Social-card images live under /api/og/. Twitterbot and other preview
+        // crawlers obey robots.txt, so they must be allowed past the /api/ rule.
+        allow: ["/", "/api/og/"],
         disallow: [
           "/api/",
           "/admin",

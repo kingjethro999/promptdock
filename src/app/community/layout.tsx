@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 const title = "AI Prompt Community — Discover & Remix Prompts";
 const description =
   "Discover, save, and remix reusable AI prompts shared by the PromptDock community. Find prompt ideas for ChatGPT, Claude, Gemini, and other AI tools.";
-const image = "/api/og/default";
+// Static file, not /api/og/default: see OG_DEFAULT_IMAGE in src/lib/site.ts.
+const image = "/og-default.png";
 
 export const metadata: Metadata = {
   title,
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: image,
+        type: "image/png",
         width: 1200,
         height: 630,
         alt: "PromptDock Community",

@@ -34,7 +34,8 @@ test("community metadata includes a complete large social preview", () => {
   const openGraphImage = metadata.openGraph?.images?.[0];
 
   assert.equal(metadata.openGraph?.url, "/community");
-  assert.equal(openGraphImage?.url, "/api/og/default");
+  assert.equal(openGraphImage?.url, "/og-default.png");
+  assert.equal(openGraphImage?.type, "image/png");
   assert.equal(openGraphImage?.width, 1200);
   assert.equal(openGraphImage?.height, 630);
   assert.equal(metadata.twitter?.card, "summary_large_image");

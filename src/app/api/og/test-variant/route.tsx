@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
 import { getFonts } from "@/lib/og/fonts";
 import { safeAvatar } from "@/lib/og/avatar";
@@ -7,7 +8,7 @@ import { OG_SIZE, SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
+async function render(req: Request) {
   const url = new URL(req.url);
   const eyebrow = clean(url.searchParams.get("eyebrow") || "Shared prompt", 40);
   const title = clean(url.searchParams.get("title") || "PromptDock", 120);
@@ -42,4 +43,8 @@ export async function GET(req: Request) {
       },
     },
   );
+}
+
+export function GET(...args: Parameters<typeof render>): Promise<Response> {
+  return ogResponse(() => render(...args));
 }

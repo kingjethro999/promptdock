@@ -26,7 +26,7 @@ import "../styles/next/responsive.css";
 import "../styles/next/landing-refresh.css";
 import "../styles/next/community-refresh.css";
 
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { OG_DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +52,7 @@ export const metadata: Metadata = {
       "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
     images: [
       {
-        url: "/api/og/default",
-        width: 1200,
-        height: 630,
+        ...OG_DEFAULT_IMAGE,
         alt: `${SITE_NAME} — your prompt workspace`,
       },
     ],
@@ -64,7 +62,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
     description:
       "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
-    images: ["/api/og/default"],
+    images: [OG_DEFAULT_IMAGE.url],
   },
 };
 
