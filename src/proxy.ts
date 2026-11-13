@@ -22,7 +22,14 @@ export function proxy(request: NextRequest) {
   incoming.set("Content-Security-Policy", policy);
   const response = NextResponse.next({ request: { headers: incoming } });
   response.headers.set("Content-Security-Policy", policy);
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Account pages can carry a one-time link token in the URL, so they never
+  // send a Referer at all.
+  response.headers.set(
+    "Referrer-Policy",
+    request.nextUrl.pathname.startsWith("/auth")
+      ? "no-referrer"
+      : "strict-origin-when-cross-origin",
+  );
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set(

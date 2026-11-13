@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import AuthForm from "@/components/auth/AuthForm";
 
 const authTitles: Record<string, string> = {
@@ -7,7 +8,6 @@ const authTitles: Record<string, string> = {
   register: "Create your workspace",
   forgot: "Reset your password",
   reset: "Choose a new password",
-  verify: "Verifying your email",
 };
 
 export async function generateMetadata({
@@ -21,10 +21,22 @@ export async function generateMetadata({
     description: "Sign in or create your PromptDock workspace.",
     alternates: { canonical: "/auth" },
     robots: { index: false, follow: true },
+    referrer: "no-referrer",
   };
 }
 
-export default function AuthPage() {
+export default async function AuthPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string; token?: string }>;
+}) {
+  const { mode, token } = await searchParams;
+  if (mode === "verify")
+    redirect(
+      token && /^[a-f0-9]{64}$/.test(token)
+        ? `/auth/verify?token=${token}`
+        : "/auth/verify",
+    );
   return (
     <Suspense fallback={<p>Loading account…</p>}>
       <AuthForm />

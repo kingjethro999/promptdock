@@ -202,6 +202,17 @@ test("account routes dispatch registration, login, verification, and reset with 
         return { ok: true };
       },
     ],
+    [
+      auth,
+      "verifyEmail",
+      async (token) => {
+        calls.push(["verify", token]);
+        return {
+          user: { id: "u1", email: "hello@example.com" },
+          cookie: "promptdock_session=def; HttpOnly; Path=/; SameSite=Lax",
+        };
+      },
+    ],
     [auth, "currentUser", async () => null],
     [rateLimit, "consume", async () => ({ allowed: true, retryAfter: 60 })],
   ];
@@ -232,11 +243,11 @@ test("account routes dispatch registration, login, verification, and reset with 
       ).status,
       200,
     );
-    assert.equal(
-      (await send(base, "/api/auth/verify", "POST", { token: "verify-token" }))
-        .status,
-      200,
-    );
+    const verified = await send(base, "/api/auth/verify", "POST", {
+      token: "verify-token",
+    });
+    assert.equal(verified.status, 200);
+    assert.match(verified.headers.get("set-cookie"), /promptdock_session=def/);
     assert.equal(
       (
         await send(base, "/api/auth/reset", "POST", {
@@ -272,7 +283,7 @@ test("account routes dispatch registration, login, verification, and reset with 
     ["register", "hello@example.com"],
     ["login", "hello@example.com"],
     ["forgot", "hello@example.com"],
-    ["verify", "verify-token", undefined],
+    ["verify", "verify-token"],
     ["reset", "reset-token", "new-long-password"],
   ]);
 });

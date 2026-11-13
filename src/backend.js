@@ -674,9 +674,15 @@ async function handleBackendRequest(request, response) {
           json(response, 200, await auth.resendVerification(body));
         else if (pathname === "/api/auth/forgot")
           json(response, 200, await auth.forgotPassword(body));
-        else if (pathname === "/api/auth/verify")
-          json(response, 200, await auth.consumeToken(body?.token, "verify"));
-        else if (pathname === "/api/auth/reset")
+        else if (pathname === "/api/auth/verify") {
+          const result = await auth.verifyEmail(body?.token, request);
+          json(
+            response,
+            200,
+            { ok: true, user: result.user },
+            { "Set-Cookie": result.cookie },
+          );
+        } else if (pathname === "/api/auth/reset")
           json(
             response,
             200,

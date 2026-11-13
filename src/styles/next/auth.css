@@ -12,3 +12,12 @@
   width: max-content;
   margin-left: auto;
 }
+.auth-resend {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.auth-resend p {
+  margin: 0;
+}

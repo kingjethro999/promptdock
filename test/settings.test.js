@@ -62,7 +62,12 @@ test("email links use the configured public origin", () => {
   const env = { APP_URL: "https://promptdock.example" };
   const link = new URL(mailer.authLink("verify", "a".repeat(64), env));
   assert.equal(link.origin, "https://promptdock.example");
-  assert.equal(link.searchParams.get("verify"), "a".repeat(64));
+  assert.equal(link.pathname, "/auth/verify");
+  assert.equal(link.searchParams.get("token"), "a".repeat(64));
+  const reset = new URL(mailer.authLink("reset", "b".repeat(64), env));
+  assert.equal(reset.pathname, "/auth");
+  assert.equal(reset.searchParams.get("mode"), "reset");
+  assert.equal(reset.searchParams.get("token"), "b".repeat(64));
   assert.equal(
     mailer.appUrl({ VERCEL_PROJECT_PRODUCTION_URL: "promptdock.example" }),
     "https://promptdock.example",

@@ -209,12 +209,16 @@ async function firebaseIdentity(body, allowBodyProvider = false) {
         `${providerLabel(provider)} did not provide an email address.`,
         400,
       );
-    if (provider === "google" && decoded.email_verified === false)
+    // Only an explicit provider claim counts. Firebase asserts it for Google
+    // and leaves it false for GitHub, so GitHub can open a new account but is
+    // never linked into an existing one on the strength of the email alone.
+    const emailVerified = decoded.email_verified === true;
+    if (provider === "google" && !emailVerified)
       throw new AuthError(
         `${providerLabel(provider)} did not provide a verified email address.`,
         400,
       );
-    return { decoded, provider, email };
+    return { decoded, provider, email, emailVerified };
   } catch (error) {
     if (error instanceof AuthError) throw error;
     throw new AuthError(
@@ -225,9 +229,52 @@ async function firebaseIdentity(body, allowBodyProvider = false) {
   }
 }
 
+/**
+ * Attaches a provider whose email claim is verified to the account that owns
+ * that email. If the account never proved the address itself, whoever created
+ * it may not be its owner, so its password, sessions and pending links are
+ * dropped before the real owner is let in.
+ */
+async function linkVerifiedProvider(account, provider, providerUid, email) {
+  const client = await database.pool.connect();
+  try {
+    await client.query("BEGIN");
+    if (!account.email_verified_at) {
+      await client.query(
+        "UPDATE users SET email_verified_at = now(), password_hash = NULL, failed_logins = 0, locked_until = NULL WHERE id = $1",
+        [account.id],
+      );
+      await client.query("DELETE FROM sessions WHERE user_id = $1", [
+        account.id,
+      ]);
+      await client.query("DELETE FROM auth_tokens WHERE user_id = $1", [
+        account.id,
+      ]);
+    }
+    await client.query(
+      `INSERT INTO auth_identities (user_id, provider, provider_uid, provider_email)
+       VALUES ($1, $2, $3, $4)`,
+      [account.id, provider, providerUid, email],
+    );
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    if (error.code === "23505")
+      throw new AuthError(
+        `This account is already connected to a different ${providerLabel(provider)} account.`,
+        409,
+        "provider_already_linked",
+      );
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function firebaseLogin(body, request) {
   await database.ensureSchema();
-  const { decoded, provider, email } = await firebaseIdentity(body);
+  const { decoded, provider, email, emailVerified } =
+    await firebaseIdentity(body);
   const providerUid = providerUidFrom(decoded, provider);
   const linked = await database.pool.query(
     `SELECT users.id, users.email, users.username
@@ -242,16 +289,28 @@ async function firebaseLogin(body, request) {
   }
 
   const existing = await database.pool.query(
-    "SELECT id FROM users WHERE email = $1",
+    "SELECT id, email, username, email_verified_at FROM users WHERE email = $1",
     [email],
   );
   if (existing.rows[0]) {
     const label = providerLabel(provider);
-    throw new AuthError(
-      `An account already exists with this email, but ${label} is not connected. Sign in with your email and password, then connect ${label} from Settings.`,
-      409,
-      "provider_not_linked",
-    );
+    // One verified email is one account. Linking on an unverified claim would
+    // let anyone who can make a provider account with this email take it over.
+    if (!emailVerified)
+      throw new AuthError(
+        `An account already exists with this email, but ${label} is not connected. Sign in another way, then connect ${label} from Settings.`,
+        409,
+        "provider_not_linked",
+      );
+    const account = existing.rows[0];
+    await linkVerifiedProvider(account, provider, providerUid, email);
+    const user = {
+      id: account.id,
+      email: account.email,
+      username: account.username,
+    };
+    await syncFirebaseUser(user, await firebaseProvidersFor(user.id));
+    return issueSession(user, request);
   }
 
   const usernameBase = (
@@ -461,6 +520,17 @@ async function login(body, request) {
   const user = result.rows[0];
   if (user?.locked_until && new Date(user.locked_until) > new Date())
     throw new AuthError("Too many attempts. Try again in 15 minutes.", 429);
+  if (user && !user.password_hash) {
+    const providers = await firebaseProvidersFor(user.id);
+    if (providers.length) {
+      const names = providers.map(providerLabel).join(" or ");
+      throw new AuthError(
+        `This account uses ${names} sign-in. Continue with ${names} instead, or use Forgot password to add a password.`,
+        401,
+        "oauth_only",
+      );
+    }
+  }
   const valid = user
     ? await verifyPassword(password, user.password_hash)
     : await verifyPassword(
@@ -491,14 +561,25 @@ async function login(body, request) {
 }
 
 async function resendVerification(body) {
-  const email = emailFrom(body?.email);
+  // A link that has expired still identifies its account, so the verify page
+  // can ask for a fresh one without the visitor retyping an address.
+  const byToken =
+    typeof body?.token === "string" && /^[a-f0-9]{64}$/.test(body.token);
+  const email = byToken ? null : emailFrom(body?.email);
   await database.ensureSchema();
   if (!mailer.configured())
     throw new AuthError("Email delivery is not configured.", 503);
-  const result = await database.pool.query(
-    "SELECT id, email FROM users WHERE email = $1 AND email_verified_at IS NULL",
-    [email],
-  );
+  const result = byToken
+    ? await database.pool.query(
+        `SELECT users.id, users.email FROM auth_tokens tokens
+        JOIN users ON users.id = tokens.user_id
+        WHERE tokens.token_hash = $1 AND tokens.purpose = 'verify' AND users.email_verified_at IS NULL`,
+        [tokenHash(body.token)],
+      )
+    : await database.pool.query(
+        "SELECT id, email FROM users WHERE email = $1 AND email_verified_at IS NULL",
+        [email],
+      );
   if (result.rows[0]) {
     try {
       await sendToken(result.rows[0], "verify");
@@ -506,7 +587,71 @@ async function resendVerification(body) {
       console.warn("Verification email could not be sent.");
     }
   }
+  // Same answer whether or not an account matched.
   return { ok: true };
+}
+
+/**
+ * Consumes a verification link and signs its owner in. A used link is kept,
+ * marked by expires_at = created_at, until the next one is issued, so a second
+ * click can be told apart from an expired or unknown link.
+ */
+async function verifyEmail(value, request) {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value))
+    throw new AuthError(
+      "This verification link is not valid. Request a new one below.",
+      400,
+      "token_invalid",
+    );
+  await database.ensureSchema();
+  const client = await database.pool.connect();
+  let user;
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      `SELECT tokens.user_id, tokens.expires_at > now() AS live,
+        tokens.expires_at <= tokens.created_at AS used,
+        users.email, users.username
+      FROM auth_tokens tokens JOIN users ON users.id = tokens.user_id
+      WHERE tokens.token_hash = $1 AND tokens.purpose = 'verify' FOR UPDATE OF tokens`,
+      [tokenHash(value)],
+    );
+    const row = result.rows[0];
+    if (!row)
+      throw new AuthError(
+        "This verification link is not valid. Request a new one below.",
+        400,
+        "token_invalid",
+      );
+    if (row.used)
+      throw new AuthError(
+        "This link has already been used. Your email is verified, so you can sign in.",
+        409,
+        "token_used",
+      );
+    if (!row.live)
+      throw new AuthError(
+        "This verification link has expired. Links last 24 hours.",
+        410,
+        "token_expired",
+      );
+    await client.query(
+      "UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1",
+      [row.user_id],
+    );
+    await client.query(
+      "UPDATE auth_tokens SET expires_at = created_at WHERE token_hash = $1",
+      [tokenHash(value)],
+    );
+    await client.query("COMMIT");
+    user = { id: row.user_id, email: row.email, username: row.username };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+  return issueSession(user, request);
 }
 
 async function forgotPassword(body) {
@@ -528,12 +673,11 @@ async function forgotPassword(body) {
   return { ok: true };
 }
 
+/** Consumes a password-reset link. Verification links use verifyEmail. */
 async function consumeToken(value, purpose, password = null) {
+  if (purpose !== "reset") throw new AuthError("Unsupported link.", 400);
   const token = rawToken(value);
-  const encoded =
-    purpose === "reset"
-      ? await hashPassword(passwordFrom(password, true))
-      : null;
+  const encoded = await hashPassword(passwordFrom(password, true));
   await database.ensureSchema();
   const client = await database.pool.connect();
   try {
@@ -546,18 +690,11 @@ async function consumeToken(value, purpose, password = null) {
     if (!result.rows[0])
       throw new AuthError("This link is invalid or expired.", 400);
     const userId = result.rows[0].user_id;
-    if (purpose === "verify")
-      await client.query(
-        "UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1",
-        [userId],
-      );
-    else {
-      await client.query(
-        "UPDATE users SET password_hash = $1, failed_logins = 0, locked_until = NULL, email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $2",
-        [encoded, userId],
-      );
-      await client.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
-    }
+    await client.query(
+      "UPDATE users SET password_hash = $1, failed_logins = 0, locked_until = NULL, email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $2",
+      [encoded, userId],
+    );
+    await client.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
     await client.query(
       "DELETE FROM auth_tokens WHERE user_id = $1 AND purpose = $2",
       [userId, purpose],
@@ -730,6 +867,7 @@ module.exports = {
   register,
   login,
   resendVerification,
+  verifyEmail,
   forgotPassword,
   consumeToken,
   changePassword,

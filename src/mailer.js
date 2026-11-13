@@ -21,8 +21,14 @@ function appUrl(env = process.env) {
 }
 
 function authLink(purpose, token, env = process.env) {
-  const url = new URL(appUrl(env));
-  url.searchParams.set(purpose === "verify" ? "verify" : "reset", token);
+  // Each link opens a page that submits the token itself. Nothing is consumed
+  // by the GET, so mail scanners that prefetch links cannot spend it.
+  const url = new URL(
+    purpose === "verify" ? "/auth/verify" : "/auth",
+    appUrl(env),
+  );
+  if (purpose !== "verify") url.searchParams.set("mode", "reset");
+  url.searchParams.set("token", token);
   return url.toString();
 }
 

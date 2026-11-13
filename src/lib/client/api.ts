@@ -2,6 +2,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    /** Machine-readable reason from the server, when it sends one. */
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -15,11 +17,15 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       "The site API returned an invalid response.",
       response.status,
     );
-  const result = (await response.json()) as T & { error?: string };
+  const result = (await response.json()) as T & {
+    error?: string;
+    code?: string;
+  };
   if (!response.ok)
     throw new ApiError(
       result.error || "The request could not be completed.",
       response.status,
+      typeof result.code === "string" ? result.code : undefined,
     );
   return result;
 }
