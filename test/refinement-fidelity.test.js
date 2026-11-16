@@ -161,3 +161,22 @@ test("safe fallback preserves source, guidance, clarifications, and research con
   assert.match(prompt, /left unanswered/);
   assert.match(prompt, /Official docs recommend/);
 });
+
+test("detailed refinement keeps change notes and result checks", () => {
+  const result = parseDetailedRefinement(
+    JSON.stringify({
+      refinedPrompt: "# Objective\nShip the migration safely.",
+      interpretation: {
+        goal: "Migrate safely",
+        changes: [{ what: "Grouped rollback steps", why: "Easier to follow." }],
+        checks: ["Does the plan include a rollback step?"],
+      },
+    }),
+  );
+  assert.deepEqual(result.interpretation.changes, [
+    { what: "Grouped rollback steps", why: "Easier to follow." },
+  ]);
+  assert.deepEqual(result.interpretation.checks, [
+    "Does the plan include a rollback step?",
+  ]);
+});

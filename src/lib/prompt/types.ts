@@ -12,11 +12,17 @@ export type PromptData = {
   raw?: boolean;
 };
 
+export type PromptChange = { what: string; why: string };
+
 export type PromptInterpretation = {
   goal: string;
   whyThisDepth: string;
   focusAreas: string[];
   missingDetails: string[];
+  /** What the refinement changed from the rough idea, and why it helps. */
+  changes?: PromptChange[];
+  /** Yes/no questions for judging the output the target AI returns. */
+  checks?: string[];
 };
 
 export type Clarification = { question: string; answer: string };

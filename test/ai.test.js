@@ -1285,3 +1285,44 @@ test("detailed refinement falls back to the source after failed repair validatio
     /kept your original content intact/,
   );
 });
+
+test("idea response explains what changed and how to check the result", () => {
+  const result = parseIdeaSuggestion(
+    JSON.stringify({
+      data: {
+        task: "Build a responsive storefront for a shoe shop",
+        focus: "1. Working cart\n2. Mobile layout",
+      },
+      interpretation: {
+        goal: "Sell shoes online",
+        changes: [
+          {
+            what: "Named the deliverable as a responsive storefront",
+            why: "The AI no longer has to guess what kind of site to build.",
+          },
+          { what: "  ", why: "Dropped: no change named" },
+          { why: "Dropped: missing what" },
+          "not an object",
+        ],
+        checks: ["Can a shopper add a pair to the cart?", 42, ""],
+      },
+    }),
+    "website for selling shoes",
+  );
+  assert.deepEqual(result.interpretation.changes, [
+    {
+      what: "Named the deliverable as a responsive storefront",
+      why: "The AI no longer has to guess what kind of site to build.",
+    },
+  ]);
+  assert.deepEqual(result.interpretation.checks, [
+    "Can a shopper add a pair to the cart?",
+  ]);
+
+  const bare = parseIdeaSuggestion(
+    JSON.stringify({ data: { task: "Plan a trip", focus: "Budget" } }),
+    "trip",
+  );
+  assert.deepEqual(bare.interpretation.changes, []);
+  assert.deepEqual(bare.interpretation.checks, []);
+});

@@ -214,6 +214,24 @@ function mergeRequirementInventories(inventories) {
   };
 }
 
+// "What changed and why" plus yes/no checks let a person judge the refinement
+// and the output it produces, instead of trusting a rewritten prompt blindly.
+function normalizeChanges(value, limit = 4) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => ({
+      what:
+        typeof item?.what === "string" ? item.what.trim().slice(0, 160) : "",
+      why: typeof item?.why === "string" ? item.why.trim().slice(0, 240) : "",
+    }))
+    .filter((item) => item.what)
+    .slice(0, limit);
+}
+
+function normalizeChecks(value, limit = 5) {
+  return normalizeList(value, limit, 200);
+}
+
 function parseDetailedRefinement(content) {
   const parsed = jsonFromText(content);
   const prompt =
@@ -233,6 +251,8 @@ function parseDetailedRefinement(content) {
           : "A detailed source needs complete requirement coverage.",
       focusAreas: normalizeList(raw.focusAreas, 4, 160),
       missingDetails: normalizeList(raw.missingDetails, 3, 160),
+      changes: normalizeChanges(raw.changes),
+      checks: normalizeChecks(raw.checks),
     },
   };
 }
@@ -422,12 +442,32 @@ function refinedPromptSchema() {
         interpretation: {
           type: "object",
           additionalProperties: false,
-          required: ["goal", "whyThisDepth", "focusAreas", "missingDetails"],
+          required: [
+            "goal",
+            "whyThisDepth",
+            "focusAreas",
+            "missingDetails",
+            "changes",
+            "checks",
+          ],
           properties: {
             goal: { type: "string" },
             whyThisDepth: { type: "string" },
             focusAreas: { type: "array", items: { type: "string" } },
             missingDetails: { type: "array", items: { type: "string" } },
+            changes: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["what", "why"],
+                properties: {
+                  what: { type: "string" },
+                  why: { type: "string" },
+                },
+              },
+            },
+            checks: { type: "array", items: { type: "string" } },
           },
         },
       },
@@ -481,7 +521,7 @@ function detailedRefinementMessages({
     {
       role: "system",
       content:
-        "Refine the supplied instructions without summarizing them. Every active requirement ID must remain meaningfully present. Improve organization, clarity, and executability; preserve examples and negative requirements; honor later decisions over superseded ones; never invent missing values or placeholders for supplied information. Return JSON with refinedPrompt and interpretation only.",
+        "Refine the supplied instructions without summarizing them. Every active requirement ID must remain meaningfully present. Improve organization, clarity, and executability; preserve examples and negative requirements; honor later decisions over superseded ones; never invent missing values or placeholders for supplied information. In interpretation, changes lists two to four {what, why} entries naming concrete improvements you made and why each helps the result; checks lists three to five yes/no questions, specific to these instructions, that a person can answer by inspecting the target AI's output. Return JSON with refinedPrompt and interpretation only.",
     },
     {
       role: "user",
@@ -520,6 +560,8 @@ function repairMessages({ source, inventory, refinedPrompt, validation }) {
 
 module.exports = {
   classifyRefinement,
+  normalizeChanges,
+  normalizeChecks,
   coverageValidationMessages,
   detailedRefinementMessages,
   estimateTokens,

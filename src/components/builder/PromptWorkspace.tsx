@@ -186,7 +186,10 @@ export default function PromptWorkspace() {
           }}
         />
         {builder.result?.interpretation && (
-          <InterpretationCard interpretation={builder.result.interpretation} />
+          <InterpretationCard
+            key={builder.documentRevision}
+            interpretation={builder.result.interpretation}
+          />
         )}
         {builder.ready && builder.data && (
           <PromptEditor

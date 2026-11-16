@@ -359,6 +359,8 @@ function parseIdeaSuggestion(content, idea, guidance = {}, imageCount = 0) {
           : "",
     focusAreas: list(raw.focusAreas, 4),
     missingDetails: list(raw.missingDetails, 3),
+    changes: fidelity.normalizeChanges(raw.changes),
+    checks: fidelity.normalizeChecks(raw.checks),
   };
   if (!interpretation.focusAreas.length)
     interpretation.focusAreas = data.focus
@@ -379,6 +381,11 @@ function parseIdeaSuggestion(content, idea, guidance = {}, imageCount = 0) {
     interpretation.focusAreas = interpretation.focusAreas.map(
       selfContainedVisualText,
     );
+    interpretation.changes = interpretation.changes.map((change) => ({
+      what: selfContainedVisualText(change.what),
+      why: selfContainedVisualText(change.why),
+    }));
+    interpretation.checks = interpretation.checks.map(selfContainedVisualText);
   }
   return { idea, data, interpretation };
 }
@@ -891,6 +898,8 @@ async function ideaToPrompt(input, env = process.env, request = fetch) {
             "PromptDock kept your original content intact because a complete refinement could not be verified.",
           focusAreas: [],
           missingDetails: [],
+          changes: [],
+          checks: [],
         },
       };
     }
@@ -1127,6 +1136,8 @@ async function fidelityIdeaToPrompt(
       goal: "Preserve your supplied instructions in full",
       whyThisDepth:
         "PromptDock kept your original content intact because the refinement could not pass its completeness check.",
+      // The refined text was discarded, so its change notes no longer apply.
+      changes: [],
     };
   }
   generated.data.raw = true;

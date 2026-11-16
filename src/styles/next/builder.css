@@ -483,3 +483,187 @@
 .save-to-done-btn {
   margin-left: auto;
 }
+
+/* Understanding your prompt: what changed, why, and how to check the result. */
+.understanding-card {
+  --understanding-ink: #1d2a25;
+  --understanding-muted: #5e7467;
+  --understanding-rule: #eef2ea;
+  --understanding-accent: #4f8a47;
+  display: grid;
+  gap: 0;
+}
+.understanding-card h3 {
+  font-family: Manrope, sans-serif;
+  font-size: 17px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--understanding-ink);
+  margin: 0;
+  text-wrap: balance;
+}
+.understanding-card .understanding-goal {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--understanding-muted);
+  text-wrap: pretty;
+}
+.understanding-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--understanding-rule);
+}
+.understanding-block h4 {
+  margin: 0;
+  font-family: Manrope, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--understanding-ink);
+}
+.understanding-changes {
+  list-style: none;
+  counter-reset: change;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.understanding-changes li {
+  counter-increment: change;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
+}
+.understanding-changes li::before {
+  content: counter(change);
+  grid-row: span 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #eef6df;
+  color: var(--understanding-accent);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
+}
+.understanding-change-what {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--understanding-ink);
+}
+.understanding-change-why {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--understanding-muted);
+  text-wrap: pretty;
+}
+.understanding-focus,
+.understanding-open {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--understanding-muted);
+}
+.understanding-focus li::marker,
+.understanding-open li::marker {
+  color: var(--understanding-accent);
+}
+.understanding-check-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.understanding-tally {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--understanding-muted);
+  transition: color 160ms ease-out;
+}
+.understanding-tally.is-done {
+  color: var(--understanding-accent);
+}
+.understanding-card .understanding-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--understanding-muted);
+}
+.understanding-checks {
+  list-style: none;
+  margin: 8px -10px 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.understanding-checks label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 11px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--understanding-ink);
+  transition: background-color 120ms ease-out;
+}
+.understanding-checks label:hover {
+  background: #f5f8f1;
+}
+.understanding-checks .ui-check {
+  margin-top: 0;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    transform 100ms ease-out;
+}
+/* Feedback on press, not release. */
+.understanding-checks label:active .ui-check {
+  transform: scale(0.9);
+}
+.understanding-checks .ui-check:focus-visible {
+  outline: 2px solid var(--ui-focus, #98c844);
+  outline-offset: 2px;
+}
+.understanding-checks label span {
+  transition: color 160ms ease-out;
+}
+.understanding-checks label.is-ticked span {
+  color: var(--understanding-muted);
+}
+.understanding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px -10px 0;
+}
+.understanding-actions .ui-btn {
+  min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .understanding-checks label,
+  .understanding-checks .ui-check,
+  .understanding-checks label span,
+  .understanding-tally {
+    transition: none;
+  }
+  .understanding-checks label:active .ui-check {
+    transform: none;
+  }
+}
