@@ -588,18 +588,6 @@
   box-shadow: none;
 }
 
-.landing-page .sequence__kicker {
-  color: #3f6638;
-}
-
-.landing-page .sequence__description {
-  color: #4c6653;
-}
-
-.landing-page .sequence__surface-head > span:nth-child(2) {
-  color: #4b6952;
-}
-
 .landing-page .models-table thead,
 .landing-page .benchmark-table thead {
   color: #4b6550;
@@ -772,5 +760,45 @@
 
   .landing-page .landing-mobile-nav summary {
     font-size: 11px;
+  }
+}
+
+/* Bring-your-own-key band: even breathing room on every side, a clear gap
+   between heading and copy, and room for the orbit's labels. */
+.landing-page .landing-keys {
+  padding: clamp(40px, 6vw, 80px) clamp(24px, 6vw, 88px);
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 88px);
+  margin-inline: max(16px, calc((100% - 1232px) / 2));
+}
+.landing-page .landing-keys-orbit {
+  justify-self: center;
+  margin-inline: 56px;
+}
+.landing-page .landing-keys-copy h2 {
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+.landing-page .landing-keys-copy p {
+  max-width: 52ch;
+  margin: 0 0 28px;
+  line-height: 1.65;
+}
+@media (max-width: 1000px) {
+  .landing-page .landing-keys {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+  }
+  .landing-page .landing-keys-orbit {
+    justify-self: center;
+  }
+}
+@media (max-width: 600px) {
+  .landing-page .landing-keys {
+    padding: 40px 24px 36px;
+    gap: 32px;
+  }
+  .landing-page .landing-keys-orbit {
+    margin-inline: 52px;
   }
 }

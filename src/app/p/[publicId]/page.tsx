@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { shareSeed } from "@/lib/og/themes";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     prompt.data?.task || "A shared PromptDock prompt",
     180,
   );
-  const image = `/api/og/p/${publicId}?v=${new Date(prompt.updatedAt ?? 0).getTime()}`;
+  const image = `/api/og/p/${publicId}?v=${new Date(prompt.updatedAt ?? 0).getTime()}&s=${shareSeed()}`;
 
   return {
     title,

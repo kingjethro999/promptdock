@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { shareSeed } from "@/lib/og/themes";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       `A curated prompt playlist by ${col.displayName || col.username} on PromptDock.`,
     180,
   );
-  const image = `/api/og/c/${publicId}?v=${new Date(col.updatedAt ?? 0).getTime()}`;
+  const image = `/api/og/c/${publicId}?v=${new Date(col.updatedAt ?? 0).getTime()}&s=${shareSeed()}`;
 
   return {
     title,

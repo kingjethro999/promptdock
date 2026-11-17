@@ -131,8 +131,7 @@ export default function AiProviderSettings() {
   }
 
   return (
-    <section className="settings-card react-settings-card">
-      <span className="section-kicker">AI PROVIDER</span>
+    <section className="settings-card react-settings-card" id="ai-provider">
       <h2>Bring your own key</h2>
       <p>
         Save NVIDIA, Anthropic, OpenAI, Groq, APMIX, Gemini, or a compatible

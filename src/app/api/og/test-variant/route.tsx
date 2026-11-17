@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
+import { pickLook } from "@/lib/og/themes";
 import { getFonts } from "@/lib/og/fonts";
 import { safeAvatar } from "@/lib/og/avatar";
 import { clean, initial } from "@/lib/og/text";
@@ -25,9 +26,11 @@ async function render(req: Request) {
     url.searchParams.get("fallback") || (title ? initial(title) : "?");
 
   const fonts = await getFonts();
+  const look = pickLook("prompt", new URL(req.url).searchParams.get("s"));
 
   return new ImageResponse(
     <Card
+      {...look}
       eyebrow={eyebrow}
       title={title}
       body={body}

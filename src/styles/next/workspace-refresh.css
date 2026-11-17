@@ -602,3 +602,318 @@
     font-size: 14px;
   }
 }
+
+/* ------------------------------------------------------------------
+   Workspace: compose on the left, result on the right once there is
+   room. Below ~900px of content width it stacks in reading order.
+   ------------------------------------------------------------------ */
+:root {
+  --pd-ease-out: var(--ease-spring, cubic-bezier(0.16, 1, 0.3, 1));
+  --pd-ink: #1d2a25;
+  --pd-ink-soft: #5e7467;
+}
+.builder-view {
+  container: builder / inline-size;
+}
+.builder-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.builder-pane {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  align-content: start;
+}
+@container builder (min-width: 900px) {
+  .builder-panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 22px;
+  }
+}
+.builder-intro {
+  margin-bottom: 18px;
+}
+.builder-intro h1 {
+  margin-top: 0;
+  text-wrap: balance;
+}
+
+/* Readable secondary text: the old #94a095 on white was ~2.7:1. */
+.builder-view .page-intro p,
+.settings-view .page-intro p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--pd-ink-soft);
+  max-width: 62ch;
+}
+.builder-view .card-heading p,
+.builder-view .preview-subtitle,
+.builder-view .platform-section p,
+.builder-view .idea-card > p,
+.builder-view .quality-card p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pd-ink-soft);
+}
+.builder-view .workflow-steps {
+  color: #6b7a6e;
+}
+
+/* The output card lost its label; the ready badge floats top-right. */
+.builder-view .preview-card {
+  position: relative;
+}
+.builder-view .preview-top {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+}
+.builder-view .preview-card h2 {
+  margin-top: 0;
+  padding-right: 120px;
+}
+.builder-view .idea-card h2 {
+  margin-top: 0;
+}
+
+/* A new result arrives: rise in once, quickly, from where it will sit. */
+@keyframes pd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.builder-view .prompt-output:not(.is-empty),
+.builder-view .understanding-card {
+  animation: pd-rise 280ms var(--pd-ease-out) both;
+}
+.builder-view .understanding-changes li,
+.builder-view .understanding-checks li {
+  animation: pd-rise 260ms var(--pd-ease-out) both;
+}
+.builder-view .understanding-changes li:nth-child(2),
+.builder-view .understanding-checks li:nth-child(2) {
+  animation-delay: 40ms;
+}
+.builder-view .understanding-changes li:nth-child(3),
+.builder-view .understanding-checks li:nth-child(3) {
+  animation-delay: 80ms;
+}
+.builder-view .understanding-changes li:nth-child(4),
+.builder-view .understanding-checks li:nth-child(4) {
+  animation-delay: 120ms;
+}
+.builder-view .understanding-checks li:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+/* Press feedback on the platform shortcuts, on press not release. */
+.builder-view .platform-card {
+  transition:
+    transform 160ms var(--pd-ease-out),
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.builder-view .platform-card:active {
+  transform: scale(0.97);
+}
+
+/* ------------------------------------------------------------------
+   Settings: a jump bar so the long page is navigable.
+   ------------------------------------------------------------------ */
+.settings-jump {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 0 20px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid #e3e9df;
+  box-shadow: 0 6px 18px rgba(32, 55, 34, 0.06);
+}
+.settings-jump::-webkit-scrollbar {
+  display: none;
+}
+.settings-jump a {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pd-ink-soft);
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 120ms var(--pd-ease-out);
+}
+.settings-jump a:hover {
+  background: #eef6df;
+  color: var(--pd-ink);
+}
+.settings-jump a:active {
+  transform: scale(0.96);
+}
+.settings-jump a:focus-visible {
+  outline: 2px solid #98c844;
+  outline-offset: 2px;
+}
+.settings-view [id] {
+  scroll-margin-top: 72px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .settings-jump {
+    background: #fff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .builder-view .prompt-output:not(.is-empty),
+  .builder-view .understanding-card,
+  .builder-view .understanding-changes li,
+  .builder-view .understanding-checks li {
+    animation: none;
+  }
+  .builder-view .platform-card:active,
+  .settings-jump a:active {
+    transform: none;
+  }
+}
+
+/* Export profiles: one scrollable row instead of wrapping into a stack. */
+.builder-view .prompt-profile-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -4px;
+  padding: 2px 4px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.builder-view .prompt-profile-tabs::-webkit-scrollbar {
+  display: none;
+}
+.builder-view .profile-tab-btn {
+  flex: none;
+}
+.builder-view .prompt-document-tools {
+  margin: 4px 0 8px;
+}
+.builder-pane > * {
+  min-width: 0;
+}
+
+/* Empty result: show what is coming instead of a box of disabled buttons. */
+.preview-card.is-waiting .preview-actions,
+.preview-card.is-waiting .export-row,
+.preview-card.is-waiting .run-row,
+.preview-card.is-waiting .preview-top {
+  display: none;
+}
+.preview-empty {
+  list-style: none;
+  counter-reset: preview-step;
+  margin: 20px 0 4px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.preview-empty li {
+  counter-increment: preview-step;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 2px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f7faf3;
+  border: 1px dashed #d9e5cf;
+  animation: pd-rise 320ms var(--pd-ease-out) both;
+}
+.preview-empty li:nth-child(2) {
+  animation-delay: 50ms;
+}
+.preview-empty li:nth-child(3) {
+  animation-delay: 100ms;
+}
+.preview-empty li::before {
+  content: counter(preview-step);
+  grid-row: span 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #e6f4c9;
+  color: #3f7a3c;
+  font:
+    800 13px/30px Manrope,
+    sans-serif;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.preview-empty-title {
+  font:
+    700 14px/1.35 Manrope,
+    sans-serif;
+  letter-spacing: -0.01em;
+  color: var(--pd-ink);
+}
+.preview-empty-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pd-ink-soft);
+}
+.idea-shortcut {
+  display: none;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--pd-ink-soft);
+}
+.idea-shortcut kbd {
+  display: inline-block;
+  min-width: 20px;
+  margin-right: 3px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid #d7e2d1;
+  border-bottom-width: 2px;
+  background: #fff;
+  font:
+    600 11px/18px "DM Sans",
+    sans-serif;
+  color: var(--pd-ink);
+  text-align: center;
+}
+/* Only where there is a keyboard to press it on. */
+@media (hover: hover) and (pointer: fine) {
+  .idea-shortcut {
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-empty li {
+    animation: none;
+  }
+}
+
+/* Pinned composer (set from JS only when it fits the window). Two panes only. */
+@container builder (min-width: 900px) {
+  .builder-pane--compose.is-pinned {
+    position: sticky;
+    top: 24px;
+  }
+}

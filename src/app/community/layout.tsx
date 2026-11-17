@@ -1,40 +1,44 @@
 import { AdaptiveShell } from "@/components/community/AdaptiveShell";
 import type { Metadata } from "next";
 
-const title = "AI Prompt Community — Discover & Remix Prompts";
-const description =
-  "Discover, save, and remix reusable AI prompts shared by the PromptDock community. Find prompt ideas for ChatGPT, Claude, Gemini, and other AI tools.";
-// Static file, not /api/og/default: see OG_DEFAULT_IMAGE in src/lib/site.ts.
-const image = "/og-default.png";
+import { randomCard } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/community" },
-  openGraph: {
-    type: "website",
-    siteName: "PromptDock",
-    locale: "en_US",
-    title: "PromptDock Community",
+const title = "Community prompts to discover, save, and remix";
+const description =
+  "Browse prompts people actually use, then save or remix them for ChatGPT, Claude, Gemini, and whatever else you work with. Follow creators you like.";
+
+export function generateMetadata(): Metadata {
+  // Static files from the CDN (crawler-friendly), one picked per request.
+  const image = randomCard().url;
+  return {
+    title,
     description,
-    url: "/community",
-    images: [
-      {
-        url: image,
-        type: "image/png",
-        width: 1200,
-        height: 630,
-        alt: "PromptDock Community",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "PromptDock Community",
-    description,
-    images: [image],
-  },
-};
+    alternates: { canonical: "/community" },
+    openGraph: {
+      type: "website",
+      siteName: "PromptDock",
+      locale: "en_US",
+      title: "PromptDock Community",
+      description,
+      url: "/community",
+      images: [
+        {
+          url: image,
+          type: "image/png",
+          width: 1200,
+          height: 630,
+          alt: "PromptDock Community",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "PromptDock Community",
+      description,
+      images: [image],
+    },
+  };
+}
 
 export default function CommunityLayout({
   children,

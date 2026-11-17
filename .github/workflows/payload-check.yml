@@ -1,0 +1,20 @@
+name: Payload check
+
+# Runs before anything installs or builds, with no dependencies, so an
+# injected install script or build hook never gets a chance to execute.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  payload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: node scripts/check-payload.js

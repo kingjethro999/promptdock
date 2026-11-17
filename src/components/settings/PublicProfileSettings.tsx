@@ -213,7 +213,6 @@ export default function PublicProfileSettings() {
   if (loading) {
     return (
       <section className="settings-card profile-editor-card" id="profile">
-        <div className="section-kicker">COMMUNITY</div>
         <h2>Public Profile</h2>
         <p className="profile-editor__loading">Loading profile settings…</p>
       </section>
@@ -223,7 +222,6 @@ export default function PublicProfileSettings() {
   return (
     <section className="settings-card profile-editor-card" id="profile">
       <div className="profile-editor__header">
-        <div className="section-kicker">COMMUNITY</div>
         <h2>Public Profile</h2>
         <p>This is how prompt engineers see you across PromptDock.</p>
       </div>

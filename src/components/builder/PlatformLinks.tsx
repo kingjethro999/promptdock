@@ -26,7 +26,6 @@ export default function PlatformLinks() {
     <section className="platform-section">
       <div className="platform-heading">
         <div>
-          <div className="section-kicker">WORKS WITH YOUR FAVORITES</div>
           <h2>One prompt. Any platform.</h2>
           <p>Copy your prompt, then open the AI tool you use.</p>
         </div>

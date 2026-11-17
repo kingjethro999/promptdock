@@ -120,8 +120,7 @@ export default function ProfileSettings({
   }
 
   return (
-    <section className="settings-card react-settings-card">
-      <span className="section-kicker">ACCOUNT</span>
+    <section className="settings-card react-settings-card" id="account">
       <h2>Sign-in &amp; security</h2>
       <p>
         Signed in as <strong>{user.email}</strong>

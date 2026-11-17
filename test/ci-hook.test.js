@@ -18,6 +18,7 @@ test("pre-commit and GitHub Actions share the complete CI verification command",
   assert.ok(verification, "package.json must define ci:verify");
 
   const checks = [
+    "npm run payload:check",
     "npm run lint",
     "npm run format:check",
     "npm run headers:check",

@@ -29,7 +29,6 @@ export default function ClarificationPanel({
           ✦
         </span>
         <div>
-          <div className="section-kicker">ONE QUICK CHECK</div>
           <h2 id="clarificationHeading">Help me get this right</h2>
         </div>
       </div>

@@ -358,7 +358,13 @@
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
   user-select: none;
 }
 
@@ -457,7 +463,13 @@
   background: #fff;
   color: #31593d;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .variables-toggle-btn.is-active {

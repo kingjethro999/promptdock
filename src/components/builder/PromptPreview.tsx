@@ -186,9 +186,11 @@ export default function PromptPreview({
   }
 
   return (
-    <section className="preview-card" aria-labelledby="previewHeading">
+    <section
+      className={`preview-card${ready ? "" : " is-waiting"}`}
+      aria-labelledby="previewHeading"
+    >
       <div className="preview-top">
-        <div className="section-kicker">PROMPT OUTPUT</div>
         <span
           className="ready-badge"
           style={{ visibility: finalPrompt ? "visible" : "hidden" }}
@@ -285,8 +287,35 @@ export default function PromptPreview({
           autoFocus
           rows={10}
         />
+      ) : !ready ? (
+        <ol className="preview-empty" aria-label="What you will get">
+          <li>
+            <span className="preview-empty-title">
+              A prompt that works anywhere
+            </span>
+            <span className="preview-empty-text">
+              Ready for ChatGPT, Claude, Gemini, or your IDE, in the format each
+              one reads best.
+            </span>
+          </li>
+          <li>
+            <span className="preview-empty-title">What changed, and why</span>
+            <span className="preview-empty-text">
+              Each improvement over your rough idea, in plain words.
+            </span>
+          </li>
+          <li>
+            <span className="preview-empty-title">
+              A checklist for the answer
+            </span>
+            <span className="preview-empty-text">
+              Yes-or-no checks so you can tell whether the AI delivered.
+            </span>
+          </li>
+        </ol>
       ) : (
         <div
+          key={documentRevision}
           className={`prompt-output${finalPrompt ? "" : " is-empty"}`}
           tabIndex={0}
           aria-live="polite"

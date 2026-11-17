@@ -52,11 +52,10 @@
 
 .community-page .community-heading {
   font:
-    500 clamp(36px, 4.2vw, 58px) / 1.1 ui-monospace,
-    "SFMono-Regular",
-    Consolas,
-    monospace;
-  letter-spacing: -0.06em;
+    800 clamp(36px, 4.2vw, 58px) / 1.05 Manrope,
+    sans-serif;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .community-page .community-subtitle {
@@ -118,21 +117,19 @@
 .landing-page #community .community-grid > :first-child .community-card-title {
   max-width: 560px;
   font:
-    500 clamp(24px, 2.5vw, 34px) / 1.2 ui-monospace,
-    "SFMono-Regular",
-    Consolas,
-    monospace;
-  letter-spacing: -0.045em;
+    800 clamp(24px, 2.5vw, 34px) / 1.15 Manrope,
+    sans-serif;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
 .community-page .community-card-title,
 .landing-page #community .community-card-title {
   font:
-    500 20px / 1.25 ui-monospace,
-    "SFMono-Regular",
-    Consolas,
-    monospace;
-  letter-spacing: -0.035em;
+    700 19px / 1.25 Manrope,
+    sans-serif;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .community-page .community-card-excerpt,

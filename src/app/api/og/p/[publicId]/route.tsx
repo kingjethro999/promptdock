@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
+import { pickLook } from "@/lib/og/themes";
 import { getFonts } from "@/lib/og/fonts";
 import { clean, initial } from "@/lib/og/text";
 import { OG_SIZE, SITE_URL } from "@/lib/site";
@@ -12,11 +13,12 @@ const CACHE =
 const SHORT = "public, max-age=60, s-maxage=300";
 
 async function render(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ publicId: string }> },
 ) {
   const { publicId } = await params;
   const fonts = await getFonts();
+  const look = pickLook("prompt", new URL(req.url).searchParams.get("s"));
   const domain = SITE_URL.replace(/^https?:\/\//, "");
 
   let prompt: Awaited<ReturnType<typeof getPromptForViewer>> = null;
@@ -27,6 +29,7 @@ async function render(
   if (!prompt) {
     return new ImageResponse(
       <Card
+        {...look}
         eyebrow="Shared prompt"
         title="A prompt shared on PromptDock"
         body="Explore prompts structured for any AI platform. Create, organize and share your own."
@@ -43,6 +46,7 @@ async function render(
   const owner = clean(prompt.displayName || prompt.username, 40);
   return new ImageResponse(
     <Card
+      {...look}
       eyebrow={owner ? `Shared by ${owner}` : "Shared prompt"}
       title={clean(prompt.name, 90)}
       body={clean(prompt.data?.task, 180)}

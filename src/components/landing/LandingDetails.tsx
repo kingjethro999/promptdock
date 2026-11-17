@@ -135,16 +135,16 @@ export function LandingDetails() {
           <small>YOUR KEY</small>
         </Reveal>
 
-        <div>
-          <span className="landing-kicker">YOUR AI, YOUR WAY</span>
+        <div className="landing-keys-copy">
           <RevealHeading as="h2">
             Bring your own key. Choose your model.
           </RevealHeading>
           <Reveal kind="rise" delay={0.1}>
             <p>
-              Connect your Groq or Gemini key in settings, pick the model you
-              prefer, and keep shaping prompts in the same workspace. Your key
-              is encrypted on the server and never shown again after saving.
+              Add a key from OpenAI, Anthropic, Gemini, Groq, NVIDIA, or any
+              compatible endpoint, pick the model you like, and keep working in
+              the same workspace. Keys are encrypted on the server and never
+              sent back to your browser.
             </p>
           </Reveal>
           <Reveal kind="rise" delay={0.15}>

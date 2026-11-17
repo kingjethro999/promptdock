@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
+import { pickLook } from "@/lib/og/themes";
 import { getFonts } from "@/lib/og/fonts";
 import { safeAvatar } from "@/lib/og/avatar";
 import { clean, initial } from "@/lib/og/text";
@@ -14,11 +15,12 @@ const CACHE =
 const SHORT = "public, max-age=60, s-maxage=300"; // generic fallback: keep short so a late-created code can show up
 
 async function render(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
   const fonts = await getFonts();
+  const look = pickLook("invite", new URL(req.url).searchParams.get("s"));
   const domain = SITE_URL.replace(/^https?:\/\//, "");
 
   let inviter: { username?: string | null; avatarUrl?: string | null } | null =
@@ -33,6 +35,7 @@ async function render(
     // Never 404 the image and never hint that the code is invalid.
     return new ImageResponse(
       <Card
+        {...look}
         eyebrow="Your prompt workspace"
         title="Write, organize and share your best prompts."
         body="Join PromptDock to write, organize and share prompts for any AI platform."
@@ -46,6 +49,7 @@ async function render(
   const avatar = await safeAvatar(inviter.avatarUrl);
   return new ImageResponse(
     <Card
+      {...look}
       eyebrow="You're invited"
       title={`${name} invited you to PromptDock`}
       body="Join their workspace to write, organize and share prompts."

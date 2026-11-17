@@ -28,45 +28,46 @@ import "../styles/next/community-refresh.css";
 import "../styles/next/workspace-refresh.css";
 import "../styles/next/modals.css";
 
-import { OG_DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+  randomCard,
+} from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
-    template: `%s — ${SITE_NAME}`,
-  },
-  description:
-    "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
-  applicationName: "PromptDock",
-  verification: { google: "lPK13chagDv8i5bMS5lDIzUcGerNFMeaPLkS1DXWn7U" },
-  alternates: { canonical: "/", types: { "application/rss+xml": "/feed.xml" } },
-  icons: { icon: "/favicon.svg" },
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    locale: "en_US",
-    url: "/",
-    title: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
-    description:
-      "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
-    images: [
-      {
-        ...OG_DEFAULT_IMAGE,
-        alt: `${SITE_NAME} — your prompt workspace`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} | AI Prompt Builder & Prompt Library`,
-    description:
-      "Turn rough ideas into clear AI prompts. Refine, organize, save, and share reusable prompts in your PromptDock library for the AI tools you use.",
-    images: [OG_DEFAULT_IMAGE.url],
-  },
-};
+export function generateMetadata(): Metadata {
+  const card = randomCard();
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: SITE_TITLE, template: `%s — ${SITE_NAME}` },
+    description: SITE_DESCRIPTION,
+    applicationName: "PromptDock",
+    verification: { google: "lPK13chagDv8i5bMS5lDIzUcGerNFMeaPLkS1DXWn7U" },
+    alternates: {
+      canonical: "/",
+      types: { "application/rss+xml": "/feed.xml" },
+    },
+    icons: { icon: "/favicon.svg" },
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      locale: "en_US",
+      url: "/",
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      images: [{ ...card, alt: `${SITE_NAME}, your prompt workspace` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      images: [card.url],
+    },
+  };
+}
 
 import { headers } from "next/headers";
 import { MotionProvider } from "@/components/motion/env";

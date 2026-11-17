@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "promptdock",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "APP_URL=http://localhost:3111",
+        "npx",
+        "next",
+        "dev",
+        "-p",
+        "3111"
+      ],
+      "port": 3111
+    },
+    {
+      "name": "promptdock-produrl",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "APP_URL=https://thepromptdock.vercel.app",
+        "npx",
+        "next",
+        "dev",
+        "-p",
+        "3112"
+      ],
+      "port": 3112
+    }
+  ]
+}

@@ -23,8 +23,10 @@ export default function UsageMeter({
   error: string;
 }) {
   return (
-    <section className="settings-card react-settings-card react-usage-card">
-      <span className="section-kicker">USAGE</span>
+    <section
+      className="settings-card react-settings-card react-usage-card"
+      id="usage"
+    >
       <h2>This hour</h2>
       <p>
         Every AI action has a rolling hourly budget. The meter shows what is

@@ -94,7 +94,6 @@ export default function FineTunePanel({
     >
       <div className="card-heading">
         <div>
-          <div className="section-kicker">✦ &nbsp; OPTIONAL DETAILS</div>
           <h2 id="composerHeading">Fine-tune your prompt</h2>
           <p>
             Know the tone, format, or focus you want? Add it here. Otherwise,

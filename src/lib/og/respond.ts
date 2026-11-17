@@ -16,7 +16,8 @@ export async function ogResponse(
     const headers = new Headers(image.headers);
     headers.set("Content-Length", String(body.byteLength));
     return new Response(body, { status: 200, headers });
-  } catch {
+  } catch (error) {
+    console.error("[og] render failed", error);
     return new Response(null, {
       status: 302,
       headers: {

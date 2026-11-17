@@ -32,10 +32,12 @@
 ### Task 1: Expand and validate the live candidate matrix
 
 **Files:**
+
 - Modify: `scripts/model-benchmark.cjs`
 - Test: `test/model-benchmark.test.js`
 
 **Interfaces:**
+
 - `buildModelMatrix(env)` returns NVIDIA Super VL, Lightning, Super 120B-A12B, Ultra 550B-A55B, and Groq GPT-OSS 120B in stable order, with provider-specific model overrides retained.
 
 - [ ] Add failing tests asserting all five default candidates, stable IDs, and explicit key requirements.
@@ -46,6 +48,7 @@
 ### Task 2: Separate availability from rubric quality
 
 **Files:**
+
 - Modify: `benchmark/fixtures/contradictory-decisions/fixture.json`
 - Modify: `benchmark/fixtures/detailed-workspace/fixture.json`
 - Modify: `benchmark/fixtures/short-idea/fixture.json`
@@ -54,6 +57,7 @@
 - Test: `test/model-benchmark.test.js`
 
 **Interfaces:**
+
 - Each fixture defines stable criteria with an ID, a short meaning, a hard-constraint flag, and any known acceptable semantic phrasings as scorer aids rather than the sole definition of semantic correctness.
 - A review record stores each criterion judgment as `covered`, `partial`, or `missing`, plus a short completion excerpt for local retained reports only.
 - Aggregates expose `attemptedCount`, `validResponseCount`, and `evaluatedCount` separately; quality means are calculated over valid, reviewed outputs only.
@@ -67,12 +71,14 @@
 ### Task 3: Correct the landing benchmark display
 
 **Files:**
+
 - Modify: `src/components/landing/ModelsBenchmark.tsx`
 - Modify: `src/styles/shared/landing.css`
 - Modify: `src/styles/next/landing-refresh.css`
 - Test: relevant landing UI test in `test/` (add one if no current benchmark coverage exists)
 
 **Interfaces:**
+
 - The table reads the aggregate public report keyed by stable candidate ID and renders an explicit unmeasured state where no published reviewed score exists.
 
 - [ ] Add the five candidate columns and update the report/result TypeScript types.
@@ -84,10 +90,12 @@
 ### Task 4: Run, review, publish, and verify the five-model benchmark
 
 **Files:**
+
 - Modify: `public/model-benchmark.json`
 - Local ignored outputs: `benchmark-results/` (never stage)
 
 **Interfaces:**
+
 - The live benchmark runner retains completions only in local ignored reports; a separately reviewed assessment supplies the criterion grades/evidence used to build the sanitized public report.
 
 - [ ] Run all five candidates against all four fixtures with `--retain-output`, recording 20 attempts and not printing key values.

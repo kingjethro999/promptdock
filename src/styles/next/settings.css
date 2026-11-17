@@ -274,6 +274,7 @@
 }
 
 .profile-editor__preview-shell {
+  --avatar: 84px;
   border: 1px solid #dbe2dc;
   border-radius: 12px;
   overflow: hidden;

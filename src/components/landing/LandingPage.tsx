@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { LandingDetails, LandingFooter, LandingProof } from "./LandingDetails";
 import LandingHero from "./LandingHero";
 import LandingCommunity from "./LandingCommunity";
@@ -15,11 +14,6 @@ import { ScrollProgress } from "@/components/scroll/ScrollProgress";
 import { SmartHeader } from "@/components/scroll/SmartHeader";
 import { AnchorLink } from "@/components/scroll/AnchorLink";
 import { Glyph, Icon } from "@/components/ui";
-
-const SignatureSequence = dynamic(() => import("./SignatureSequence"), {
-  ssr: false,
-  loading: () => <div className="sequence" style={{ minHeight: "500px" }} />,
-});
 
 export default function LandingPage() {
   return (
@@ -141,9 +135,6 @@ export default function LandingPage() {
               </StaggerItem>
             </Stagger>
           </section>
-
-          {/* GSAP matchMedia-gated pinned/lite Signature Sequence */}
-          <SignatureSequence />
 
           {/* Features, BYOK, FAQ, and Sponsor */}
           <LandingDetails />

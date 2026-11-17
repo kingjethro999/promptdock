@@ -20,15 +20,21 @@ export default async function SettingsPage() {
     <div className="settings-view react-settings-page">
       <div className="page-intro">
         <div>
-          <div className="eyebrow">
-            <span className="eyebrow-star">✳</span> YOUR WORKSPACE
-          </div>
           <h1>
             Make it <em>yours.</em>
           </h1>
-          <p>Choose the AI behind your prompts and keep your account secure.</p>
+          <p>
+            Your public profile, the AI behind your prompts, and how you sign
+            in, all in one place.
+          </p>
         </div>
       </div>
+      <nav className="settings-jump" aria-label="Settings sections">
+        <a href="#profile">Profile</a>
+        <a href="#ai-provider">AI provider</a>
+        <a href="#account">Sign-in &amp; security</a>
+        <a href="#usage">Usage</a>
+      </nav>
       <div className="settings-public-profile-section">
         <PublicProfileSettings />
       </div>

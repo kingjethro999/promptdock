@@ -30,11 +30,23 @@ function loadModule(file, dependencies = {}, globals = {}) {
 }
 
 test("community metadata includes a complete large social preview", () => {
-  const { metadata } = loadModule("src/app/community/layout.tsx");
+  const cards = [1, 2, 3, 4, 5, 6].map((n) => ({
+    url: `/og/card-${n}.png`,
+    width: 1200,
+    height: 630,
+    type: "image/png",
+  }));
+  const { generateMetadata } = loadModule("src/app/community/layout.tsx", {
+    "@/lib/site": {
+      randomCard: () => cards[Math.floor(Math.random() * cards.length)],
+    },
+  });
+  const metadata = generateMetadata();
   const openGraphImage = metadata.openGraph?.images?.[0];
 
   assert.equal(metadata.openGraph?.url, "/community");
-  assert.equal(openGraphImage?.url, "/og-default.png");
+  // One of the pre-rendered static cards, picked per request.
+  assert.match(openGraphImage?.url, /^\/og\/card-[1-6]\.png$/);
   assert.equal(openGraphImage?.type, "image/png");
   assert.equal(openGraphImage?.width, 1200);
   assert.equal(openGraphImage?.height, 630);

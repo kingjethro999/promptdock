@@ -143,7 +143,13 @@
   border: 1px solid transparent;
   cursor: pointer;
   min-height: 36px;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .community-tag-btn:hover {
@@ -386,15 +392,16 @@
 }
 
 .profile-avatar {
-  width: var(--avatar);
-  height: var(--avatar);
-  min-width: var(--avatar);
-  min-height: var(--avatar);
+  /* Fallback keeps the avatar sane outside .profile (settings preview). */
+  width: var(--avatar, 96px);
+  height: var(--avatar, 96px);
+  min-width: var(--avatar, 96px);
+  min-height: var(--avatar, 96px);
   box-sizing: border-box;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
-  margin-top: calc(var(--avatar) / -2);
+  margin-top: calc(var(--avatar, 96px) / -2);
   border: 4px solid var(--community-bg);
   background: var(--community-surface);
   object-fit: cover;
@@ -614,7 +621,13 @@
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 8px;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .community-nav-link:hover {
@@ -642,7 +655,13 @@
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 8px;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .community-nav-signin:hover {
@@ -1001,7 +1020,13 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .community-tab-btn:hover {

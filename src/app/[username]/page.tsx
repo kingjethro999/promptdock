@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from "next/navigation";
+import { shareSeed } from "@/lib/og/themes";
 import type { Metadata } from "next";
 import {
   USERNAME_RE,
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${p.displayName} (@${p.username}) on PromptDock`;
   const description =
     p.bio ?? `Prompts shared by ${p.displayName} on PromptDock Community.`;
-  const image = `/api/og/u/${p.username}`;
+  const image = `/api/og/u/${p.username}?s=${shareSeed()}`;
 
   return {
     title,

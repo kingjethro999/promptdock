@@ -41,6 +41,12 @@ npm run build
 
 The pre-commit hook runs lint and bumps the project version on each commit. Let the hook update `VERSION`, `package.json`, and `package-lock.json`; do not set those versions by hand. The version sequence is explained in [README.md](README.md#versioning).
 
+## Payload check
+
+`npm run payload:check` (also run by the pre-commit hook, `ci:verify`, and the `payload-check` GitHub workflow) refuses changes that match a known repository-injection pattern: obfuscated `_0x…` JavaScript, code hidden after long runs of whitespace, a root-level `init` loader, `package.json` scripts that run it, `.vscode/tasks.json` tasks that run on folder open, and a `.gitignore` that stops ignoring `.env`.
+
+If it fails on a change you did not make, do not commit or deploy. Revoke your GitHub tokens and sessions, check your machine for the source, and rotate the deployment secrets before continuing.
+
 ## Open a pull request
 
 Describe what changed, why it helps users, and how you verified it. Include screenshots for visible UI changes and note any new environment variables, database changes, or provider costs. Keep unrelated formatting or refactors in separate pull requests so the behavior is easy to review.

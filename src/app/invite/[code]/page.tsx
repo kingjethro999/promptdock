@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { shareSeed } from "@/lib/og/themes";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${name} invited you to PromptDock`;
   const description =
     "Turn rough ideas into prompts worth keeping. Create a free workspace, save what works, and share it with others.";
-  const image = `/api/og/invite/${clean(code, 24)}`;
+  const image = `/api/og/invite/${clean(code, 24)}?s=${shareSeed()}`;
 
   return {
     title,

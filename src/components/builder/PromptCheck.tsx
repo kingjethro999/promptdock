@@ -34,7 +34,6 @@ export default function PromptCheck({ data }: { data?: PromptData | null }) {
     <section className="quality-card" aria-label="Prompt check">
       <div className="quality-header">
         <div>
-          <div className="section-kicker">PROMPT CHECK</div>
           <h3>{title}</h3>
         </div>
         <div className="quality-score">

@@ -1,0 +1,19 @@
+# Read-only reference UI: see oldui/README.md (do not modify tracked files).
+oldui/
+
+# Generated, vendored, or binary-adjacent content.
+node_modules/
+.next/
+.vercel/
+public/
+benchmark/
+benchmark-results/
+qa/
+package-lock.json
+pnpm-lock.yaml
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Local tooling state.
+.claude/
+codex-skills/

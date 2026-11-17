@@ -2,7 +2,7 @@
 
 import { useVoiceIdea } from "@/hooks/useVoiceIdea";
 import type { Attachment } from "@/hooks/useAttachments";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Popover } from "@/components/ui/Popover";
 import { usePromptBuilderStore } from "@/stores/prompt-builder";
 import { useIdeaSuggestions, type IdeaSuggestion } from "./useIdeaSuggestions";
@@ -14,6 +14,8 @@ type Props = {
   setIdea(value: string): void;
   addImages(files: File[]): void;
   removeImage(index: number): void;
+  /** Runs "Turn idea into prompt" from the keyboard (Cmd/Ctrl+Enter). */
+  onSubmit?: () => void;
 };
 
 export default function IdeaCard({
@@ -23,8 +25,15 @@ export default function IdeaCard({
   setIdea,
   addImages,
   removeImage,
+  onSubmit,
 }: Props) {
   const [imageError, setImageError] = useState("");
+  // Show the modifier people actually press. Resolved after mount so the
+  // server render and first client render match.
+  const [modKey, setModKey] = useState("Ctrl");
+  useEffect(() => {
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) setModKey("⌘");
+  }, []);
   const loadTemplate = usePromptBuilderStore((state) => state.loadTemplate);
   // The example stops moving for good once the visitor starts writing.
   const [touched, setTouched] = useState(false);
@@ -45,11 +54,6 @@ export default function IdeaCard({
   );
   return (
     <section className="idea-card" aria-labelledby="ideaHeading">
-      <div className="idea-card-top">
-        <span className="idea-symbol">✳</span>
-        <span className="section-kicker">IDEA → PROMPT</span>
-        <span className="idea-step">START HERE</span>
-      </div>
       <h2 id="ideaHeading">What is your idea?</h2>
       <p>
         Write it naturally. A sentence, a messy thought, or a full brief all
@@ -72,6 +76,15 @@ export default function IdeaCard({
             setIdea(event.target.value);
           }}
           onKeyDown={(event) => {
+            if (
+              event.key === "Enter" &&
+              (event.metaKey || event.ctrlKey) &&
+              onSubmit
+            ) {
+              event.preventDefault();
+              if (!busy) onSubmit();
+              return;
+            }
             // Tab accepts the example only while the box is empty. With text
             // in it, or with Shift held, Tab moves focus as usual.
             if (
@@ -116,6 +129,10 @@ export default function IdeaCard({
           )}
         </div>
       </div>
+      <p className="idea-shortcut" aria-hidden="true">
+        <kbd>{modKey}</kbd>
+        <kbd>Enter</kbd> to shape it
+      </p>
       <div className="voice-status" role="status">
         {voice.message}
       </div>

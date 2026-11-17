@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ogResponse } from "@/lib/og/respond";
 import { Card } from "@/lib/og/Card";
+import { pickLook } from "@/lib/og/themes";
 import { getFonts } from "@/lib/og/fonts";
 import { clean, initial } from "@/lib/og/text";
 import { OG_SIZE, SITE_URL } from "@/lib/site";
@@ -12,11 +13,12 @@ const CACHE =
 const SHORT = "public, max-age=60, s-maxage=300";
 
 async function render(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
   const { username } = await params;
   const fonts = await getFonts();
+  const look = pickLook("profile", new URL(req.url).searchParams.get("s"));
   const domain = SITE_URL.replace(/^https?:\/\//, "");
 
   const target = await getUserByHandle(username).catch(() => null);
@@ -27,6 +29,7 @@ async function render(
   if (!profile) {
     return new ImageResponse(
       <Card
+        {...look}
         eyebrow="PromptDock Creator"
         title="PromptDock Creator Profile"
         body="Discover and remix prompts shared by PromptDock creators."
@@ -42,6 +45,7 @@ async function render(
 
   return new ImageResponse(
     <Card
+      {...look}
       eyebrow={`@${clean(profile.username, 30)}`}
       title={clean(profile.displayName, 50)}
       body={clean(

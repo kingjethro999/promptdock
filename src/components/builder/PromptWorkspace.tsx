@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import IdeaCard from "./IdeaCard";
 import FineTunePanel from "./FineTunePanel";
 import ClarificationPanel from "./ClarificationPanel";
@@ -10,7 +10,6 @@ import PromptCheck from "./PromptCheck";
 import PlatformLinks from "./PlatformLinks";
 import PromptEditor from "./PromptEditor";
 import Button from "@/components/ui/Button";
-import Masonry from "@/components/ui/Masonry";
 import { usePromptBuilder } from "@/hooks/usePromptBuilder";
 import { useSavePrompt } from "@/hooks/useSavePrompt";
 import SharePromptDialog from "@/components/library/SharePromptDialog";
@@ -18,8 +17,6 @@ import { Icon } from "@/components/ui/Icon";
 import { visibilityState } from "@/lib/community/visibility-state";
 
 import { useSearchParams } from "next/navigation";
-
-const builderColumnWeights = [1.1, 0.9] as const;
 
 export default function PromptWorkspace() {
   const builder = usePromptBuilder();
@@ -30,6 +27,26 @@ export default function PromptWorkspace() {
   );
 
   const savePrompt = useSavePrompt({ remixSourcePublicId });
+
+  // Keep the composer in view while a long result scrolls past, but only
+  // when the whole composer fits in the window; otherwise its lower half
+  // (fine-tune fields, the generate button) would be unreachable.
+  const composePane = useRef<HTMLDivElement>(null);
+  const [composeFits, setComposeFits] = useState(false);
+  useEffect(() => {
+    const element = composePane.current;
+    if (!element) return;
+    const measure = () =>
+      setComposeFits(element.offsetHeight + 48 < window.innerHeight);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   const [saveOpen, setSaveOpen] = useState(false);
   const [name, setName] = useState("");
@@ -90,21 +107,15 @@ export default function PromptWorkspace() {
 
   return (
     <div className="react-workspace-page builder-view">
-      <div className="page-intro">
+      <div className="page-intro builder-intro">
         <div>
-          <div className="eyebrow">
-            <span className="eyebrow-star">✳</span> THE PROMPT WORKSPACE
-          </div>
           <h1>
             Start with an idea. <em>Go further.</em>
           </h1>
           <p>
-            Tell us what is on your mind. We will shape it into a prompt you can
-            use anywhere.
+            Say what you want, however it comes out. PromptDock shapes it into a
+            prompt you can use anywhere, and shows you what it changed.
           </p>
-        </div>
-        <div className="intro-decoration" aria-hidden="true">
-          <span>✳</span>
         </div>
       </div>
       <div className="workflow-steps" aria-label="Workflow">
@@ -122,13 +133,13 @@ export default function PromptWorkspace() {
           <b>03</b> Take it anywhere
         </span>
       </div>
-      <Masonry
-        className="react-builder-masonry"
-        minColumnWidth={460}
-        rowGap={17}
-        columnWeights={builderColumnWeights}
-      >
-        <div className="react-composer-flow">
+      <div className="builder-panes">
+        <div
+          ref={composePane}
+          className={`react-composer-flow builder-pane builder-pane--compose${
+            composeFits ? " is-pinned" : ""
+          }`}
+        >
           <IdeaCard
             idea={builder.idea}
             busy={builder.busy}
@@ -136,6 +147,7 @@ export default function PromptWorkspace() {
             setIdea={builder.setIdea}
             addImages={builder.addImages}
             removeImage={builder.removeImage}
+            onSubmit={builder.generate}
           />
           {builder.pending && (
             <ClarificationPanel
@@ -165,40 +177,42 @@ export default function PromptWorkspace() {
             clear={builder.clear}
           />
         </div>
-        <PromptPreview
-          prompt={builder.prompt}
-          ready={builder.ready}
-          provider={builder.result?.provider}
-          documentRevision={builder.documentRevision}
-          documentEdited={builder.documentEdited}
-          sourceChanged={
-            builder.ready && builder.idea !== builder.documentSource
-          }
-          onEdit={builder.editDocument}
-          data={builder.data}
-          research={builder.result?.research}
-          save={savePrompt}
-          onOpenDetails={() => {
-            setSaveError("");
-            setName(builder.sourcePrompt?.name || "");
-            setTags(builder.sourcePrompt?.tags.join(", ") || "");
-            setSaveOpen(true);
-          }}
-        />
-        {builder.result?.interpretation && (
-          <InterpretationCard
-            key={builder.documentRevision}
-            interpretation={builder.result.interpretation}
-          />
-        )}
-        {builder.ready && builder.data && (
-          <PromptEditor
+        <div className="builder-pane builder-pane--result">
+          <PromptPreview
+            prompt={builder.prompt}
+            ready={builder.ready}
+            provider={builder.result?.provider}
+            documentRevision={builder.documentRevision}
+            documentEdited={builder.documentEdited}
+            sourceChanged={
+              builder.ready && builder.idea !== builder.documentSource
+            }
+            onEdit={builder.editDocument}
             data={builder.data}
-            onChange={builder.editPromptField}
+            research={builder.result?.research}
+            save={savePrompt}
+            onOpenDetails={() => {
+              setSaveError("");
+              setName(builder.sourcePrompt?.name || "");
+              setTags(builder.sourcePrompt?.tags.join(", ") || "");
+              setSaveOpen(true);
+            }}
           />
-        )}
-        <PromptCheck data={builder.data} />
-      </Masonry>
+          {builder.result?.interpretation && (
+            <InterpretationCard
+              key={builder.documentRevision}
+              interpretation={builder.result.interpretation}
+            />
+          )}
+          {builder.ready && builder.data && (
+            <PromptEditor
+              data={builder.data}
+              onChange={builder.editPromptField}
+            />
+          )}
+          <PromptCheck data={builder.data} />
+        </div>
+      </div>
       <PlatformLinks />
       {saveOpen && (
         <div
