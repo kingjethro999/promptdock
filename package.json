@@ -39,7 +39,7 @@
     "lenis": "^1.3.26",
     "lucide-react": "^1.56.0",
     "motion": "^14.1.0",
-    "next": "^16.4.2",
+    "next": "^16.4.6",
     "nextjs-toploader": "^3.9.17",
     "nodemailer": "^10.2.1",
     "pg": "^8.23.0",

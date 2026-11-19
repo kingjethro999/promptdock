@@ -9,6 +9,8 @@ import InterpretationCard from "./InterpretationCard";
 import PromptCheck from "./PromptCheck";
 import PlatformLinks from "./PlatformLinks";
 import PromptEditor from "./PromptEditor";
+import PromptDiffPanel from "./PromptDiffPanel";
+import ChatWorkspace from "./ChatWorkspace";
 import Button from "@/components/ui/Button";
 import { usePromptBuilder } from "@/hooks/usePromptBuilder";
 import { useSavePrompt } from "@/hooks/useSavePrompt";
@@ -17,6 +19,8 @@ import { Icon } from "@/components/ui/Icon";
 import { visibilityState } from "@/lib/community/visibility-state";
 
 import { useSearchParams } from "next/navigation";
+
+const LAYOUT_KEY = "promptdock.workspace.layout";
 
 export default function PromptWorkspace() {
   const builder = usePromptBuilder();
@@ -27,6 +31,26 @@ export default function PromptWorkspace() {
   );
 
   const savePrompt = useSavePrompt({ remixSourcePublicId });
+
+  // Chat or classic. Chat is the default; the choice is remembered per
+  // browser, read after mount so the server render stays stable.
+  const [layout, setLayout] = useState<"chat" | "classic">("chat");
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LAYOUT_KEY);
+      if (stored === "classic" || stored === "chat") setLayout(stored);
+    } catch {
+      // Storage blocked: stay on the default.
+    }
+  }, []);
+  function chooseLayout(next: "chat" | "classic") {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      // Best effort only.
+    }
+  }
 
   // Keep the composer in view while a long result scrolls past, but only
   // when the whole composer fits in the window; otherwise its lower half
@@ -81,6 +105,13 @@ export default function PromptWorkspace() {
       .catch(() => {});
   }, [remixId]);
 
+  function openDetails() {
+    setSaveError("");
+    setName(builder.sourcePrompt?.name || "");
+    setTags(builder.sourcePrompt?.tags.join(", ") || "");
+    setSaveOpen(true);
+  }
+
   async function saveDetails(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!builder.data || saving) return;
@@ -106,114 +137,154 @@ export default function PromptWorkspace() {
   }
 
   return (
-    <div className="react-workspace-page builder-view">
+    <div
+      className={`react-workspace-page builder-view${
+        layout === "chat" ? " is-chat" : ""
+      }`}
+    >
       <div className="page-intro builder-intro">
         <div>
           <h1>
             Start with an idea. <em>Go further.</em>
           </h1>
-          <p>
-            Say what you want, however it comes out. PromptDock shapes it into a
-            prompt you can use anywhere, and shows you what it changed.
-          </p>
+          {layout === "classic" && (
+            <p>
+              Say what you want, however it comes out. PromptDock shapes it into
+              a prompt you can use anywhere, and shows you what it changed.
+            </p>
+          )}
+        </div>
+        <div className="layout-switch" role="radiogroup" aria-label="Layout">
+          {(
+            [
+              ["chat", "message", "Chat"],
+              ["classic", "sliders", "Classic"],
+            ] as const
+          ).map(([id, icon, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={layout === id}
+              className={layout === id ? "is-active" : undefined}
+              onClick={() => chooseLayout(id)}
+            >
+              <Icon name={icon} size={15} />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="workflow-steps" aria-label="Workflow">
-        <span className="step active">
-          <b>01</b> Describe it
-        </span>
-        <span className="step-line" />
-        <span
-          className={`step${builder.pending || builder.prompt ? " active" : ""}`}
-        >
-          <b>02</b> Shape it
-        </span>
-        <span className="step-line" />
-        <span className={`step${builder.prompt ? " active" : ""}`}>
-          <b>03</b> Take it anywhere
-        </span>
-      </div>
-      <div className="builder-panes">
-        <div
-          ref={composePane}
-          className={`react-composer-flow builder-pane builder-pane--compose${
-            composeFits ? " is-pinned" : ""
-          }`}
-        >
-          <IdeaCard
-            idea={builder.idea}
-            busy={builder.busy}
-            attachments={builder.attachments}
-            setIdea={builder.setIdea}
-            addImages={builder.addImages}
-            removeImage={builder.removeImage}
-            onSubmit={builder.generate}
-          />
-          {builder.pending && (
-            <ClarificationPanel
-              questions={builder.pending.questions}
-              answers={builder.pending.answers}
-              busy={builder.busy}
-              missingImages={Math.max(
-                0,
-                (builder.pending.imageCount || 0) - builder.attachments.length,
+      {layout === "chat" ? (
+        <ChatWorkspace
+          builder={builder}
+          save={savePrompt}
+          onOpenDetails={openDetails}
+        />
+      ) : (
+        <>
+          <div className="workflow-steps" aria-label="Workflow">
+            <span className="step active">
+              <b>01</b> Describe it
+            </span>
+            <span className="step-line" />
+            <span
+              className={`step${builder.pending || builder.prompt ? " active" : ""}`}
+            >
+              <b>02</b> Shape it
+            </span>
+            <span className="step-line" />
+            <span className={`step${builder.prompt ? " active" : ""}`}>
+              <b>03</b> Take it anywhere
+            </span>
+          </div>
+          <div className="builder-panes">
+            <div
+              ref={composePane}
+              className={`react-composer-flow builder-pane builder-pane--compose${
+                composeFits ? " is-pinned" : ""
+              }`}
+            >
+              <IdeaCard
+                idea={builder.idea}
+                busy={builder.busy}
+                attachments={builder.attachments}
+                setIdea={builder.setIdea}
+                addImages={builder.addImages}
+                removeImage={builder.removeImage}
+                onSubmit={builder.generate}
+              />
+              {builder.pending && (
+                <ClarificationPanel
+                  questions={builder.pending.questions}
+                  answers={builder.pending.answers}
+                  busy={builder.busy}
+                  missingImages={Math.max(
+                    0,
+                    (builder.pending.imageCount || 0) -
+                      builder.attachments.length,
+                  )}
+                  answer={builder.answer}
+                  finish={builder.finishClarification}
+                />
               )}
-              answer={builder.answer}
-              finish={builder.finishClarification}
-            />
-          )}
-          <FineTunePanel
-            guidance={builder.guidance}
-            update={builder.updateGuidance}
-            researchMode={builder.researchMode}
-            setResearchMode={builder.setResearchMode}
-            referenceUrl={builder.referenceUrl}
-            setReferenceUrl={builder.setReferenceUrl}
-            idea={builder.idea}
-            imageCount={builder.attachments.length}
-            busy={builder.busy}
-            status={builder.status}
-            generate={builder.generate}
-            clear={builder.clear}
-          />
-        </div>
-        <div className="builder-pane builder-pane--result">
-          <PromptPreview
-            prompt={builder.prompt}
-            ready={builder.ready}
-            provider={builder.result?.provider}
-            documentRevision={builder.documentRevision}
-            documentEdited={builder.documentEdited}
-            sourceChanged={
-              builder.ready && builder.idea !== builder.documentSource
-            }
-            onEdit={builder.editDocument}
-            data={builder.data}
-            research={builder.result?.research}
-            save={savePrompt}
-            onOpenDetails={() => {
-              setSaveError("");
-              setName(builder.sourcePrompt?.name || "");
-              setTags(builder.sourcePrompt?.tags.join(", ") || "");
-              setSaveOpen(true);
-            }}
-          />
-          {builder.result?.interpretation && (
-            <InterpretationCard
-              key={builder.documentRevision}
-              interpretation={builder.result.interpretation}
-            />
-          )}
-          {builder.ready && builder.data && (
-            <PromptEditor
-              data={builder.data}
-              onChange={builder.editPromptField}
-            />
-          )}
-          <PromptCheck data={builder.data} />
-        </div>
-      </div>
-      <PlatformLinks />
+              <FineTunePanel
+                guidance={builder.guidance}
+                update={builder.updateGuidance}
+                researchMode={builder.researchMode}
+                setResearchMode={builder.setResearchMode}
+                referenceUrl={builder.referenceUrl}
+                setReferenceUrl={builder.setReferenceUrl}
+                idea={builder.idea}
+                imageCount={builder.attachments.length}
+                busy={builder.busy}
+                status={builder.status}
+                generate={builder.generate}
+                clear={builder.clear}
+              />
+            </div>
+            <div className="builder-pane builder-pane--result">
+              <PromptPreview
+                prompt={builder.prompt}
+                ready={builder.ready}
+                provider={builder.result?.provider}
+                documentRevision={builder.documentRevision}
+                documentEdited={builder.documentEdited}
+                sourceChanged={
+                  builder.ready && builder.idea !== builder.documentSource
+                }
+                onEdit={builder.editDocument}
+                data={builder.data}
+                research={builder.result?.research}
+                save={savePrompt}
+                onOpenDetails={openDetails}
+                checks={builder.result?.interpretation?.checks}
+              />
+              {builder.ready && (
+                <PromptDiffPanel
+                  key={`diff-${builder.documentRevision}`}
+                  baseline={builder.baseline}
+                  prompt={builder.prompt}
+                />
+              )}
+              {builder.result?.interpretation && (
+                <InterpretationCard
+                  key={builder.documentRevision}
+                  interpretation={builder.result.interpretation}
+                />
+              )}
+              {builder.ready && builder.data && (
+                <PromptEditor
+                  data={builder.data}
+                  onChange={builder.editPromptField}
+                />
+              )}
+              <PromptCheck data={builder.data} />
+            </div>
+          </div>
+          <PlatformLinks />
+        </>
+      )}
       {saveOpen && (
         <div
           className="react-modal-backdrop"

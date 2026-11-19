@@ -36,8 +36,15 @@ export type PendingClarification = {
   }[];
 };
 
+/** The text a new prompt replaced, so the workspace can show what moved. */
+export type PromptBaseline = {
+  kind: "idea" | "previous";
+  text: string;
+};
+
 export type BuilderState = {
   idea: string;
+  baseline: PromptBaseline | null;
   guidance: Guidance;
   researchMode: "auto" | "on" | "off";
   referenceUrl: string;
@@ -73,6 +80,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
   persist(
     (set, get) => ({
       idea: "",
+      baseline: null,
       guidance: {},
       researchMode: "auto",
       referenceUrl: "",
@@ -225,6 +233,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
           result: { provider: "library", data: saved.data },
           documentSource: saved.idea || saved.data.task,
           ready: true,
+          baseline: null,
           attachments: [],
           sourcePrompt: saved,
           status: "Saved prompt opened.",
@@ -236,6 +245,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
           ...resetForInput(state),
           idea: template.idea,
           guidance: template.guidance,
+          baseline: null,
           attachments: [],
           sourcePrompt: null,
           status: `${template.name} template loaded. Shape it when ready.`,
@@ -249,6 +259,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
         set((state) => ({
           ...resetForInput(state),
           idea: "",
+          baseline: null,
           guidance: {},
           researchMode: "auto",
           referenceUrl: "",
@@ -264,6 +275,7 @@ export const usePromptBuilderStore = create<BuilderState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         idea: state.idea,
+        baseline: state.baseline,
         guidance: state.guidance,
         researchMode: state.researchMode,
         referenceUrl: state.referenceUrl,

@@ -35,6 +35,15 @@ type Props = {
     published: boolean,
   ): Promise<SavedPrompt | undefined>;
   onPromptUpdated?(prompt: SavedPrompt): void;
+  editCandidate?: SavedPrompt | null;
+  setEditCandidate?(value: SavedPrompt | null): void;
+  editText?(prompt: SavedPrompt): string;
+  saveEdit?(
+    prompt: SavedPrompt,
+    name: string,
+    content: string,
+    tags: string,
+  ): Promise<boolean | undefined>;
 };
 
 export default function LibraryDialogs(props: Props) {
@@ -48,6 +57,21 @@ export default function LibraryDialogs(props: Props) {
           publish={props.publish}
           setPrompt={props.setShareCandidate}
           onUpdated={props.onPromptUpdated}
+        />
+      )}
+      {props.editCandidate && props.saveEdit && props.editText && (
+        <PastePromptDialog
+          key={props.editCandidate.id}
+          initial={{
+            name: props.editCandidate.name,
+            content: props.editText(props.editCandidate),
+            tags: props.editCandidate.tags,
+          }}
+          close={() => props.setEditCandidate?.(null)}
+          saving={props.saving}
+          paste={(name, content, tags) =>
+            props.saveEdit!(props.editCandidate!, name, content, tags)
+          }
         />
       )}
       {props.pasteOpen && (

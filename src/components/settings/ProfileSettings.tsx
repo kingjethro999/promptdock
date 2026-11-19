@@ -1,5 +1,7 @@
 "use client";
 
+import { SkeletonBlock } from "@/components/ui/Skeleton";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -189,7 +191,11 @@ export default function ProfileSettings({
         </p>
         <div className="sessions-list" aria-live="polite">
           {sessionsLoading && (
-            <p className="sessions-empty">Loading sessions…</p>
+            <div className="pd-skel-intro" role="status">
+              <span className="sr-only">Loading sessions</span>
+              <SkeletonBlock width="100%" height={52} radius={12} />
+              <SkeletonBlock width="100%" height={52} radius={12} />
+            </div>
           )}
           {!sessionsLoading && sessions.length === 0 && (
             <p className="sessions-empty">No active sessions.</p>

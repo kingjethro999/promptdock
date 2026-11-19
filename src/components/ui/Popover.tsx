@@ -12,6 +12,13 @@ export interface PopoverProps {
   label: string;
   id?: string;
   align?: "start" | "end" | "match";
+  /** Panel width in px (default 360). */
+  width?: number;
+  /**
+   * Draw a caret pointing back at the trigger and grow the panel out of it,
+   * like the updates menu. For short menus; the panel no longer scrolls.
+   */
+  pointer?: boolean;
   children: React.ReactNode;
 }
 
@@ -22,6 +29,8 @@ export function Popover({
   label,
   id,
   align = "end",
+  width = 360,
+  pointer = false,
   children,
 }: PopoverProps) {
   const compact = useMediaQuery("(max-width: 760px)");
@@ -31,7 +40,7 @@ export function Popover({
 
   const pos = usePopupPosition(open && !compact, anchorRef, {
     align,
-    width: 360,
+    width,
     gap: 12,
   });
 
@@ -84,6 +93,16 @@ export function Popover({
 
   if (!open || typeof document === "undefined") return null;
 
+  let pointerX: number | undefined;
+  if (pointer && pos && !compact) {
+    const rect = anchorRef.current?.getBoundingClientRect();
+    if (rect)
+      pointerX = Math.max(
+        18,
+        Math.min(pos.width - 18, rect.left + rect.width / 2 - pos.left),
+      );
+  }
+
   return createPortal(
     <div
       ref={panel}
@@ -95,15 +114,20 @@ export function Popover({
       className="ui-popover"
       data-side={pos?.side ?? "bottom"}
       data-compact={compact || undefined}
+      data-pointer={pointerX !== undefined || undefined}
       style={
         compact
           ? undefined
-          : {
+          : ({
               left: pos?.left,
               top: pos?.top,
               bottom: pos?.bottom,
               maxHeight: pos?.maxH,
-            }
+              width: pos?.width,
+              ...(pointerX !== undefined
+                ? { "--pop-pointer-x": `${pointerX}px` }
+                : {}),
+            } as React.CSSProperties)
       }
     >
       {children}

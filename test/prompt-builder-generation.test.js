@@ -36,6 +36,14 @@ function loadGeneration(responses) {
             JSON.stringify({ idea, guidance, clarifications }),
         };
       }
+      // The baseline for the before/after panel is built from the prompt
+      // that is being replaced.
+      if (id === "@/lib/prompt/format") {
+        return { buildPrompt: (data) => data.task || "" };
+      }
+      if (id === "@/lib/prompt/types") {
+        return { emptyPromptData: { task: "" } };
+      }
       throw new Error(`Unexpected dependency: ${id}`);
     },
   });

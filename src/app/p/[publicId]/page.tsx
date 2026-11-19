@@ -30,9 +30,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const owner = clean(prompt.displayName || prompt.username, 40);
+  const promptName = clean(prompt.name, 70);
   const title = owner
-    ? `${owner} wants to share a prompt with you`
-    : `${clean(prompt.name, 90)}`;
+    ? `${owner} shared a prompt with you: ${promptName}`
+    : promptName;
   const description = clean(
     prompt.data?.task || "A shared PromptDock prompt",
     180,
@@ -40,11 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = `/api/og/p/${publicId}?v=${new Date(prompt.updatedAt ?? 0).getTime()}&s=${shareSeed()}`;
 
   return {
-    title,
+    title: { absolute: `${promptName} · PromptDock` },
     description,
     alternates: { canonical: `/p/${publicId}` },
     openGraph: {
       type: "article",
+      siteName: "PromptDock",
       title,
       description,
       url: `/p/${publicId}`,

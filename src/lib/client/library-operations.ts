@@ -57,3 +57,28 @@ export const pastePrompt = (name: string, content: string, tagList: string) =>
       .map((item) => item.trim())
       .filter(Boolean),
   });
+
+/**
+ * Edit a saved prompt in place: title, tags and text. Structured prompts keep
+ * their fields unless the text itself changed, in which case the edited text
+ * becomes the prompt.
+ */
+export const updatePromptDetails = (
+  prompt: SavedPrompt,
+  details: {
+    name: string;
+    content: string;
+    tags: string[];
+    textChanged: boolean;
+  },
+) =>
+  json<{ prompt: SavedPrompt }>("/api/prompts", "PUT", {
+    id: prompt.id,
+    name: details.name.trim(),
+    idea: prompt.idea,
+    data: details.textChanged
+      ? { task: details.content, raw: true }
+      : prompt.data,
+    analysis: details.textChanged ? null : prompt.analysis || null,
+    tags: details.tags,
+  });

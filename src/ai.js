@@ -158,8 +158,8 @@ function normalizeClarifications(input) {
 
 function normalizeImages(input) {
   if (input?.images == null) return [];
-  if (!Array.isArray(input.images) || input.images.length > 3)
-    throw new Error("Attach up to three images.");
+  if (!Array.isArray(input.images) || input.images.length > 10)
+    throw new Error("Attach up to ten images.");
   let total = 0;
   return input.images.map((image) => {
     const match = /^data:(image\/[a-z]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
@@ -1173,7 +1173,9 @@ async function runPrompt(input, env = process.env, request = fetch) {
     {
       json: false,
       maxTokens: 4000,
-      timeoutMs: 30000,
+      // Full deliverables (a site, a long report) need more than 30s; the
+      // route allows 60s, so leave room for the response to get back.
+      timeoutMs: 50000,
       traceName: "run-prompt",
       userId: input?.userId,
       errorMessage: "The prompt could not be run right now. Please try again.",
@@ -1184,41 +1186,52 @@ async function runPrompt(input, env = process.env, request = fetch) {
 async function runPromptComparison(input, env = process.env, request = fetch) {
   const text = normalizeRunInput(input);
   const available = configuredProviders(env);
-  const selected =
+  const chosen =
     Array.isArray(input.providers) && input.providers.length
       ? input.providers.filter((p) => available.includes(p))
-      : available.slice(0, 2);
-  const targets = selected.length ? selected : available.slice(0, 1);
-  if (!targets.length) {
+      : [];
+  if (!available.length) {
     throw new Error("No AI providers configured to run comparison.");
   }
-  const runs = await Promise.allSettled(
-    targets.map(async (provider) => {
-      const specificEnv = {
-        ...env,
-        AI_PROVIDER_ORDER: provider,
-        AI_MAX_FALLBACKS: "0",
-      };
+  const runOne = async (provider) => {
+    const specificEnv = {
+      ...env,
+      AI_PROVIDER_ORDER: provider,
+      AI_MAX_FALLBACKS: "0",
+    };
+    try {
+      // The copy above hides that this is the site's own env, which is how
+      // generateWithProviders knows to pick apmix's current free model.
+      if (provider === "apmix" && env === process.env)
+        specificEnv.APMIX_MODEL = await siteFreeModel(env);
       const result = await runPrompt(
         { ...input, prompt: text },
         specificEnv,
         request,
       );
       return { provider, text: result.text, success: true };
-    }),
-  );
-  const results = runs.map((res, index) => {
-    const provider = targets[index];
-    if (res.status === "fulfilled") {
-      return res.value;
+    } catch (error) {
+      return {
+        provider,
+        error: error?.message || "Execution failed",
+        success: false,
+      };
     }
-    return {
-      provider,
-      error: res.reason?.message || "Execution failed",
-      success: false,
-    };
-  });
-  return { results };
+  };
+  // Named providers run as asked. Otherwise aim for two answers: start with
+  // the first two configured, and when one is rate-limited or down, try the
+  // next configured provider instead of returning an empty comparison.
+  if (chosen.length) return { results: await Promise.all(chosen.map(runOne)) };
+  const want = Math.min(2, available.length);
+  const queue = [...available];
+  const results = await Promise.all(queue.splice(0, want).map(runOne));
+  while (results.filter((item) => item.success).length < want && queue.length) {
+    results.push(await runOne(queue.shift()));
+  }
+  // Once enough models answered, the ones skipped for errors are noise; when
+  // too few did, show every error so the person knows why.
+  const ok = results.filter((item) => item.success);
+  return { results: ok.length >= want ? ok : results };
 }
 
 module.exports = {

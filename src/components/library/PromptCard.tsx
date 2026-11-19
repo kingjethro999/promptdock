@@ -9,6 +9,9 @@ import { visibilityState } from "@/lib/community/visibility-state";
 
 type Props = {
   prompt: SavedPrompt;
+  /** Edit title, tags and text in place. */
+  onEdit(prompt: SavedPrompt): void;
+  /** Take it to the workspace to reshape it. */
   onOpen(prompt: SavedPrompt): void;
   onDuplicate(prompt: SavedPrompt): void;
   onShare(prompt: SavedPrompt): void;
@@ -19,11 +22,13 @@ type Props = {
 const MAX_TAGS = 3;
 
 /**
- * One saved prompt in the library grid. The title opens the prompt; every
- * other action lives in the card menu so nothing competes with the title.
+ * One saved prompt in the library grid. The title and Edit change it in
+ * place; Remix takes it to the workspace to reshape it. Everything else lives
+ * in the card menu so nothing competes with the title.
  */
 export default function PromptCard({
   prompt,
+  onEdit,
   onOpen,
   onDuplicate,
   onShare,
@@ -91,7 +96,7 @@ export default function PromptCard({
         <button
           type="button"
           className="prompt-card-title"
-          onClick={() => onOpen(prompt)}
+          onClick={() => onEdit(prompt)}
         >
           <span>{prompt.name}</span>
         </button>
@@ -121,10 +126,24 @@ export default function PromptCard({
             year: "numeric",
           })}
         </time>
-        <button type="button" onClick={() => onOpen(prompt)}>
-          <span>Open</span>
-          <Icon name="arrow-right" size={12} />
-        </button>
+        <span className="prompt-card-cta">
+          <button
+            type="button"
+            onClick={() => onEdit(prompt)}
+            aria-label={`Edit ${prompt.name}`}
+          >
+            <Icon name="pencil" size={12} />
+            <span>Edit</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpen(prompt)}
+            aria-label={`Remix ${prompt.name} in the workspace`}
+          >
+            <Icon name="sparkles" size={12} />
+            <span>Remix</span>
+          </button>
+        </span>
       </div>
 
       <Popover

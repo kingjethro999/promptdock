@@ -4,13 +4,13 @@ const maxRequestBytes = 3_800_000;
 
 export function validateAttachments(files: File[]): void {
   if (
-    files.length > 3 ||
+    files.length > 10 ||
     files.some(
       (file) => file.size > maxOriginalBytes || !acceptedTypes.has(file.type),
     )
   )
     throw new Error(
-      "Attach up to three JPEG, PNG, or WebP images, up to 25 MB each.",
+      "Attach up to ten JPEG, PNG, or WebP images, up to 25 MB each.",
     );
 }
 

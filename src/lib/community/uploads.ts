@@ -50,13 +50,41 @@ export type SignedUploadPayload = {
   allowedTypes: string[];
 };
 
+/**
+ * Cloudinary's dashboard names the secret CLOUDINARY_API_SECRET and also
+ * offers a single CLOUDINARY_URL (cloudinary://key:secret@cloud). Accept
+ * those as well as our own names so a copy-paste from the dashboard works.
+ */
+function cloudinaryConfig() {
+  let fromUrl: { key?: string; secret?: string; cloud?: string } = {};
+  const raw = process.env.CLOUDINARY_URL;
+  if (raw) {
+    try {
+      const url = new URL(raw);
+      fromUrl = {
+        key: decodeURIComponent(url.username) || undefined,
+        secret: decodeURIComponent(url.password) || undefined,
+        cloud: url.hostname || undefined,
+      };
+    } catch {
+      // Malformed URL: fall through to the separate variables.
+    }
+  }
+  return {
+    apiKey: process.env.CLOUDINARY_API_KEY || fromUrl.key,
+    apiSecret:
+      process.env.CLOUDINARY_SECRET ||
+      process.env.CLOUDINARY_API_SECRET ||
+      fromUrl.secret,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || fromUrl.cloud,
+  };
+}
+
 export function signCloudinaryUpload(
   userId: string,
   kind: UploadKind,
 ): SignedUploadPayload {
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_SECRET;
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const { apiKey, apiSecret, cloudName } = cloudinaryConfig();
 
   if (!apiKey || !apiSecret || !cloudName) {
     throw new HttpError(500, "upload_provider_not_configured");

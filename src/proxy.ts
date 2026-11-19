@@ -12,6 +12,8 @@ export function proxy(request: NextRequest) {
     "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.google-analytics.com https://*.analytics.google.com https://api.cloudinary.com",
     "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
     "media-src 'self' blob:",
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",

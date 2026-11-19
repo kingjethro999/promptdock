@@ -21,7 +21,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Playlist not found", robots: { index: false } };
   }
 
-  const title = `${col.name} — Playlist by @${col.username}`;
+  const owner = clean(col.displayName || col.username, 40);
+  const listName = clean(col.name, 70);
+  const title = `${owner} shared a prompt playlist with you: ${listName}`;
   const description = clean(
     col.description ||
       `A curated prompt playlist by ${col.displayName || col.username} on PromptDock.`,
@@ -30,11 +32,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = `/api/og/c/${publicId}?v=${new Date(col.updatedAt ?? 0).getTime()}&s=${shareSeed()}`;
 
   return {
-    title,
+    title: { absolute: `${listName} · Playlist by @${col.username}` },
     description,
     alternates: { canonical: `/c/${publicId}` },
     openGraph: {
       type: "website",
+      siteName: "PromptDock",
       title,
       description,
       url: `/c/${publicId}`,

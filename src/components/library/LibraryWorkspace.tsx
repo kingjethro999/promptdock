@@ -8,9 +8,13 @@ import CollectionDialog from "./CollectionDialog";
 import SearchSelect from "@/components/ui/SearchSelect";
 import Button from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { SkeletonGrid } from "@/components/ui/Skeleton";
 import { useLibrary } from "@/hooks/useLibrary";
 import { usePromptBuilderStore } from "@/stores/prompt-builder";
 import { api, json } from "@/lib/client/api";
+import { updatePromptDetails } from "@/lib/client/library-operations";
+import { buildPrompt } from "@/lib/prompt/format";
+import { emptyPromptData } from "@/lib/prompt/types";
 import type { SavedPrompt } from "@/lib/prompt/types";
 import type { CollectionItem } from "@/components/collections/SaveToPanel";
 
@@ -25,6 +29,7 @@ export default function LibraryWorkspace({
   const [shareCandidate, setShareCandidate] = useState<SavedPrompt | null>(
     null,
   );
+  const [editCandidate, setEditCandidate] = useState<SavedPrompt | null>(null);
 
   // Collections state
   const [collections, setCollections] = useState<CollectionItem[]>([]);
@@ -117,6 +122,39 @@ export default function LibraryWorkspace({
     }
   };
 
+  /** The text a person sees and edits: raw text, or the built prompt. */
+  function promptText(prompt: SavedPrompt) {
+    return prompt.data.raw
+      ? prompt.data.task
+      : buildPrompt({ ...emptyPromptData, ...prompt.data });
+  }
+
+  async function saveEdit(
+    prompt: SavedPrompt,
+    name: string,
+    content: string,
+    tagList: string,
+  ) {
+    try {
+      const { prompt: updated } = await updatePromptDetails(prompt, {
+        name,
+        content,
+        tags: tagList
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        textChanged: content.trim() !== promptText(prompt).trim(),
+      });
+      setPrompts((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setEditCandidate(null);
+      void refresh();
+      return true;
+    } catch {
+      return false;
+    }
+  }
   return (
     <div className="library-view react-library-page">
       <div className="page-intro library-intro">
@@ -377,12 +415,7 @@ export default function LibraryWorkspace({
       )}
 
       {prompts.length === 0 && loading ? (
-        <div className="library-loading-state" role="status">
-          <div className="empty-state-icon">
-            <Icon name="sparkles" size={24} />
-          </div>
-          <h3>Loading your library…</h3>
-        </div>
+        <SkeletonGrid count={6} label="Loading your library" />
       ) : prompts.length === 0 && activeCollection ? (
         <div className="library-loading-state" role="status">
           <div className="empty-state-icon">
@@ -400,6 +433,7 @@ export default function LibraryWorkspace({
             <PromptCard
               key={prompt.id}
               prompt={prompt}
+              onEdit={setEditCandidate}
               onOpen={(item) => {
                 loadPrompt(item);
                 router.push("/workspace");
@@ -508,6 +542,10 @@ export default function LibraryWorkspace({
         shareCandidate={shareCandidate}
         setShareCandidate={setShareCandidate}
         publish={share}
+        editCandidate={editCandidate}
+        setEditCandidate={setEditCandidate}
+        editText={promptText}
+        saveEdit={saveEdit}
         onPromptUpdated={(updated) => {
           setPrompts((prev) =>
             prev.map((item) => (item.id === updated.id ? updated : item)),

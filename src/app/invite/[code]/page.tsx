@@ -25,12 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image = `/api/og/invite/${clean(code, 24)}?s=${shareSeed()}`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/invite/${code}` },
     robots: { index: false, follow: true },
     openGraph: {
       type: "website",
+      siteName: "PromptDock",
       title,
       description,
       url: `/invite/${code}`,

@@ -663,3 +663,46 @@ body {
     transform: none;
   }
 }
+
+/* Loading skeletons (components/ui/Skeleton) */
+.pd-skel {
+  display: block;
+  background: #e9eee4;
+}
+.pd-skel-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #e7ebe2;
+  border-radius: 16px;
+  background: #fff;
+}
+.pd-skel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.pd-skel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+.pd-skel-page {
+  display: grid;
+  gap: 24px;
+}
+.pd-skel-intro {
+  display: grid;
+  gap: 12px;
+}
+.pd-skel-chat {
+  display: grid;
+  gap: 22px;
+  max-width: 780px;
+  margin: 12px auto 0;
+  width: 100%;
+}
+.pd-skel-chat .pd-skel-user {
+  justify-self: end;
+}

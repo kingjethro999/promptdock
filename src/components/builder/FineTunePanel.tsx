@@ -55,38 +55,6 @@ export default function FineTunePanel({
   clear,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const textField = (
-    field: GuidanceField,
-    label: string,
-    hint: string,
-    placeholder: string,
-    rows = 0,
-  ) => (
-    <div className="field" key={field}>
-      <label htmlFor={field}>
-        {label} <span className="optional">{hint}</span>
-      </label>
-      {rows ? (
-        <textarea
-          id={field}
-          rows={rows}
-          value={guidance[field] || ""}
-          placeholder={placeholder}
-          onChange={(event) => update(field, event.target.value)}
-        />
-      ) : (
-        <input
-          id={field}
-          type="text"
-          autoComplete="off"
-          value={guidance[field] || ""}
-          placeholder={placeholder}
-          onChange={(event) => update(field, event.target.value)}
-        />
-      )}
-    </div>
-  );
-
   return (
     <section
       className={`composer-card react-finetune${open ? "" : " is-collapsed"}`}
@@ -121,74 +89,7 @@ export default function FineTunePanel({
               ↺ &nbsp; Clear idea and guidance
             </button>
           </div>
-          <div className="field-row">
-            {textField(
-              "role",
-              "Act as",
-              "optional",
-              "e.g. A senior copywriter",
-            )}
-            {textField(
-              "audience",
-              "For whom",
-              "optional",
-              "e.g. Busy founders",
-            )}
-          </div>
-          {textField(
-            "context",
-            "Helpful context",
-            "optional",
-            "Background, relevant facts, examples, or anything AI should know...",
-            3,
-          )}
-          <div className="field-row">
-            <GuidanceSelect
-              id="format"
-              label="Output format"
-              placeholder="Choose a format"
-              options={formats}
-              value={guidance.format || ""}
-              onChange={(value) => update("format", value)}
-            />
-            <GuidanceSelect
-              id="tone"
-              label="Tone"
-              placeholder="Choose a tone"
-              options={tones}
-              value={guidance.tone || ""}
-              onChange={(value) => update("tone", value)}
-            />
-          </div>
-          {textField(
-            "approach",
-            "Suggested flow",
-            "for multi-step work",
-            "e.g. Define the goal, compare options, then recommend next steps",
-            3,
-          )}
-          {textField(
-            "focus",
-            "What should AI emphasize?",
-            "highest priority first",
-            "e.g. Practical first steps, likely obstacles, and how to measure progress",
-            3,
-          )}
-          <GuidanceSelect
-            id="depth"
-            label="Answer depth"
-            placeholder="Choose depth"
-            options={depths}
-            value={guidance.depth || ""}
-            onChange={(value) => update("depth", value)}
-          />
-          {textField(
-            "constraints",
-            "Must include / avoid",
-            "optional",
-            "e.g. Keep it under 200 words. Avoid jargon. Include a call to action.",
-            2,
-          )}
+          <GuidanceFields guidance={guidance} update={update} />
           <div className="field-row">
             <GuidanceSelect
               id="researchMode"
@@ -253,5 +154,109 @@ export default function FineTunePanel({
         </span>
       </div>
     </section>
+  );
+}
+
+/** The tone, format, audience and focus fields, shared by both layouts. */
+export function GuidanceFields({
+  guidance,
+  update,
+}: {
+  guidance: Guidance;
+  update(field: GuidanceField, value: string): void;
+}) {
+  const textField = (
+    field: GuidanceField,
+    label: string,
+    hint: string,
+    placeholder: string,
+    rows = 0,
+  ) => (
+    <div className="field" key={field}>
+      <label htmlFor={field}>
+        {label} <span className="optional">{hint}</span>
+      </label>
+      {rows ? (
+        <textarea
+          id={field}
+          rows={rows}
+          value={guidance[field] || ""}
+          placeholder={placeholder}
+          onChange={(event) => update(field, event.target.value)}
+        />
+      ) : (
+        <input
+          id={field}
+          type="text"
+          autoComplete="off"
+          value={guidance[field] || ""}
+          placeholder={placeholder}
+          onChange={(event) => update(field, event.target.value)}
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      <div className="field-row">
+        {textField("role", "Act as", "optional", "e.g. A senior copywriter")}
+        {textField("audience", "For whom", "optional", "e.g. Busy founders")}
+      </div>
+      {textField(
+        "context",
+        "Helpful context",
+        "optional",
+        "Background, relevant facts, examples, or anything AI should know...",
+        3,
+      )}
+      <div className="field-row">
+        <GuidanceSelect
+          id="format"
+          label="Output format"
+          placeholder="Choose a format"
+          options={formats}
+          value={guidance.format || ""}
+          onChange={(value) => update("format", value)}
+        />
+        <GuidanceSelect
+          id="tone"
+          label="Tone"
+          placeholder="Choose a tone"
+          options={tones}
+          value={guidance.tone || ""}
+          onChange={(value) => update("tone", value)}
+        />
+      </div>
+      {textField(
+        "approach",
+        "Suggested flow",
+        "for multi-step work",
+        "e.g. Define the goal, compare options, then recommend next steps",
+        3,
+      )}
+      {textField(
+        "focus",
+        "What should AI emphasize?",
+        "highest priority first",
+        "e.g. Practical first steps, likely obstacles, and how to measure progress",
+        3,
+      )}
+      <GuidanceSelect
+        id="depth"
+        label="Answer depth"
+        placeholder="Choose depth"
+        options={depths}
+        value={guidance.depth || ""}
+        onChange={(value) => update("depth", value)}
+      />
+      {textField(
+        "constraints",
+        "Must include / avoid",
+        "optional",
+        "e.g. Keep it under 200 words. Avoid jargon. Include a call to action.",
+        2,
+      )}
+    </>
   );
 }

@@ -541,9 +541,61 @@
   background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-bg));
 }
 
-.ui-choice-card:focus-within {
+.ui-choice-card {
+  position: relative;
+  align-items: center;
+}
+.ui-choice-card:has(.ui-choice-card__input:focus-visible) {
   outline: 2px solid var(--ui-focus);
   outline-offset: 2px;
+}
+/* The native radio stays for keyboard and screen readers, out of sight. */
+.ui-choice-card__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.ui-choice-card__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #eef3ea;
+  color: #2f5c33;
+  transition: background-color 0.14s ease;
+}
+.ui-choice-card[data-checked="true"] .ui-choice-card__icon {
+  background: #d6f87c;
+  color: #14231b;
+}
+.ui-choice-card__check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #182824;
+  color: #c7f464;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 160ms ease,
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ui-choice-card[data-checked="true"] .ui-choice-card__check {
+  opacity: 1;
+  transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-choice-card__check {
+    transition: none;
+  }
 }
 
 .ui-choice-card__body {
@@ -754,6 +806,59 @@
   animation: ui-popover-in 0.15s ease-out both;
 }
 
+/* Pointer mode: a caret marks the trigger and the panel grows out of it. */
+.ui-popover[data-pointer] {
+  overflow: visible;
+  transform-origin: var(--pop-pointer-x, 50%) bottom;
+  animation: ui-popover-trail 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.ui-popover[data-pointer][data-side="bottom"] {
+  transform-origin: var(--pop-pointer-x, 50%) top;
+}
+.ui-popover[data-pointer]::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--pop-pointer-x, 50%) - 6px);
+  width: 12px;
+  height: 12px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  transform: rotate(45deg);
+}
+.ui-popover[data-pointer][data-side="top"]::before {
+  bottom: -7px;
+  border-top: 0;
+  border-left: 0;
+}
+.ui-popover[data-pointer][data-side="bottom"]::before {
+  top: -7px;
+  border-bottom: 0;
+  border-right: 0;
+}
+@keyframes ui-popover-trail {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+}
+.ui-popover[data-pointer][data-side="top"] {
+  animation-name: ui-popover-trail;
+}
+.ui-popover[data-pointer][data-side="bottom"] {
+  animation-name: ui-popover-trail-down;
+}
+@keyframes ui-popover-trail-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-popover[data-pointer] {
+    animation-duration: 0.01s;
+  }
+}
+
 .ui-popover::before {
   content: "";
   position: absolute;
@@ -815,4 +920,16 @@
   .ui-popover {
     border-color: CanvasText;
   }
+}
+
+/* The legacy `.app-dialog label { display: block }` rule flattens choice
+   cards inside modals; restore the row. */
+.app-dialog label.ui-choice-card,
+label.ui-choice-card {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.ui-choice-card__check {
+  margin-left: auto;
 }

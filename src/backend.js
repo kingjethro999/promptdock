@@ -1120,7 +1120,7 @@ async function handleBackendRequest(request, response) {
               "Describe your idea in a few words.",
               "Invalid fine-tune details.",
               "Invalid clarification answers.",
-              "Attach up to three images.",
+              "Attach up to ten images.",
               "Use JPEG, PNG, or WebP images.",
               "Invalid image data.",
               "The selected provider needs a vision model in Settings before it can analyze images.",

@@ -1,8 +1,10 @@
 import type { StoreApi } from "zustand";
 import { api } from "@/lib/client/api";
 import { ideaPayload } from "@/lib/client/images";
+import { buildPrompt } from "@/lib/prompt/format";
+import { emptyPromptData } from "@/lib/prompt/types";
 import type { Guidance, IdeaResult } from "@/lib/prompt/types";
-import type { BuilderState } from "./prompt-builder";
+import type { BuilderState, PromptBaseline } from "./prompt-builder";
 
 type GetState = StoreApi<BuilderState>["getState"];
 type SetState = StoreApi<BuilderState>["setState"];
@@ -185,6 +187,7 @@ function acceptResult(
   }
   set({
     result: response,
+    baseline: baselineFor(state),
     ready: true,
     pending: null,
     documentRevision: state.documentRevision + 1,
@@ -194,4 +197,19 @@ function acceptResult(
       ? "Source preserved, not AI-refined. Refinement could not be verified. Try again."
       : "Prompt ready. Make it yours.",
   });
+}
+
+/**
+ * What the new prompt should be compared against: the prompt it replaces
+ * when one was on screen, otherwise the words the person typed.
+ */
+function baselineFor(state: BuilderState): PromptBaseline | null {
+  if (state.ready && state.result?.data?.task?.trim()) {
+    return {
+      kind: "previous",
+      text: buildPrompt({ ...emptyPromptData, ...state.result.data }),
+    };
+  }
+  const idea = state.pending?.idea || state.idea;
+  return idea.trim() ? { kind: "idea", text: idea.trim() } : null;
 }

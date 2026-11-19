@@ -155,8 +155,8 @@ test("image input is validated before it reaches a provider", () => {
     /Invalid image/,
   );
   assert.throws(
-    () => normalizeImages({ images: Array(4).fill(tinyPng) }),
-    /three images/,
+    () => normalizeImages({ images: Array(11).fill(tinyPng) }),
+    /ten images/,
   );
 });
 

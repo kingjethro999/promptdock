@@ -7,6 +7,7 @@ import { decode } from "@/lib/community/image";
 import ProfileHeader from "@/components/community/ProfileHeader";
 import ImageCropDialog from "@/components/community/ImageCropDialog";
 import { TextField, TextArea, ChoiceCard, Icon } from "@/components/ui";
+import { SkeletonBlock } from "@/components/ui/Skeleton";
 import LiquidButton, {
   type LiquidButtonStatus,
 } from "@/components/ui/LiquidButton";
@@ -214,7 +215,14 @@ export default function PublicProfileSettings() {
     return (
       <section className="settings-card profile-editor-card" id="profile">
         <h2>Public Profile</h2>
-        <p className="profile-editor__loading">Loading profile settings…</p>
+        <div className="pd-skel-intro" role="status">
+          <span className="sr-only">Loading profile settings</span>
+          <SkeletonBlock width="100%" height={96} radius={14} />
+          <SkeletonBlock width={84} height={84} radius={999} />
+          <SkeletonBlock width="60%" height={16} />
+          <SkeletonBlock width="100%" height={44} radius={12} />
+          <SkeletonBlock width="100%" height={88} radius={12} />
+        </div>
       </section>
     );
   }
@@ -366,6 +374,7 @@ export default function PublicProfileSettings() {
                   checked={audience === "public"}
                   onChange={() => setAudience("public")}
                   title="Public"
+                  icon={<Icon name="globe" size={16} />}
                   description="Visible to anyone with the link and listed in the community feed."
                 />
 
@@ -374,6 +383,7 @@ export default function PublicProfileSettings() {
                   value="followers"
                   checked={audience === "followers"}
                   onChange={() => setAudience("followers")}
+                  icon={<Icon name="users" size={16} />}
                   title="Followers only"
                   description="Only approved followers can see your profile and prompts."
                 />

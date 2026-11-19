@@ -203,9 +203,15 @@ export function ProfileSetup({
         if (committed.current.avatar !== a.id) {
           committed.current.avatar = a.id;
           queue.run("avatar", async () => {
-            const blob = await rasterize(a.svg, 512);
-            const avatarUrl = await uploadProcessed("avatar", blob);
-            await patchProfile({ avatarUrl });
+            try {
+              const blob = await rasterize(a.svg, 512);
+              const avatarUrl = await uploadProcessed("avatar", blob);
+              await patchProfile({ avatarUrl });
+            } catch (error) {
+              // Let the next Continue try again instead of thinking it saved.
+              committed.current.avatar = undefined;
+              throw error;
+            }
           });
         }
       } else if (draft.avatar.kind === "image") {
@@ -213,8 +219,13 @@ export function ProfileSetup({
         if (committed.current.avatar !== a.id) {
           committed.current.avatar = a.id;
           queue.run("avatar", async () => {
-            const avatarUrl = await uploadProcessed("avatar", a.blob);
-            await patchProfile({ avatarUrl });
+            try {
+              const avatarUrl = await uploadProcessed("avatar", a.blob);
+              await patchProfile({ avatarUrl });
+            } catch (error) {
+              committed.current.avatar = undefined;
+              throw error;
+            }
           });
         }
       } else if (draft.avatar.kind === "none") {
@@ -235,8 +246,13 @@ export function ProfileSetup({
         if (committed.current.banner !== b.id) {
           committed.current.banner = b.id;
           queue.run("banner", async () => {
-            const bannerUrl = await uploadProcessed("banner", b.blob);
-            await patchProfile({ bannerUrl });
+            try {
+              const bannerUrl = await uploadProcessed("banner", b.blob);
+              await patchProfile({ bannerUrl });
+            } catch (error) {
+              committed.current.banner = undefined;
+              throw error;
+            }
           });
         }
       } else if (draft.banner.kind === "none") {

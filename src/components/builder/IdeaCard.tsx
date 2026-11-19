@@ -164,7 +164,7 @@ export default function IdeaCard({
           {imageError ||
             (attachments.length
               ? `${attachments.length} image${attachments.length === 1 ? "" : "s"} attached`
-              : "Up to 3 images · large images optimized automatically")}
+              : "Up to 10 images · large images optimized automatically")}
         </span>
       </div>
       {attachments.length > 0 && (

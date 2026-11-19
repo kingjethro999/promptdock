@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import BootScreen from "@/components/ui/BootScreen";
 import TopLoader from "@/components/ui/TopLoader";
@@ -26,6 +26,7 @@ import "../styles/next/responsive.css";
 import "../styles/next/landing-refresh.css";
 import "../styles/next/community-refresh.css";
 import "../styles/next/workspace-refresh.css";
+import "../styles/next/chat-workspace.css";
 import "../styles/next/modals.css";
 
 import {
@@ -37,6 +38,11 @@ import {
 } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+export const viewport: Viewport = {
+  themeColor: "#182824",
+  colorScheme: "light",
+};
 
 export function generateMetadata(): Metadata {
   const card = randomCard();
@@ -50,7 +56,15 @@ export function generateMetadata(): Metadata {
       canonical: "/",
       types: { "application/rss+xml": "/feed.xml" },
     },
-    icons: { icon: "/favicon.svg" },
+    icons: {
+      icon: "/favicon.svg",
+      apple: "/icons/apple-touch-icon.png",
+    },
+    appleWebApp: {
+      capable: true,
+      title: "PromptDock",
+      statusBarStyle: "default",
+    },
     openGraph: {
       type: "website",
       siteName: SITE_NAME,
@@ -71,6 +85,7 @@ export function generateMetadata(): Metadata {
 
 import { headers } from "next/headers";
 import { MotionProvider } from "@/components/motion/env";
+import PwaRuntime from "@/components/pwa/PwaRuntime";
 
 export default async function RootLayout({
   children,
@@ -102,6 +117,7 @@ export default async function RootLayout({
           <BootScreen />
           <TopLoader />
           {children}
+          <PwaRuntime />
         </MotionProvider>
       </body>
     </html>

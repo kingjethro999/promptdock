@@ -1,3 +1,4 @@
+import { SkeletonBlock } from "@/components/ui/Skeleton";
 export type Usage = {
   route: string;
   capacity?: number;
@@ -33,7 +34,14 @@ export default function UsageMeter({
         left before the budget refills.
       </p>
       <div className="usage-list">
-        {loading && <p className="usage-empty">Loading usage…</p>}
+        {loading && (
+          <div className="pd-skel-intro" role="status">
+            <span className="sr-only">Loading usage</span>
+            <SkeletonBlock width="100%" height={10} radius={999} />
+            <SkeletonBlock width="100%" height={10} radius={999} />
+            <SkeletonBlock width="70%" height={10} radius={999} />
+          </div>
+        )}
         {error && (
           <p className="usage-empty" role="status">
             {error}

@@ -6,6 +6,7 @@ import { emptyPromptData } from "@/lib/prompt/types";
 
 export function usePromptBuilder() {
   const idea = usePromptBuilderStore((state) => state.idea);
+  const baseline = usePromptBuilderStore((state) => state.baseline);
   const guidance = usePromptBuilderStore((state) => state.guidance);
   const result = usePromptBuilderStore((state) => state.result);
   const pending = usePromptBuilderStore((state) => state.pending);
@@ -25,6 +26,7 @@ export function usePromptBuilder() {
     ready && result?.data ? { ...emptyPromptData, ...result.data } : null;
   return {
     idea,
+    baseline,
     guidance,
     researchMode,
     referenceUrl,

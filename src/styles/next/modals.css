@@ -384,18 +384,25 @@
   font-size: 13px;
   line-height: 1.45;
 }
+/* Selected state is a check badge, not a radio dot. */
 .pd-modal .vis-option__radio {
-  display: block;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
   width: 22px;
   height: 22px;
-  border: 2px solid #9fb19f;
   border-radius: 50%;
-  background: #ffffff;
+  color: #c7f464;
+  background: #182824;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 160ms ease,
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pd-modal .vis-option[data-checked] .vis-option__radio {
-  border-color: #2f6b2a;
-  background: radial-gradient(circle, #2f6b2a 0 5px, #ffffff 6px);
+  opacity: 1;
+  transform: scale(1);
 }
 .vis-confirm {
   display: grid;
@@ -508,6 +515,87 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pd-modal .vis-option {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Phones: every modal is a bottom sheet. It rises from the bottom edge,
+   carries a grabber, and can be swiped down to dismiss (AppDialog).
+   ------------------------------------------------------------------ */
+@keyframes pd-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes pd-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (max-width: 640px) {
+  .app-dialog,
+  .app-dialog.pd-modal,
+  .app-dialog.pd-modal--lg {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: 0;
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    padding-top: 22px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: pd-sheet-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+    touch-action: pan-y;
+  }
+  .app-dialog.pd-modal {
+    padding-top: 14px;
+    overflow: hidden;
+  }
+  .app-dialog::backdrop {
+    animation: pd-sheet-fade 0.3s ease both;
+  }
+  .app-dialog::before,
+  .react-modal::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    margin-left: -19px;
+    border-radius: 3px;
+    background: #cfd8cb;
+  }
+  .app-dialog.is-dragging {
+    animation: none;
+    transition: none;
+  }
+  .app-dialog.is-settling {
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .react-modal-backdrop {
+    align-items: end;
+    place-items: end stretch;
+    padding: 0;
+  }
+  .react-modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 22px 22px 0 0;
+    padding: 30px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    animation: pd-sheet-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .app-dialog,
+  .react-modal {
+    animation: pd-sheet-fade 0.2s ease both;
+  }
+  .app-dialog.is-settling {
     transition: none;
   }
 }

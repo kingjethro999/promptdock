@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#182824" />
+    <title>You're offline · PromptDock</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1d2a25;
+        --soft: #5e7467;
+        --page: #f7f8f3;
+        --dark: #182824;
+        --lime: #c7f464;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--page);
+        color: var(--ink);
+        font-family:
+          "DM Sans",
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      ::selection {
+        background: var(--lime);
+        color: var(--dark);
+      }
+      main {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: min(100%, 440px);
+        padding: 32px 28px;
+        border: 1px solid #e7ebe2;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 12px 36px rgba(32, 55, 34, 0.08);
+        text-align: center;
+      }
+      svg {
+        width: 56px;
+        height: 56px;
+      }
+      h1 {
+        margin: 18px 0 8px;
+        font-size: 24px;
+        line-height: 1.2;
+        letter-spacing: -0.025em;
+        text-wrap: balance;
+      }
+      p {
+        margin: 0 auto;
+        max-width: 34ch;
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--soft);
+        text-wrap: pretty;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        margin-top: 22px;
+        padding: 0 22px;
+        border-radius: 999px;
+        background: var(--dark);
+        color: #f4f8ee;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      a:hover {
+        background: #22392f;
+      }
+      a:active {
+        transform: scale(0.97);
+      }
+      a:focus-visible {
+        outline: 2px solid #98c844;
+        outline-offset: 3px;
+      }
+      .note {
+        margin-top: 18px;
+        font-size: 13px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        a:active {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <rect width="64" height="64" rx="18" fill="#182824" />
+          <path
+            d="M16 20h25a9 9 0 0 1 0 18H29v10l-13-10V20Z"
+            fill="#c7f464"
+          />
+          <circle cx="29" cy="29" r="3" fill="#182824" />
+          <circle cx="40" cy="29" r="3" fill="#182824" />
+        </svg>
+        <h1>You're offline</h1>
+        <p>
+          PromptDock needs a connection to shape prompts and reach your
+          library. Nothing you saved is lost.
+        </p>
+        <a href="">Try again</a>
+        <p class="note">This page reloads what you were opening.</p>
+      </div>
+    </main>
+  </body>
+</html>

@@ -24,11 +24,15 @@ function tagProblem(tag: string, existing: string[]): string | null {
   return null;
 }
 
-/** Composer for adding a prompt written elsewhere to the library. */
+/**
+ * Composer for adding a prompt written elsewhere to the library, and for
+ * editing a saved prompt's title, tags and text in place.
+ */
 export default function PastePromptDialog({
   close,
   saving,
   paste,
+  initial,
 }: {
   close(): void;
   saving: boolean;
@@ -37,10 +41,13 @@ export default function PastePromptDialog({
     content: string,
     tags: string,
   ): Promise<boolean | undefined>;
+  /** Present when editing an existing prompt. */
+  initial?: { name: string; content: string; tags: string[] };
 }) {
-  const [name, setName] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const editing = Boolean(initial);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [content, setContent] = useState(initial?.content ?? "");
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [tagDraft, setTagDraft] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [clipboardNote, setClipboardNote] = useState("");
@@ -133,9 +140,12 @@ export default function PastePromptDialog({
   const nearLimit = count > MAX_PROMPT * 0.95;
   return (
     <ModalFrame
-      title="Paste a prompt"
-      kicker="Library"
-      description="Keep a prompt you wrote elsewhere. It stays private until you choose to share it."
+      title={editing ? "Edit prompt" : "Paste a prompt"}
+      description={
+        editing
+          ? "Change the title, tags or text. Saving keeps a version you can go back to."
+          : "Keep a prompt you wrote elsewhere. It stays private until you choose to share it."
+      }
       size="lg"
       className="paste-modal"
       close={close}
@@ -153,7 +163,7 @@ export default function PastePromptDialog({
             loading={saving}
             loadingText="Saving…"
           >
-            Save to library
+            {editing ? "Save changes" : "Save to library"}
           </Button>
         </>
       }

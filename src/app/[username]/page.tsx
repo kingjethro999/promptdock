@@ -43,13 +43,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const isAudienceFollowers = p.communityAudience === "followers";
 
-  const title = `${p.displayName} (@${p.username}) on PromptDock`;
-  const description =
-    p.bio ?? `Prompts shared by ${p.displayName} on PromptDock Community.`;
+  const name = p.displayName || `@${p.username}`;
+  // Reads like a personal invitation in chat and social previews.
+  const title = `${name} invited you to follow them on PromptDock`;
+  const description = p.bio
+    ? `${p.bio} · Follow @${p.username} for the prompts they share.`
+    : `See the prompts ${name} has shared and follow along for new ones.`;
   const image = `/api/og/u/${p.username}?s=${shareSeed()}`;
 
   return {
-    title,
+    title: { absolute: `${name} (@${p.username}) · PromptDock` },
     description,
     alternates: { canonical: `/${p.username}` },
     robots: isAudienceFollowers ? { index: false } : undefined,
@@ -58,7 +61,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: `/${p.username}`,
-      images: [{ url: image, width: 1200, height: 630 }],
+      siteName: "PromptDock",
+      images: [
+        { url: image, type: "image/png", width: 1200, height: 630, alt: title },
+      ],
     },
     twitter: {
       card: "summary_large_image",

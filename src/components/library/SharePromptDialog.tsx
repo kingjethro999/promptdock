@@ -238,7 +238,9 @@ export default function SharePromptDialog({
                   {state.hint}
                 </span>
               </span>
-              <span className="vis-option__radio" aria-hidden="true" />
+              <span className="vis-option__radio" aria-hidden="true">
+                <Icon name="check" size={14} strokeWidth={3} />
+              </span>
             </label>
           );
         })}

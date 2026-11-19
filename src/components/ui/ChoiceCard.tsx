@@ -2,6 +2,7 @@
 
 import React, { useId, type ReactNode } from "react";
 import { cx } from "./cx";
+import { Icon } from "./Icon";
 
 export interface ChoiceCardProps {
   name: string;
@@ -52,7 +53,7 @@ export function ChoiceCard({
         checked={checked}
         disabled={disabled}
         onChange={() => onChange(value)}
-        className="ui-radio"
+        className="ui-choice-card__input"
         aria-describedby={descId}
       />
       <div className="ui-choice-card__body">
@@ -65,7 +66,7 @@ export function ChoiceCard({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {icon && <span>{icon}</span>}
+            {icon && <span className="ui-choice-card__icon">{icon}</span>}
             <span className="ui-choice-card__title">{title}</span>
           </div>
           {badge && <div>{badge}</div>}
@@ -76,6 +77,9 @@ export function ChoiceCard({
           </p>
         )}
       </div>
+      <span className="ui-choice-card__check" aria-hidden="true">
+        <Icon name="check" size={14} strokeWidth={3} />
+      </span>
     </label>
   );
 }

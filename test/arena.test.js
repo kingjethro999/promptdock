@@ -80,6 +80,48 @@ test("runPromptComparison tolerates one failing provider and reports its error",
   assert.ok(result.results[1].error);
 });
 
+test("runPromptComparison replaces a rate-limited provider with the next one", async () => {
+  const request = async (url) => {
+    if (url.includes("groq")) return { ok: false, status: 429 };
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: url.includes("apmix") ? "From apmix" : "From openai",
+            },
+          },
+        ],
+      }),
+    };
+  };
+  const env = {
+    GROQ_API_KEY: "groq-key",
+    GROQ_MODEL: "groq-model",
+    APMIX_API_KEY: "apmix-key",
+    APMIX_BASE_URL: "https://api.apmix.ai/v1",
+    APMIX_MODEL: "apmix-model",
+    OPENAI_API_KEY: "openai-key",
+    OPENAI_MODEL: "openai-model",
+    AI_PROVIDER_ORDER: "groq,apmix,openai",
+  };
+
+  const result = await runPromptComparison(
+    { prompt: "Task: say hello" },
+    env,
+    request,
+  );
+
+  assert.deepEqual(
+    result.results.map((item) => [item.provider, item.success]),
+    [
+      ["apmix", true],
+      ["openai", true],
+    ],
+  );
+});
+
 test("runPromptComparison rejects empty or invalid prompt text", async () => {
   await assert.rejects(
     () => runPromptComparison({ prompt: "" }),

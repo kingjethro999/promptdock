@@ -10,6 +10,7 @@ import {
   type PromptProfile,
 } from "@/lib/prompt/format";
 import { interpolatePrompt } from "@/lib/prompt/variables";
+import { arenaInsights } from "@/lib/prompt/arena-insights";
 import ResearchDrawer from "./ResearchDrawer";
 import PromptVariablesForm from "./PromptVariablesForm";
 
@@ -30,6 +31,8 @@ type Props = {
   save?: ReturnType<typeof useSavePrompt>;
   onOpenDetails?: () => void;
   research?: ResearchMetadata;
+  /** The prompt's own yes/no checks; the arena scores each answer on them. */
+  checks?: string[];
 };
 
 export default function PromptPreview({
@@ -45,6 +48,7 @@ export default function PromptPreview({
   save,
   onOpenDetails,
   research,
+  checks = [],
 }: Props) {
   const [profile, setProfile] = useState<PromptProfile>("universal");
   const [editing, setEditing] = useState(false);
@@ -62,6 +66,15 @@ export default function PromptPreview({
     | { provider: string; text?: string; error?: string; success: boolean }[]
     | null
   >(null);
+
+  const insights = compareOutputs
+    ? new Map(
+        arenaInsights(compareOutputs, checks).map((insight) => [
+          insight.provider,
+          insight,
+        ]),
+      )
+    : null;
 
   const activePrompt = !ready
     ? ""
@@ -168,10 +181,11 @@ export default function PromptPreview({
       }>("/api/run", "POST", { prompt: finalPrompt, compare: true });
       if (revision !== executionRevision.current) return;
       setCompareOutputs(result.results);
+      const answered = result.results.filter((item) => item.success).length;
       setMessage(
-        `Comparison complete across ${result.results.length} model${
-          result.results.length === 1 ? "" : "s"
-        }.`,
+        answered
+          ? `Compared ${answered} model${answered === 1 ? "" : "s"}.`
+          : "No model answered this time. Try again in a minute.",
       );
     } catch (error) {
       if (revision !== executionRevision.current) return;
@@ -406,6 +420,12 @@ export default function PromptPreview({
             <div>
               <div className="section-kicker">MODEL ARENA</div>
               <h3>Side-by-side comparison</h3>
+              <p className="arena-explainer">
+                Same prompt, different models. Under each answer: what it gives
+                you that the others do not
+                {checks.length ? ", and how many of your checks it covers" : ""}
+                . Counted from the text, not judged by AI.
+              </p>
             </div>
             <button
               type="button"
@@ -417,7 +437,10 @@ export default function PromptPreview({
             </button>
           </div>
           <div className="arena-grid">
-            {compareOutputs.map((item, idx) => (
+            {(compareOutputs.some((item) => item.success)
+              ? compareOutputs.filter((item) => item.success)
+              : compareOutputs
+            ).map((item, idx) => (
               <div key={item.provider + idx} className="arena-column">
                 <div className="arena-col-top">
                   <span className="arena-provider-pill">{item.provider}</span>
@@ -443,13 +466,59 @@ export default function PromptPreview({
                 {item.error ? (
                   <p className="arena-error">{item.error}</p>
                 ) : (
-                  <div className="arena-content">{item.text}</div>
+                  <>
+                    <ArenaNote insight={insights?.get(item.provider)} />
+                    <div className="arena-content">{item.text}</div>
+                  </>
                 )}
               </div>
             ))}
           </div>
+          {compareOutputs.some((item) => item.success) &&
+            compareOutputs.some((item) => !item.success) && (
+              <p className="arena-skipped">
+                No answer from{" "}
+                {compareOutputs
+                  .filter((item) => !item.success)
+                  .map((item) => item.provider)
+                  .join(", ")}{" "}
+                this time (busy or rate-limited), so the comparison used the
+                models that responded.
+              </p>
+            )}
         </div>
       )}
     </section>
+  );
+}
+
+function ArenaNote({
+  insight,
+}: {
+  insight?: ReturnType<typeof arenaInsights>[number];
+}) {
+  if (!insight) return null;
+  return (
+    <div className="arena-insight">
+      <p className="arena-insight__pick">{insight.pickIf}</p>
+      <ul>
+        <li>
+          {insight.words} words, {insight.structure.join(", ")}
+        </li>
+        {insight.notes.map((note) => (
+          <li key={note}>{note}</li>
+        ))}
+      </ul>
+      {insight.checksTotal > 0 && (
+        <div className="arena-insight__meter" aria-hidden="true">
+          {Array.from({ length: insight.checksTotal }, (_, index) => (
+            <span
+              key={index}
+              className={index < insight.checksMet ? "is-met" : undefined}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
