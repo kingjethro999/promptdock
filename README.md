@@ -5,7 +5,7 @@ Turn a rough idea or spoken note into an editable prompt for ChatGPT, Claude, Ge
 If PromptDock helps your work, [support the project on GitHub Sponsors](https://github.com/sponsors/kingjethro999).
 You can also support it through [thanks.dev](https://thanks.dev/u/gh/kingjethro999).
 
-PromptDock is an independent personal project by [King Jethro](https://github.com/kingjethro999). The hosted site publishes a [Privacy Policy](src/app/privacy/page.tsx), [Terms of Use](src/app/terms/page.tsx), and [Copyright & independence notice](src/app/copyright/page.tsx). The source code is MIT licensed; user prompts are not automatically open source. Links to these pages appear on the landing page, signup form, shared prompt page, and workspace sidebar. The notices describe the current deployment and should be reviewed whenever its data handling or provider integrations change.
+PromptDock is an independent personal project by [King Jethro](https://github.com/kingjethro999). The hosted site publishes a [Privacy Policy](https://thepromptdock.vercel.app/privacy), [Terms of Use](https://thepromptdock.vercel.app/terms), and [Copyright & independence notice](https://thepromptdock.vercel.app/copyright). The source code is MIT licensed; user prompts are not automatically open source. Links to these pages appear on the landing page, signup form, shared prompt page, and workspace sidebar. The notices describe the current deployment and should be reviewed whenever its data handling or provider integrations change.
 
 ## Project layout
 
