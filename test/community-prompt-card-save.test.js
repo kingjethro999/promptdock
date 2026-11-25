@@ -46,8 +46,11 @@ function loadCard(fetchImpl) {
           );
         return {
           Button,
-          IconButton: ({ icon, ...props }) =>
-            React.createElement("button", { type: "button", ...props }),
+          IconButton: (props) => {
+            const { icon, ...rest } = props;
+            void icon;
+            return React.createElement("button", { type: "button", ...rest });
+          },
           LinkButton: ({ children, href, leadingIcon: icon, ...props }) =>
             React.createElement(
               "a",
