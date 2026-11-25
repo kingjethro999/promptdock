@@ -257,6 +257,11 @@
   color: var(--community-text);
   margin: 0;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .community-card-title a {
@@ -286,6 +291,10 @@
 }
 
 .community-card-tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 6px;

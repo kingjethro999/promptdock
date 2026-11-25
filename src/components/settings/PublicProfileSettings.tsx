@@ -8,6 +8,7 @@ import ProfileHeader from "@/components/community/ProfileHeader";
 import ImageCropDialog from "@/components/community/ImageCropDialog";
 import { TextField, TextArea, ChoiceCard, Icon } from "@/components/ui";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
+import ShareProfileButton from "@/components/community/ShareProfileButton";
 import LiquidButton, {
   type LiquidButtonStatus,
 } from "@/components/ui/LiquidButton";
@@ -416,6 +417,13 @@ export default function PublicProfileSettings() {
                   style={{ display: "inline-block", verticalAlign: "middle" }}
                 />
               </Link>
+            )}
+            {profile?.username && (
+              <ShareProfileButton
+                username={profile.username}
+                displayName={displayName}
+                variant="quiet"
+              />
             )}
             {feedback && (
               <span

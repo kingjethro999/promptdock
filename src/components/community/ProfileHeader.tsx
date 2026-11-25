@@ -6,6 +6,7 @@ import type { PublicProfile } from "@/lib/community/types";
 import { avatarFallback } from "@/lib/community/username";
 import { BannerPreset } from "@/components/profile/BannerPreset";
 import FollowButton from "./FollowButton";
+import ShareProfileButton from "./ShareProfileButton";
 
 type ViewProps = {
   mode?: "view";
@@ -111,15 +112,28 @@ export default function ProfileHeader(props: Props) {
 
           <div className="profile-actions">
             {!isEdit && props.profile.isOwner ? (
-              <LinkButton href="/settings#profile" variant="secondary">
-                Edit Profile
-              </LinkButton>
+              <>
+                <LinkButton href="/settings#profile" variant="secondary">
+                  Edit Profile
+                </LinkButton>
+                <ShareProfileButton
+                  username={props.profile.username}
+                  displayName={props.profile.displayName}
+                />
+              </>
             ) : !isEdit ? (
-              <FollowButton
-                username={props.profile.username}
-                initialFollowing={props.profile.following ?? false}
-                initialCount={props.profile.followerCount}
-              />
+              <>
+                <FollowButton
+                  username={props.profile.username}
+                  initialFollowing={props.profile.following ?? false}
+                  initialCount={props.profile.followerCount}
+                />
+                <ShareProfileButton
+                  username={props.profile.username}
+                  displayName={props.profile.displayName}
+                  iconOnly
+                />
+              </>
             ) : null}
           </div>
         </div>

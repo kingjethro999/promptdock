@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button, LinkButton } from "@/components/ui";
+import { IconButton, LinkButton } from "@/components/ui";
 import type { CommunityPromptCard as CardType } from "@/lib/community/types";
 import { avatarFallback } from "@/lib/community/username";
 import { copyPromptText } from "@/lib/community/copy";
@@ -153,39 +153,38 @@ export default function CommunityPromptCard({ card }: { card: CardType }) {
         </div>
       )}
 
+      {/* One primary action, two quiet icon actions: the row is the same
+          width-proof shape in a 250px column as in a 500px one. */}
       <div className="community-card-actions">
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon={copied ? "check" : "copy"}
-          onClick={handleCopy}
-          aria-label="Copy prompt text"
-        >
-          {copied ? "Copied" : "Copy"}
-        </Button>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon="bookmark"
-          onClick={handleSave}
-          loading={saving}
-          loadingText="Saving…"
-          aria-label="Save prompt to your library"
-        >
-          {saved ? "Saved" : "Save"}
-        </Button>
-
         <LinkButton
           href={`/workspace?remix=${card.publicId}`}
           variant="primary"
           size="sm"
           leadingIcon="zap"
-          style={{ marginLeft: "auto" }}
-          aria-label="Remix this prompt"
+          className="community-card-remix"
+          aria-label={`Remix ${card.title}`}
         >
           Remix
         </LinkButton>
+        <IconButton
+          icon={copied ? "check" : "copy"}
+          variant="secondary"
+          size="sm"
+          onClick={handleCopy}
+          aria-label="Copy prompt text"
+          title={copied ? "Copied" : "Copy prompt"}
+        />
+        <IconButton
+          icon={saved ? "check" : "bookmark"}
+          variant="secondary"
+          size="sm"
+          onClick={handleSave}
+          disabled={saving}
+          aria-busy={saving}
+          aria-pressed={saved}
+          aria-label="Save prompt to your library"
+          title={saved ? "Saved" : "Save to library"}
+        />
       </div>
 
       {saveFeedback && (

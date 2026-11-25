@@ -46,6 +46,8 @@ function loadCard(fetchImpl) {
           );
         return {
           Button,
+          IconButton: ({ icon, ...props }) =>
+            React.createElement("button", { type: "button", ...props }),
           LinkButton: ({ children, href, leadingIcon: icon, ...props }) =>
             React.createElement(
               "a",
@@ -118,10 +120,10 @@ test("Community save explains a rejected save and allows retry", async () => {
       /no longer available/i,
     );
     assert.equal(
-      container.querySelector(
-        'button[aria-label="Save prompt to your library"]',
-      ).textContent,
-      "Save",
+      container
+        .querySelector('button[aria-label="Save prompt to your library"]')
+        .getAttribute("aria-pressed"),
+      "false",
     );
   } finally {
     await React.act(async () => root.unmount());
@@ -158,10 +160,10 @@ test("successful Community save clears errors and announces completion", async (
   try {
     await clickSave(dom, container);
     assert.equal(
-      container.querySelector(
-        'button[aria-label="Save prompt to your library"]',
-      ).textContent,
-      "Saved",
+      container
+        .querySelector('button[aria-label="Save prompt to your library"]')
+        .getAttribute("aria-pressed"),
+      "true",
     );
     assert.match(
       container.querySelector('[role="status"]').textContent,

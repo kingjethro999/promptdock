@@ -134,7 +134,10 @@ export default function ChatComposer({
     const element = input.current;
     if (!element) return;
     element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 320)}px`;
+    // Never taller than a third of the screen, so the send button stays
+    // on screen however much is pasted.
+    const cap = Math.max(96, Math.min(320, window.innerHeight * 0.32));
+    element.style.height = `${Math.min(element.scrollHeight, cap)}px`;
   }, [text]);
 
   const count = builder.attachments.length + docs.length;

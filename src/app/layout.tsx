@@ -27,6 +27,7 @@ import "../styles/next/landing-refresh.css";
 import "../styles/next/community-refresh.css";
 import "../styles/next/workspace-refresh.css";
 import "../styles/next/chat-workspace.css";
+import "../styles/next/not-found.css";
 import "../styles/next/modals.css";
 
 import {

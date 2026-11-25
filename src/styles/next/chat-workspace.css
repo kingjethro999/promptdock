@@ -577,7 +577,7 @@
 .chat-composer textarea {
   width: 100%;
   min-height: 28px;
-  max-height: 320px;
+  max-height: min(320px, 32dvh);
   resize: none;
   padding: 8px 8px 4px;
   border: 0;
@@ -596,10 +596,17 @@
 /* Attachments sit inside the composer, above the text, like Claude's. */
 .chat-attachments {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
   gap: 8px;
   padding: 4px 2px 6px;
+  /* One scrolling row, so ten attachments never push the send button away. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.chat-attachments > * {
+  flex: none;
 }
 .chat-tile {
   position: relative;
@@ -1296,5 +1303,43 @@
 @media (prefers-reduced-motion: reduce) {
   .net-status {
     animation: none;
+  }
+}
+
+/* Library card: Edit and Remix sit together, with room to tap. */
+.prompt-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.prompt-card-cta button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  transition:
+    background-color 160ms ease,
+    transform 140ms var(--chat-ease);
+}
+.prompt-card-cta button:hover {
+  background: #eef6df;
+}
+.prompt-card-cta button:active {
+  transform: scale(0.96);
+}
+.prompt-card-cta button:focus-visible {
+  outline: 2px solid #98c844;
+  outline-offset: 2px;
+}
+@media (hover: none) {
+  .prompt-card-cta button {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt-card-cta button:active {
+    transform: none;
   }
 }
