@@ -3,7 +3,8 @@ import { shareSeed } from "@/lib/og/themes";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { getPromptForViewer } from "@/lib/community/queries";
+import { getPromptForViewer, getPromptGate } from "@/lib/community/queries";
+import FollowGate from "@/components/community/FollowGate";
 import { getViewer } from "@/lib/community/viewer";
 import { clean } from "@/lib/og/text";
 import { buildPrompt } from "@/lib/prompt/format";
@@ -78,7 +79,15 @@ export default async function SharedPromptPage({
   const collectionPublicId = sp.c || null;
   const viewer = await getViewer();
   const item = await getPrompt(publicId, viewer?.id ?? null).catch(() => null);
-  if (!item) notFound();
+  if (!item) {
+    // A followers-only prompt gets a clear next step; anything else stays a
+    // plain "not available" so private prompts are never confirmed to exist.
+    const gate = await getPromptGate(publicId, viewer?.id ?? null).catch(
+      () => null,
+    );
+    if (gate) return <FollowGate gate={gate} signedIn={Boolean(viewer)} />;
+    notFound();
+  }
 
   const seriesContext = collectionPublicId
     ? await getSeriesContext(collectionPublicId, publicId, viewer?.id ?? null)

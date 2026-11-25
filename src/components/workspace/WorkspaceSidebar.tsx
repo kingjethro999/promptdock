@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePromptBuilderStore } from "@/stores/prompt-builder";
+import { announceNewPrompt } from "@/lib/chat-store";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
@@ -103,7 +105,12 @@ export default function WorkspaceSidebar({
       <nav className="main-nav" aria-label="Main navigation">
         <Link
           href="/workspace"
-          onClick={close}
+          onClick={() => {
+            // A new prompt is a clean slate, the chat included.
+            usePromptBuilderStore.getState().clear();
+            announceNewPrompt();
+            close();
+          }}
           data-tour="nav-new-prompt"
           aria-current={pathname === "/workspace" ? "page" : undefined}
           className={`nav-item${pathname === "/workspace" ? " active" : ""}`}

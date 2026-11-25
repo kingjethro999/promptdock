@@ -69,6 +69,40 @@ export async function getPromptForViewer(
   return rows[0] ?? null;
 }
 
+export type PromptGate = {
+  publicId: string;
+  title: string;
+  ownerId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
+/**
+ * For a prompt the viewer cannot open only because they do not follow its
+ * owner: enough to say "follow this creator to view it". Private and deleted
+ * prompts return null, so their existence is never revealed.
+ */
+export async function getPromptGate(
+  publicId: string,
+  viewerId: string | null,
+): Promise<PromptGate | null> {
+  if (!publicId || !/^[0-9a-f-]{36}$/i.test(publicId)) return null;
+  if (!db.pool) return null;
+  await db.ensureSchema();
+  const { rows } = await db.pool.query(
+    `SELECT p.public_id AS "publicId", p.name AS title, p.owner_id AS "ownerId",
+            u.username, COALESCE(u.display_name, u.username) AS "displayName", u.avatar_url AS "avatarUrl"
+       FROM prompts p JOIN users u ON u.id = p.owner_id
+      WHERE p.public_id = $1::uuid AND p.deleted_at IS NULL AND u.username IS NOT NULL
+        AND (COALESCE(p.visibility, 'public') = 'followers'
+             OR (COALESCE(p.visibility, 'public') = 'public' AND COALESCE(u.community_audience, 'public') <> 'public'))
+        AND ($2::uuid IS NULL OR p.owner_id <> $2::uuid)`,
+    [publicId, viewerId],
+  );
+  return rows[0] ?? null;
+}
+
 /** Fetch a prompt by primary internal ID for a viewer (used for attribution check). */
 export async function getPromptByIdForViewer(
   id: string,

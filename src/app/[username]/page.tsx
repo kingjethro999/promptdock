@@ -11,8 +11,11 @@ import {
   getPublicProfile,
   listCommunityPrompts,
   getFollowState,
+  getPromptForViewer,
+  getPromptGate,
   resolveHandle,
 } from "@/lib/community/queries";
+import Link from "next/link";
 import ProfileHeader from "@/components/community/ProfileHeader";
 import PromptGrid from "@/components/community/PromptGrid";
 import { Icon } from "@/components/ui/Icon";
@@ -22,6 +25,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ username: string }>;
+  searchParams?: Promise<{ highlight?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -75,8 +79,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ProfilePage({ params }: Props) {
+export default async function ProfilePage({ params, searchParams }: Props) {
   const { username } = await params;
+  const highlightId = ((await searchParams)?.highlight || "").slice(0, 40);
   const handle = normalizeUsername(username);
   if (!USERNAME_RE.test(handle) || RESERVED.has(handle)) {
     notFound();
@@ -110,9 +115,52 @@ export default async function ProfilePage({ params }: Props) {
 
   profile.following = follow;
 
+  // A prompt someone was sent: pick it out at the top of the profile. If the
+  // viewer cannot open it yet, say what unlocks it.
+  const picked = highlightId
+    ? await getPromptForViewer(highlightId, viewer?.id ?? null).catch(
+        () => null,
+      )
+    : null;
+  const locked =
+    highlightId && !picked
+      ? await getPromptGate(highlightId, viewer?.id ?? null).catch(() => null)
+      : null;
+  const highlight =
+    picked && picked.ownerId === resolved.userId
+      ? { open: true as const, title: picked.name, publicId: picked.publicId }
+      : locked && locked.ownerId === resolved.userId
+        ? { open: false as const, title: locked.title, publicId: highlightId }
+        : null;
+
   return (
     <div className="community-container">
       <ProfileHeader profile={profile} />
+
+      {highlight && (
+        <aside
+          className="profile-highlight"
+          aria-label="Prompt shared with you"
+        >
+          <span className="profile-highlight__tag">Shared with you</span>
+          <h2>{highlight.title}</h2>
+          {highlight.open ? (
+            <>
+              <p>You can open this prompt now.</p>
+              <Link
+                className="profile-highlight__action"
+                href={`/p/${highlight.publicId}`}
+              >
+                Open prompt
+              </Link>
+            </>
+          ) : (
+            <p>
+              Follow {profile.displayName} with the button above to unlock it.
+            </p>
+          )}
+        </aside>
+      )}
 
       {collections.length > 0 && (
         <section style={{ marginTop: 32 }}>

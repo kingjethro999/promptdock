@@ -11,6 +11,14 @@ import type { Clarification, PromptInterpretation } from "@/lib/prompt/types";
 import { guidanceFields } from "@/lib/prompt/types";
 import type { PromptBaseline } from "@/stores/prompt-builder";
 import { GuidanceFields } from "./FineTunePanel";
+import {
+  DRAFT_CHAT,
+  NEW_PROMPT_EVENT,
+  announceNewPrompt,
+  readChat,
+  removeChat,
+  writeChat,
+} from "@/lib/chat-store";
 import ChatComposer, { type AddOn, type ChatDoc } from "./ChatComposer";
 import { ChatSkeleton } from "./ChatSkeleton";
 import PromptDiffPanel from "./PromptDiffPanel";
@@ -35,30 +43,6 @@ type Turn = {
   };
   error?: string;
 };
-
-const STORE_KEY = "promptdock.chat.v1";
-const MAX_TURNS = 20;
-
-function readTurns(): Turn[] {
-  try {
-    const raw = window.localStorage.getItem(STORE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? (parsed as Turn[]).slice(-MAX_TURNS) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeTurns(turns: Turn[]) {
-  try {
-    window.localStorage.setItem(
-      STORE_KEY,
-      JSON.stringify(turns.slice(-MAX_TURNS)),
-    );
-  } catch {
-    // The conversation still works; it just won't survive a reload.
-  }
-}
 
 /** Text files ride along inside the message, clearly fenced and labelled. */
 function withAttachments(message: string, docs: ChatDoc[]) {
@@ -98,17 +82,50 @@ export default function ChatWorkspace({
   const awaiting = useRef<{ id: string; revision: number } | null>(null);
   const lastPending = useRef<Clarification[] | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  // Stored turns load after mount so the server render matches; nothing is
-  // written back until they have, or an empty first render would wipe them.
-  const [hydrated, setHydrated] = useState(false);
+  // One conversation per prompt. `loadedId` is the chat the turns on screen
+  // belong to; nothing is written until it matches the current prompt, so a
+  // switch can never save one prompt's messages under another's id.
+  const chatId = builder.sourcePrompt?.id ?? DRAFT_CHAT;
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  const hydrated = loadedId === chatId;
+  const turnsRef = useRef<Turn[]>([]);
+  turnsRef.current = turns;
+
+  function resetComposer() {
+    awaiting.current = null;
+    lastPending.current = null;
+    setText("");
+    setDocs([]);
+    setRefine(true);
+  }
 
   useEffect(() => {
-    setTurns(readTurns());
-    setHydrated(true);
-  }, []);
+    if (loadedId === chatId) return;
+    if (loadedId === DRAFT_CHAT && chatId !== DRAFT_CHAT) {
+      // The draft was just saved: its conversation now belongs to the prompt.
+      writeChat(chatId, turnsRef.current);
+      removeChat(DRAFT_CHAT);
+      setLoadedId(chatId);
+      return;
+    }
+    resetComposer();
+    setTurns(readChat<Turn>(chatId));
+    setLoadedId(chatId);
+  }, [chatId, loadedId]);
+
   useEffect(() => {
-    if (hydrated) writeTurns(turns);
-  }, [turns, hydrated]);
+    if (hydrated) writeChat(chatId, turns);
+  }, [turns, hydrated, chatId]);
+
+  // Sidebar "New Prompt": start clean, even when already on this page.
+  useEffect(() => {
+    const reset = () => {
+      resetComposer();
+      setTurns([]);
+    };
+    window.addEventListener(NEW_PROMPT_EVENT, reset);
+    return () => window.removeEventListener(NEW_PROMPT_EVENT, reset);
+  }, []);
 
   // A prompt shaped in the classic layout carries over as the first message.
   useEffect(() => {
@@ -265,13 +282,8 @@ export default function ChatWorkspace({
   }
 
   function newChat() {
-    setDocs([]);
-    awaiting.current = null;
-    lastPending.current = null;
+    announceNewPrompt();
     builder.clear();
-    setTurns([]);
-    setText("");
-    setRefine(true);
     document.getElementById("chatInput")?.focus();
   }
 

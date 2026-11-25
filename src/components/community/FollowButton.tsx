@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 
 type Props = {
@@ -19,6 +20,7 @@ export default function FollowButton({
     count: Math.max(0, initialCount),
   });
   const busy = useRef(false);
+  const router = useRouter();
 
   // Check ?intent=follow after login
   useEffect(() => {
@@ -61,6 +63,8 @@ export default function FollowButton({
         following: Boolean(d.following),
         count: Math.max(0, Number(d.followerCount) || 0),
       });
+      // Following can unlock prompts on this page; show them straight away.
+      router.refresh();
     } catch {
       setS(prev);
     } finally {

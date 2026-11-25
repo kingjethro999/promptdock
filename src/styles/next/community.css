@@ -1244,3 +1244,68 @@
 .creator-card-view-btn:hover {
   text-decoration: underline;
 }
+
+/* A prompt someone was sent: picked out at the top of the profile. */
+.profile-highlight {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid #b5d679;
+  border-radius: 16px;
+  background: color-mix(
+    in srgb,
+    #d7f77a 14%,
+    var(--community-card-bg, #171c17)
+  );
+  animation: profile-highlight-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.profile-highlight__tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #d7f77a;
+  color: #111710;
+  font-size: 12px;
+  font-weight: 800;
+}
+.profile-highlight h2 {
+  margin: 10px 0 4px;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+  color: var(--community-text);
+}
+.profile-highlight p {
+  margin: 0;
+  color: var(--community-muted);
+  font-size: 14.5px;
+}
+.profile-highlight__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #d7f77a;
+  color: #111710;
+  font-weight: 700;
+  text-decoration: none;
+}
+.profile-highlight__action:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+@keyframes profile-highlight-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 0 0 0 rgba(215, 247, 122, 0.5);
+  }
+  60% {
+    box-shadow: 0 0 0 10px rgba(215, 247, 122, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-highlight {
+    animation: none;
+  }
+}
